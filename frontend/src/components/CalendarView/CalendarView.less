@@ -1,0 +1,574 @@
+.calendar-view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.calendar-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  height: 100%;
+}
+
+// 顶部工具栏
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+
+  .toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .calendar-icon {
+      font-size: 20px;
+      color: #666;
+    }
+
+    .month-title {
+      font-size: 22px;
+      font-weight: 600;
+      margin: 0;
+      color: #333;
+    }
+  }
+
+  .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .toolbar-btn {
+      color: #666;
+    }
+
+    .view-dropdown {
+      min-width: 60px;
+    }
+
+    .nav-btn-group {
+      .ant-btn {
+        padding: 4px 12px;
+      }
+    }
+  }
+}
+
+// 星期行
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+  flex-shrink: 0;
+
+  .weekday-cell {
+    text-align: center;
+    padding: 8px 0;
+    font-size: 13px;
+    color: #999;
+    font-weight: 500;
+  }
+}
+
+// 日历网格
+.calendar-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  min-height: 0;
+
+  .calendar-cell {
+    border-right: 1px solid #f5f5f5;
+    border-bottom: 1px solid #f5f5f5;
+    padding: 4px;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    &:nth-child(7n) {
+      border-right: none;
+    }
+
+    &:nth-child(n + 36) {
+      border-bottom: none;
+    }
+
+    &.other-month {
+      background: #fafafa;
+
+      .date-number {
+        color: #bbb;
+      }
+    }
+
+    &.today {
+      background: #f0f7ff;
+    }
+
+    .cell-date {
+      margin-bottom: 2px;
+      flex-shrink: 0;
+
+      .date-number {
+        font-size: 13px;
+        color: #333;
+        line-height: 24px;
+      }
+
+      .today-highlight {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        height: 24px;
+        padding: 0 4px;
+        border-radius: 12px;
+        background: #1677ff;
+        color: #fff;
+        font-weight: 600;
+      }
+    }
+
+    .cell-tasks {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      overflow: hidden;
+      flex: 1;
+      min-height: 0;
+    }
+  }
+}
+
+// 任务条
+.task-bar {
+  display: flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  line-height: 20px;
+  flex-shrink: 0;
+
+  &:hover {
+    opacity: 0.85;
+    filter: brightness(0.95);
+  }
+
+  .task-checkbox {
+    margin-right: 4px;
+    font-size: 11px;
+    color: #666;
+    flex-shrink: 0;
+  }
+
+  .task-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #333;
+  }
+
+  .task-time {
+    margin-left: auto;
+    padding-left: 8px;
+    font-size: 11px;
+    color: #666;
+    flex-shrink: 0;
+  }
+}
+
+// 更多任务
+.more-tasks {
+  font-size: 11px;
+  color: #1677ff;
+  padding: 1px 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// TaskPopover 相关样式
+.task-popover-trigger {
+  cursor: pointer;
+}
+
+.task-popover-content {
+  max-width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+
+  .task-popover-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: #f5f5f5;
+    }
+  }
+
+  .task-popover-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+  }
+
+  .task-popover-meta {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+  }
+}
+
+.task-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+
+  &.task-status-completed {
+    background-color: #52c41a;
+  }
+
+  &.task-status-in_progress {
+    background-color: #1890ff;
+  }
+
+  &.task-status-pending {
+    background-color: #faad14;
+  }
+
+  &.task-status-cancelled {
+    background-color: #8c8c8c;
+  }
+}
+
+// ============================================
+// 周视图和日视图共享样式
+// ============================================
+
+.week-view,
+.day-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+// 周视图头部
+.week-view-header {
+  display: flex;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+
+  .time-axis-placeholder {
+    width: 50px;
+    flex-shrink: 0;
+  }
+
+  .week-day-header {
+    flex: 1;
+    text-align: center;
+    padding: 8px 0;
+    border-left: 1px solid #f5f5f5;
+
+    .day-name {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 4px;
+    }
+
+    .day-number {
+      font-size: 22px;
+      font-weight: 500;
+      color: #333;
+
+      &.today-highlight {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #1677ff;
+        color: #fff;
+      }
+    }
+  }
+}
+
+// 日视图头部
+.day-view-header {
+  display: flex;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+
+  .time-axis-placeholder {
+    width: 50px;
+    flex-shrink: 0;
+  }
+
+  .day-header-content {
+    flex: 1;
+    text-align: center;
+    padding: 12px 0;
+
+    .day-name {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 4px;
+    }
+
+    .day-number {
+      font-size: 28px;
+      font-weight: 500;
+      color: #333;
+
+      &.today-highlight {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: #1677ff;
+        color: #fff;
+      }
+    }
+  }
+}
+
+// 时间网格容器
+.time-grid-container {
+  flex: 1;
+  display: flex;
+  overflow-y: auto;
+  min-height: 0;
+
+  .time-axis {
+    width: 50px;
+    flex-shrink: 0;
+    border-right: 1px solid #f0f0f0;
+
+    .hour-label {
+      height: 60px;
+      font-size: 12px;
+      color: #999;
+      text-align: right;
+      padding-right: 8px;
+      padding-top: 2px;
+      box-sizing: border-box;
+    }
+  }
+
+  .time-grid {
+    flex: 1;
+    position: relative;
+    min-height: calc(24 * 60px);
+
+    .grid-lines {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      pointer-events: none;
+
+      .hour-row {
+        height: 60px;
+        border-bottom: 1px solid #f5f5f5;
+
+        &:nth-child(even) {
+          background: #fafafa;
+        }
+      }
+    }
+  }
+}
+
+// 周视图列
+.week-columns {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+
+  .week-column {
+    flex: 1;
+    position: relative;
+    border-left: 1px solid #f5f5f5;
+
+    &:first-child {
+      border-left: none;
+    }
+
+    &.today-column {
+      background: rgba(22, 119, 255, 0.03);
+    }
+  }
+}
+
+// 日视图列
+.day-column {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  &.today-column {
+    background: rgba(22, 119, 255, 0.03);
+  }
+}
+
+// 任务块
+.task-block {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .task-block-title {
+    font-weight: 500;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    .task-checkbox {
+      margin-right: 4px;
+      font-size: 11px;
+      color: #666;
+    }
+  }
+
+  .task-block-time {
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.5);
+    margin-top: 2px;
+  }
+}
+
+// 日视图任务块（全宽）
+.day-task-block {
+  left: 8px;
+  right: 8px;
+}
+
+// ============================================
+// 年视图样式
+// ============================================
+
+.year-view {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+
+  .year-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px 24px;
+  }
+
+  .mini-calendar {
+    .mini-month-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      cursor: pointer;
+      color: #333;
+      transition: color 0.2s;
+
+      &:hover {
+        color: #1677ff;
+      }
+    }
+
+    .mini-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      margin-bottom: 4px;
+
+      .mini-weekday {
+        text-align: center;
+        font-size: 12px;
+        color: #999;
+        padding: 4px 0;
+      }
+    }
+
+    .mini-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+
+      .mini-day {
+        text-align: center;
+        padding: 3px 0;
+        font-size: 13px;
+        cursor: pointer;
+        border-radius: 4px;
+        color: #333;
+        transition: background 0.2s, color 0.2s;
+
+        &:hover {
+          background: #f0f0f0;
+        }
+
+        &.other-month {
+          color: #ccc;
+        }
+
+        &.has-tasks {
+          background: #DBEAFE;
+          color: #1e40af;
+        }
+
+        &.has-many-tasks {
+          background: #93C5FD;
+          color: #fff;
+        }
+
+        &.today {
+          background: #1677ff;
+          color: #fff;
+          font-weight: 600;
+        }
+      }
+    }
+  }
+}

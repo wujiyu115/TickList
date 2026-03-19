@@ -1,0 +1,35 @@
+environment: development
+
+jwt:
+  secret_key: "ticklist-secret-key-change-in-production"
+  algorithm: "HS256"
+  access_token_expire_hours: 24
+
+mongodb:
+  host: "localhost"
+  port: 27017
+  database: "ticklist"
+  username: ""
+  password: ""
+  auth_source: "admin"
+  replica_set: ""
+  ssl: false
+  ssl_cert_reqs: "CERT_NONE"
+  connect_timeout: 10000
+  server_selection_timeout: 10000
+  max_pool_size: 100
+  min_pool_size: 10
+
+cors:
+  allowed_origins:
+    - "http://localhost:3000"
+    - "http://127.0.0.1:3000"
+    - "http://localhost:5000"
+    - "http://127.0.0.1:5000"
+
+logging:
+  level: INFO
+  console_level: INFO
+  file_level: INFO
+  error_level: ERROR
+  log_dir: "logs"

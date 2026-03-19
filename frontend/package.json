@@ -1,0 +1,66 @@
+{
+  "name": "ticklist-frontend",
+  "description": "TickList Todo Management Frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npm run dev",
+    "dev": "cross-env NODE_ENV=development webpack serve --progress",
+    "build": "cross-env NODE_ENV=production webpack",
+    "build:dev": "cross-env NODE_ENV=development webpack",
+    "lint": "eslint --ext .js,.ts,.tsx .",
+    "lint-fix": "eslint --ext .js,.ts,.tsx --fix ."
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.3.7",
+    "@ant-design/plots": "^2.6.6",
+    "@ant-design/pro-components": "^2.4.4",
+    "@monaco-editor/react": "^4.7.0",
+    "antd": "^5.0.0",
+    "axios": "^1.6.0",
+    "classnames": "^2.3.1",
+    "core-js": "^3.45.1",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.1",
+    "monaco-editor": "^0.52.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.10.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.10",
+    "@babel/plugin-proposal-class-properties": "^7.12.1",
+    "@babel/preset-env": "^7.12.11",
+    "@babel/preset-react": "^7.12.10",
+    "@babel/preset-typescript": "^7.12.7",
+    "@types/lodash": "^4.14.182",
+    "@types/node": "^14.0.0",
+    "@types/react": "^18.0.33",
+    "@types/react-dom": "^18.0.11",
+    "@typescript-eslint/eslint-plugin": "^7.14.1",
+    "@typescript-eslint/parser": "^7.14.1",
+    "babel-loader": "^8.2.2",
+    "babel-plugin-import": "^1.13.5",
+    "clean-webpack-plugin": "^4.0.0",
+    "cross-env": "^7.0.3",
+    "css-loader": "^6.8.1",
+    "eslint": "^8.12.0",
+    "html-webpack-plugin": "^5.5.0",
+    "less": "^3.13.1",
+    "less-loader": "^6.1.0",
+    "mini-css-extract-plugin": "^2.6.0",
+    "style-loader": "^3.3.3",
+    "typescript": "^5.1.6",
+    "webpack": "^5.70.0",
+    "webpack-cli": "^4.9.2",
+    "webpack-dev-server": "^5.2.2"
+  },
+  "browserslist": {
+    "production": [
+      "chrome >= 60"
+    ],
+    "development": [
+      "chrome >= 60"
+    ]
+  }
+}

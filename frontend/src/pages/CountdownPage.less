@@ -1,0 +1,230 @@
+.countdown-page {
+  height: 100%;
+
+  .countdown-container {
+    height: 100%;
+    
+    .ant-card-body {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0f0f0;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .page-icon {
+        font-size: 24px;
+        color: #1890ff;
+      }
+    }
+  }
+
+  .countdown-content {
+    flex: 1;
+    overflow-y: auto;
+
+    .loading-state {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+      color: #999;
+    }
+  }
+
+  .countdown-card {
+    border-radius: 12px;
+    border-left: 4px solid #1890ff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: visible;
+
+    &:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      transform: translateY(-2px);
+    }
+
+    &.pinned {
+      background: linear-gradient(135deg, #fffbe6 0%, #fff 50%);
+      border-left-color: #faad14;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #faad14, #ffc53d);
+        border-radius: 12px 12px 0 0;
+      }
+    }
+
+    .pin-badge {
+      position: absolute;
+      top: -8px;
+      right: 12px;
+      color: #faad14;
+      font-size: 16px;
+      transform: rotate(45deg);
+      z-index: 1;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+
+      .card-title {
+        margin: 0;
+        flex: 1;
+        font-size: 16px;
+        line-height: 1.4;
+        max-width: calc(100% - 32px);
+      }
+    }
+
+    .days-display {
+      text-align: center;
+      padding: 20px 0;
+      margin-bottom: 16px;
+      border-radius: 8px;
+      background: #fafafa;
+
+      .days-number {
+        display: block;
+        font-size: 48px;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 8px;
+      }
+
+      .days-text {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      &.days-future {
+        background: linear-gradient(135deg, #e6f7ff 0%, #f0f5ff 100%);
+        
+        .days-number {
+          color: #1890ff;
+        }
+        
+        .days-text {
+          color: #1890ff;
+        }
+      }
+
+      &.days-today {
+        background: linear-gradient(135deg, #fff7e6 0%, #fffbe6 100%);
+        
+        .days-number {
+          font-size: 36px;
+        }
+        
+        .days-text {
+          color: #fa8c16;
+          font-size: 16px;
+          font-weight: 600;
+        }
+      }
+
+      &.days-past {
+        background: #f5f5f5;
+        
+        .days-number {
+          color: #8c8c8c;
+        }
+        
+        .days-text {
+          color: #8c8c8c;
+        }
+      }
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .target-date {
+        font-size: 12px;
+      }
+    }
+
+    .card-note {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed #f0f0f0;
+      
+      .ant-typography {
+        font-size: 12px;
+      }
+    }
+  }
+
+  // 颜色选择器
+  .color-picker {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    .color-option {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: scale(1.1);
+      }
+
+      &.selected {
+        border-color: #333;
+        box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+      }
+    }
+  }
+}
+
+// 响应式适配
+@media (max-width: 768px) {
+  .countdown-page {
+    .page-header {
+      flex-direction: column;
+      gap: 16px;
+      align-items: stretch;
+
+      .header-right {
+        display: flex;
+        justify-content: space-between;
+      }
+    }
+
+    .countdown-card {
+      .days-display {
+        .days-number {
+          font-size: 36px;
+        }
+      }
+    }
+  }
+}

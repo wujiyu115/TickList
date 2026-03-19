@@ -1,0 +1,48 @@
+# ===================
+# Python / 后端
+# ===================
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+.env
+*.env
+venv/
+.venv/
+
+# 后端配置文件（保留 config.yaml.example 作为模板）
+backend/config.yaml
+
+# 后端日志
+backend/logs/
+
+# ===================
+# Node.js / 前端
+# ===================
+node_modules/
+frontend/dist/
+.cache/
+
+# ===================
+# IDE / 编辑器
+# ===================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ===================
+# 系统文件
+# ===================
+.DS_Store
+Thumbs.db
+
+# ===================
+# 项目特定
+# ===================
+*.log
+.aone_copilot/
+.qoder/

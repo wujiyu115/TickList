@@ -1,0 +1,200 @@
+.pomodoro-container {
+  display: flex;
+  height: 100%;
+  min-height: calc(100vh - 112px);
+  background: #fff;
+}
+
+// 左侧计时器区域
+.pomodoro-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px;
+  border-right: 1px solid #f0f0f0;
+  
+  .pomodoro-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    
+    .pomodoro-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0;
+      color: #1a1a1a;
+    }
+    
+    .toolbar-center {
+      // Segmented 组件样式
+    }
+    
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      
+      .toolbar-icon {
+        font-size: 16px;
+        color: #666;
+        cursor: pointer;
+        
+        &:hover {
+          color: #1677ff;
+        }
+      }
+      
+      .more-icon {
+        font-weight: bold;
+        letter-spacing: 1px;
+      }
+    }
+  }
+  
+  .timer-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    
+    .focus-label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #999;
+      font-size: 14px;
+      margin-bottom: 40px;
+      cursor: pointer;
+      
+      &:hover {
+        color: #666;
+      }
+    }
+  }
+}
+
+// 右侧统计面板
+.pomodoro-right {
+  width: 380px;
+  min-width: 320px;
+  padding: 24px;
+  background: #fafafa;
+  overflow-y: auto;
+  
+  .panel-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 16px 0;
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 32px;
+    
+    .stat-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      
+      .stat-label {
+        display: block;
+        font-size: 12px;
+        color: #999;
+        margin-bottom: 8px;
+      }
+      
+      .stat-number {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1a1a1a;
+        
+        .stat-suffix {
+          font-size: 14px;
+          font-weight: 400;
+          color: #999;
+          margin-left: 2px;
+        }
+      }
+    }
+  }
+  
+  .records-section {
+    .records-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      
+      .panel-title {
+        margin: 0;
+      }
+      
+      .add-record-btn {
+        font-size: 16px;
+        color: #999;
+        cursor: pointer;
+        
+        &:hover {
+          color: #1677ff;
+        }
+      }
+    }
+    
+    .records-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
+    }
+  }
+}
+
+// 计时器显示区域样式（覆盖原有）
+.timer-display {
+  margin-bottom: 48px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
+  .timer-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    
+    .time-value {
+      font-size: 52px;
+      font-weight: 300;
+      font-family: -apple-system, 'Helvetica Neue', sans-serif;
+      color: #333;
+      letter-spacing: 2px;
+    }
+  }
+}
+
+// 控制按钮样式
+.timer-controls {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  
+  .main-action-btn {
+    width: 200px;
+    height: 48px;
+    font-size: 16px;
+    border-radius: 24px;
+  }
+  
+  .secondary-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+  }
+}

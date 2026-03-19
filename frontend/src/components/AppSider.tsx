@@ -1,0 +1,1259 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  CheckSquareOutlined, 
+  CalendarOutlined,
+  BarChartOutlined,
+  ClockCircleOutlined,
+  HourglassOutlined,
+  FolderOutlined,
+  FolderOpenOutlined,
+  MenuOutlined,
+  TagOutlined,
+  CheckCircleOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  InboxOutlined,
+  RightOutlined,
+  DownOutlined,
+  MoreOutlined,
+  SettingOutlined,
+  ExportOutlined,
+  ImportOutlined,
+  UploadOutlined,
+  FilterOutlined
+} from '@ant-design/icons';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { Dropdown, Modal, Input, Select, message, Upload, Button, Radio, Checkbox, Tabs } from 'antd';
+import type { MenuProps, RadioChangeEvent } from 'antd';
+import { User, TaskList, Tag, Filter, FilterConditions } from '../types';
+import { getLists, createList, deleteList } from '../api/list';
+import { getTags, createTag, updateTag, deleteTag } from '../api/tag';
+import { exportData, importData } from '../api/data';
+import { getFilters, createFilter, updateFilter, deleteFilter } from '../api/filter';
+
+interface AppSiderProps {
+  user: User;
+}
+
+// 预定义颜色选项（清单用）
+const colorOptions = [
+  { value: '#ff4d4f', label: '红色' },
+  { value: '#faad14', label: '橙色' },
+  { value: '#52c41a', label: '绿色' },
+  { value: '#1677ff', label: '蓝色' },
+  { value: '#722ed1', label: '紫色' },
+  { value: '#eb2f96', label: '粉色' },
+  { value: '#13c2c2', label: '青色' },
+  { value: '#8c8c8c', label: '灰色' },
+];
+
+// 标签预定义颜色（圆形色块）
+const TAG_COLORS = [
+  '#f5f5f5',  // 无色/默认
+  '#ff4d4f',  // 红
+  '#ff7a45',  // 橙
+  '#ffa940',  // 深黄
+  '#ffec3d',  // 黄
+  '#95de64',  // 绿
+  '#69b1ff',  // 蓝
+  '#b37feb',  // 紫
+  '#ff85c0',  // 粉
+];
+
+// 图标栏导航项
+const navItems = [
+  { key: 'tasks', icon: CheckSquareOutlined, path: '/', tooltip: '任务' },
+  { key: 'calendar', icon: CalendarOutlined, path: '/calendar', tooltip: '日历' },
+  { key: 'pomodoro', icon: ClockCircleOutlined, path: '/pomodoro', tooltip: '番茄时钟' },
+  { key: 'countdown', icon: HourglassOutlined, path: '/countdown', tooltip: '倒数日' },
+  { key: 'statistics', icon: BarChartOutlined, path: '/statistics', tooltip: '统计' },
+];
+
+const AppSider: React.FC<AppSiderProps> = ({ user }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  
+  // 清单和标签数据
+  const [lists, setLists] = useState<TaskList[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [collapsedFolders, setCollapsedFolders] = useState<Record<string, boolean>>({});
+  const [showArchived, setShowArchived] = useState(false);
+  
+  // 新建清单 Modal 状态
+  const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [createType, setCreateType] = useState<'folder' | 'list'>('list');
+  const [newListName, setNewListName] = useState('');
+  const [newListColor, setNewListColor] = useState('#1677ff');
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createParentId, setCreateParentId] = useState<string | null>(null); // 用于在文件夹下创建子清单
+  const [hoveredFolderId, setHoveredFolderId] = useState<string | null>(null); // hover 的文件夹 id
+  const [hoveredListId, setHoveredListId] = useState<string | null>(null); // hover 的清单项 id
+  const [hoveredTagId, setHoveredTagId] = useState<string | null>(null); // hover 的标签项 id
+  
+  // 标签显示模式: 'all' | 'non-empty' | 'hidden'
+  const [tagDisplayMode, setTagDisplayMode] = useState<'all' | 'non-empty' | 'hidden'>('all');
+  
+  // 标签编辑 Modal 状态
+  const [tagModalVisible, setTagModalVisible] = useState(false);
+  const [tagModalMode, setTagModalMode] = useState<'create' | 'edit'>('create');
+  const [editingTag, setEditingTag] = useState<Tag | null>(null);
+  const [tagName, setTagName] = useState('');
+  const [tagColor, setTagColor] = useState('#1677ff');
+  const [tagLoading, setTagLoading] = useState(false);
+  
+  // 导入导出状态
+  const [importModalVisible, setImportModalVisible] = useState(false);
+  const [importFileData, setImportFileData] = useState<any>(null);
+  const [importLoading, setImportLoading] = useState(false);
+
+  // 过滤器状态
+  const [filters, setFilters] = useState<Filter[]>([]);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [filterModalMode, setFilterModalMode] = useState<'create' | 'edit'>('create');
+  const [editingFilter, setEditingFilter] = useState<Filter | null>(null);
+  const [filterName, setFilterName] = useState('');
+  const [filterConditions, setFilterConditions] = useState<FilterConditions>({});
+  const [filterLoading, setFilterLoading] = useState(false);
+  const [hoveredFilterId, setHoveredFilterId] = useState<string | null>(null);
+  const [prioritySelectAll, setPrioritySelectAll] = useState(true);
+
+  // 加载清单、标签和过滤器数据
+  useEffect(() => {
+    loadLists();
+    loadTags();
+    loadFilters();
+  }, []);
+
+  const loadLists = async () => {
+    try {
+      const data = await getLists();
+      setLists(data.lists || []);
+    } catch (e) {
+      console.error('Failed to load lists:', e);
+    }
+  };
+
+  const loadTags = async () => {
+    try {
+      const data = await getTags();
+      setTags(data.tags || []);
+    } catch (e) {
+      console.error('Failed to load tags:', e);
+    }
+  };
+
+  const loadFilters = async () => {
+    try {
+      const data = await getFilters();
+      setFilters(data.filters || []);
+    } catch (e) {
+      console.error('Failed to load filters:', e);
+    }
+  };
+
+  // 判断是否是任务视图
+  const isTaskView = location.pathname === '/';
+
+  // 获取当前高亮的图标
+  const getActiveIcon = () => {
+    if (location.pathname === '/') return 'tasks';
+    if (location.pathname === '/calendar') return 'calendar';
+    if (location.pathname === '/pomodoro') return 'pomodoro';
+    if (location.pathname === '/countdown') return 'countdown';
+    if (location.pathname === '/statistics') return 'statistics';
+    return '';
+  };
+
+  // 获取当前选中的筛选/清单/标签
+  const getSelectedKey = () => {
+    const filter = searchParams.get('filter');
+    const listId = searchParams.get('list_id');
+    const tag = searchParams.get('tag');
+    
+    if (filter) return `filter-${filter}`;
+    if (listId) return `list-${listId}`;
+    if (tag) return `tag-${tag}`;
+    return 'filter-today'; // 默认选中今天
+  };
+
+  // 切换文件夹展开/折叠
+  const toggleFolder = (folderId: string) => {
+    setCollapsedFolders(prev => ({
+      ...prev,
+      [folderId]: !prev[folderId]
+    }));
+  };
+
+  // 打开在文件夹下创建清单的弹窗
+  const openCreateInFolder = (folderId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCreateType('list');
+    setNewListName('');
+    setNewListColor('#1677ff');
+    setCreateParentId(folderId);
+    setCreateModalVisible(true);
+  };
+
+  // 文件夹右键菜单
+  const getFolderContextMenuItems = (folderId: string): MenuProps['items'] => [
+    {
+      key: 'add-list',
+      icon: <MenuOutlined />,
+      label: '新建清单',
+      onClick: () => {
+        setCreateType('list');
+        setNewListName('');
+        setNewListColor('#1677ff');
+        setCreateParentId(folderId);
+        setCreateModalVisible(true);
+      }
+    }
+  ];
+
+  // 文件夹"..."菜单项
+  const getFolderMoreMenuItems = (folder: TaskList): MenuProps['items'] => {
+    const childrenCount = lists.filter(l => l.parent_id === folder.id).length;
+    return [
+      {
+        key: 'add-list',
+        icon: <PlusOutlined />,
+        label: '添加清单',
+        onClick: () => {
+          setCreateType('list');
+          setNewListName('');
+          setNewListColor('#1677ff');
+          setCreateParentId(folder.id);
+          setCreateModalVisible(true);
+        }
+      },
+      {
+        key: 'delete',
+        icon: <DeleteOutlined />,
+        label: '删除',
+        danger: true,
+        onClick: () => {
+          const content = childrenCount > 0 
+            ? `该文件夹下有 ${childrenCount} 个清单，删除后子清单也将被删除。确定删除文件夹「${folder.name}」吗？`
+            : `确定删除文件夹「${folder.name}」吗？`;
+          Modal.confirm({
+            title: '删除文件夹',
+            content,
+            okText: '删除',
+            okType: 'danger',
+            cancelText: '取消',
+            onOk: async () => {
+              try {
+                await deleteList(folder.id);
+                message.success('文件夹已删除');
+                loadLists();
+              } catch (e) {
+                message.error('删除失败');
+              }
+            }
+          });
+        }
+      }
+    ];
+  };
+
+  // 清单"..."菜单项
+  const getListMoreMenuItems = (list: TaskList): MenuProps['items'] => [
+    {
+      key: 'delete',
+      icon: <DeleteOutlined />,
+      label: '删除',
+      danger: true,
+      onClick: () => {
+        Modal.confirm({
+          title: '删除清单',
+          content: `确定删除清单「${list.name}」吗？`,
+          okText: '删除',
+          okType: 'danger',
+          cancelText: '取消',
+          onOk: async () => {
+            try {
+              await deleteList(list.id);
+              message.success('清单已删除');
+              loadLists();
+            } catch (e) {
+              message.error('删除失败');
+            }
+          }
+        });
+      }
+    }
+  ];
+
+  // 标签区域头部"..."菜单项
+  const tagSectionMenuItems: MenuProps['items'] = [
+    {
+      key: 'non-empty',
+      label: '显示 (非空标签)',
+      style: tagDisplayMode === 'non-empty' ? { fontWeight: 600 } : undefined,
+      onClick: () => setTagDisplayMode('non-empty')
+    },
+    {
+      key: 'all',
+      label: (
+        <span>
+          显示
+          {tagDisplayMode === 'all' && <span style={{ marginLeft: 8 }}>✓</span>}
+        </span>
+      ),
+      onClick: () => setTagDisplayMode('all')
+    },
+    {
+      key: 'hidden',
+      label: '隐藏',
+      onClick: () => setTagDisplayMode('hidden')
+    }
+  ];
+
+  // 标签项"..."菜单项
+  const getTagMoreMenuItems = (tag: Tag): MenuProps['items'] => [
+    {
+      key: 'edit',
+      label: '编辑',
+      onClick: () => openEditTagModal(tag)
+    },
+    {
+      key: 'pin',
+      label: '置顶',
+      onClick: () => message.info('功能开发中')
+    },
+    {
+      key: 'add-child',
+      label: '添加子标签',
+      onClick: () => message.info('功能开发中')
+    },
+    {
+      key: 'delete',
+      label: '删除',
+      danger: true,
+      onClick: () => {
+        Modal.confirm({
+          title: '删除标签',
+          content: `确定删除标签「${tag.name}」吗？`,
+          okText: '删除',
+          okType: 'danger',
+          cancelText: '取消',
+          onOk: async () => {
+            try {
+              await deleteTag(tag.id);
+              message.success('标签已删除');
+              loadTags();
+            } catch (error: any) {
+              if (error.response?.status === 400) {
+                message.error(error.response.data.detail || '该标签被引用，无法删除');
+              } else {
+                message.error('删除失败');
+              }
+            }
+          }
+        });
+      }
+    }
+  ];
+
+  // 打开新建标签 Modal
+  const openCreateTagModal = () => {
+    setTagModalMode('create');
+    setEditingTag(null);
+    setTagName('');
+    setTagColor('#1677ff');
+    setTagModalVisible(true);
+  };
+
+  // 打开编辑标签 Modal
+  const openEditTagModal = (tag: Tag) => {
+    setTagModalMode('edit');
+    setEditingTag(tag);
+    setTagName(tag.name);
+    setTagColor(tag.color || '#1677ff');
+    setTagModalVisible(true);
+  };
+
+  // 保存标签（新建或编辑）
+  const handleSaveTag = async () => {
+    if (!tagName.trim()) {
+      message.warning('请输入标签名');
+      return;
+    }
+    setTagLoading(true);
+    try {
+      if (tagModalMode === 'create') {
+        await createTag({ name: tagName.trim(), color: tagColor });
+        message.success('标签创建成功');
+      } else if (editingTag) {
+        await updateTag(editingTag.id, { name: tagName.trim(), color: tagColor });
+        message.success('标签更新成功');
+      }
+      setTagModalVisible(false);
+      loadTags();
+    } catch (e) {
+      message.error(tagModalMode === 'create' ? '创建失败' : '更新失败');
+    } finally {
+      setTagLoading(false);
+    }
+  };
+
+  // 打开新建过滤器 Modal
+  const openCreateFilterModal = () => {
+    setFilterModalMode('create');
+    setEditingFilter(null);
+    setFilterName('');
+    setFilterConditions({});
+    setPrioritySelectAll(true);
+    setFilterModalVisible(true);
+  };
+
+  // 打开编辑过滤器 Modal
+  const openEditFilterModal = (filter: Filter) => {
+    setFilterModalMode('edit');
+    setEditingFilter(filter);
+    setFilterName(filter.name);
+    setFilterConditions(filter.conditions || {});
+    setPrioritySelectAll(!filter.conditions?.priority || filter.conditions.priority.length === 0);
+    setFilterModalVisible(true);
+  };
+
+  // 保存过滤器（新建或编辑）
+  const handleSaveFilter = async () => {
+    if (!filterName.trim()) {
+      message.warning('请输入过滤器名称');
+      return;
+    }
+    setFilterLoading(true);
+    try {
+      // 清理空值
+      const cleanConditions: FilterConditions = {};
+      if (filterConditions.list_id) cleanConditions.list_id = filterConditions.list_id;
+      if (filterConditions.tags && filterConditions.tags.length > 0) cleanConditions.tags = filterConditions.tags;
+      if (filterConditions.date_range) cleanConditions.date_range = filterConditions.date_range;
+      if (filterConditions.priority && filterConditions.priority.length > 0 && !prioritySelectAll) {
+        cleanConditions.priority = filterConditions.priority;
+      }
+      if (filterConditions.keyword) cleanConditions.keyword = filterConditions.keyword;
+
+      if (filterModalMode === 'create') {
+        await createFilter({ name: filterName.trim(), conditions: cleanConditions });
+        message.success('过滤器创建成功');
+      } else if (editingFilter) {
+        await updateFilter(editingFilter.id, { name: filterName.trim(), conditions: cleanConditions });
+        message.success('过滤器更新成功');
+      }
+      setFilterModalVisible(false);
+      loadFilters();
+    } catch (e) {
+      message.error(filterModalMode === 'create' ? '创建失败' : '更新失败');
+    } finally {
+      setFilterLoading(false);
+    }
+  };
+
+  // 删除过滤器
+  const handleDeleteFilter = (filter: Filter) => {
+    Modal.confirm({
+      title: '删除过滤器',
+      content: `确定删除过滤器「${filter.name}」吗？`,
+      okText: '删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await deleteFilter(filter.id);
+          message.success('过滤器已删除');
+          loadFilters();
+        } catch (e) {
+          message.error('删除失败');
+        }
+      }
+    });
+  };
+
+  // 应用过滤器
+  const applyFilter = (filter: Filter) => {
+    navigate(`/?filter_id=${filter.id}`);
+  };
+
+  // 过滤器项更多菜单
+  const getFilterMoreMenuItems = (filter: Filter): MenuProps['items'] => [
+    {
+      key: 'edit',
+      label: '编辑',
+      onClick: () => openEditFilterModal(filter)
+    },
+    {
+      key: 'delete',
+      label: '删除',
+      danger: true,
+      onClick: () => handleDeleteFilter(filter)
+    }
+  ];
+
+  // 优先级改变处理
+  const handlePriorityChange = (checked: boolean, priority: number) => {
+    const currentPriorities = filterConditions.priority || [];
+    let newPriorities: number[];
+    if (checked) {
+      newPriorities = [...currentPriorities, priority];
+      // 选择具体优先级时，自动取消"所有"选中状态
+      setPrioritySelectAll(false);
+    } else {
+      newPriorities = currentPriorities.filter(p => p !== priority);
+      // 如果所有具体优先级都被取消，自动恢复"所有"选中状态
+      if (newPriorities.length === 0) {
+        setPrioritySelectAll(true);
+      }
+    }
+    setFilterConditions({ ...filterConditions, priority: newPriorities });
+  };
+
+  // 优先级全选处理
+  const handlePrioritySelectAll = (e: RadioChangeEvent) => {
+    const selectAll = e.target.value === 'all';
+    setPrioritySelectAll(selectAll);
+    if (selectAll) {
+      setFilterConditions({ ...filterConditions, priority: [] });
+    }
+  };
+
+  // 导出数据
+  const handleExport = async () => {
+    try {
+      const response = await exportData();
+      // 将 JSON 数据下载为文件
+      const blob = new Blob([JSON.stringify(response.data || response, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ticklist-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('数据导出成功');
+    } catch (error) {
+      message.error('导出失败');
+    }
+  };
+
+  // 导入数据
+  const handleImport = async () => {
+    if (!importFileData) {
+      message.warning('请先选择文件');
+      return;
+    }
+    setImportLoading(true);
+    try {
+      const result: any = await importData(importFileData);
+      const stats = result.data?.stats || result.stats;
+      message.success(`导入成功：${stats.tasks} 个任务，${stats.lists} 个清单，${stats.tags} 个标签`);
+      setImportModalVisible(false);
+      setImportFileData(null);
+      // 刷新页面数据
+      window.location.reload();
+    } catch (error) {
+      message.error('导入失败');
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  // 设置菜单项
+  const settingsMenuItems: MenuProps['items'] = [
+    {
+      key: 'export',
+      icon: <ExportOutlined />,
+      label: '导出数据',
+      onClick: handleExport
+    },
+    {
+      key: 'import',
+      icon: <ImportOutlined />,
+      label: '导入数据',
+      onClick: () => setImportModalVisible(true)
+    }
+  ];
+
+  // 渲染清单项
+  const renderListItem = (item: TaskList, level = 0) => {
+    const children = lists.filter(l => l.parent_id === item.id && !l.is_archived);
+    const isFolder = item.type === 'folder';
+    const isCollapsed = collapsedFolders[item.id];
+    const isSelected = getSelectedKey() === `list-${item.id}`;
+    const isFolderHovered = hoveredFolderId === item.id;
+    const isListHovered = hoveredListId === item.id;
+    const isHovered = isFolder ? isFolderHovered : isListHovered;
+
+    const listItemContent = (
+      <div 
+        className={`list-item ${isSelected ? 'active' : ''}`}
+        style={{ paddingLeft: level > 0 ? 12 + level * 16 : 12 }}
+        onMouseEnter={() => {
+          if (isFolder) {
+            setHoveredFolderId(item.id);
+          } else {
+            setHoveredListId(item.id);
+          }
+        }}
+        onMouseLeave={() => {
+          if (isFolder) {
+            setHoveredFolderId(null);
+          } else {
+            setHoveredListId(null);
+          }
+        }}
+        onClick={() => {
+          if (isFolder) {
+            toggleFolder(item.id);
+          } else {
+            navigate(`/?list_id=${item.id}`);
+          }
+        }}
+      >
+        {isFolder ? (
+          <>
+            {isCollapsed ? <RightOutlined style={{ fontSize: 10, marginRight: 4 }} /> : <DownOutlined style={{ fontSize: 10, marginRight: 4 }} />}
+            {isCollapsed ? <FolderOutlined /> : <FolderOpenOutlined />}
+          </>
+        ) : (
+          <MenuOutlined />
+        )}
+        <span className="list-name">{item.name}</span>
+        {/* 文件夹 hover 操作按钮 - 只保留 "..." 菜单 */}
+        {isFolder && isFolderHovered && (
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Dropdown 
+              menu={{ items: getFolderMoreMenuItems(item) }} 
+              trigger={['click']}
+            >
+              <MoreOutlined
+                style={{ 
+                  fontSize: 14,
+                  color: '#999',
+                  cursor: 'pointer',
+                  marginRight: 4
+                }}
+                className="list-more-btn"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </Dropdown>
+          </div>
+        )}
+        {/* 清单 hover 操作按钮 */}
+        {!isFolder && isListHovered && (
+          <Dropdown 
+            menu={{ items: getListMoreMenuItems(item) }} 
+            trigger={['click']}
+          >
+            <MoreOutlined
+              style={{ 
+                marginLeft: 'auto',
+                fontSize: 14,
+                color: '#999',
+                cursor: 'pointer',
+                marginRight: 4
+              }}
+              className="list-more-btn"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </Dropdown>
+        )}
+        {!isHovered && <span className="list-dot" style={{ background: item.color, marginLeft: isHovered ? 0 : 'auto' }} />}
+      </div>
+    );
+
+    return (
+      <div key={item.id}>
+        {isFolder ? (
+          <Dropdown menu={{ items: getFolderContextMenuItems(item.id) }} trigger={['contextMenu']}>
+            {listItemContent}
+          </Dropdown>
+        ) : (
+          listItemContent
+        )}
+        {isFolder && !isCollapsed && children.length > 0 && (
+          <div className="list-children">
+            {children.map(child => renderListItem(child, level + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // 新建清单下拉菜单（顶层）
+  const createMenuItems: MenuProps['items'] = [
+    {
+      key: 'folder',
+      icon: <FolderOutlined />,
+      label: '新建文件夹',
+      onClick: () => {
+        setCreateType('folder');
+        setNewListName('');
+        setNewListColor('#1677ff');
+        setCreateParentId(null); // 顶层
+        setCreateModalVisible(true);
+      }
+    },
+    {
+      key: 'list',
+      icon: <MenuOutlined />,
+      label: '新建清单',
+      onClick: () => {
+        setCreateType('list');
+        setNewListName('');
+        setNewListColor('#1677ff');
+        setCreateParentId(null); // 顶层
+        setCreateModalVisible(true);
+      }
+    }
+  ];
+
+  // 创建清单
+  const handleCreateList = async () => {
+    if (!newListName.trim()) {
+      message.warning('请输入名称');
+      return;
+    }
+    setCreateLoading(true);
+    try {
+      await createList({
+        name: newListName.trim(),
+        type: createType,
+        color: newListColor,
+        parent_id: createParentId || undefined // 如果有 parent_id 则传递
+      });
+      const parentFolder = createParentId ? lists.find(l => l.id === createParentId) : null;
+      const successMsg = parentFolder 
+        ? `清单创建成功，已添加到「${parentFolder.name}」` 
+        : `${createType === 'folder' ? '文件夹' : '清单'}创建成功`;
+      message.success(successMsg);
+      setCreateModalVisible(false);
+      setCreateParentId(null);
+      // 如果在文件夹下创建，确保文件夹展开
+      if (createParentId) {
+        setCollapsedFolders(prev => ({ ...prev, [createParentId]: false }));
+      }
+      loadLists();
+    } catch (e) {
+      message.error('创建失败');
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  // 分类清单
+  const topLevelLists = lists.filter(l => !l.parent_id && !l.is_archived);
+  const archivedLists = lists.filter(l => l.is_archived);
+
+  const activeIcon = getActiveIcon();
+  const selectedKey = getSelectedKey();
+
+  return (
+    <div className="app-sider">
+      {/* 图标栏 */}
+      <div className="icon-bar">
+        <div className="icon-bar-top">
+          {navItems.map(item => {
+            const Icon = item.icon;
+            const isActive = activeIcon === item.key;
+            return (
+              <div
+                key={item.key}
+                className={`icon-item ${isActive ? 'active' : ''}`}
+                onClick={() => navigate(item.path)}
+                title={item.tooltip}
+              >
+                <Icon />
+              </div>
+            );
+          })}
+        </div>
+        <div className="icon-bar-bottom">
+          <Dropdown menu={{ items: settingsMenuItems }} trigger={['click']} placement="topRight">
+            <div className="icon-item" title="设置">
+              <SettingOutlined />
+            </div>
+          </Dropdown>
+        </div>
+      </div>
+
+      {/* 内容面板 - 仅在任务视图显示 */}
+      {isTaskView && (
+        <div className="secondary-panel">
+          <div className="panel-title">当周工作</div>
+          
+          {/* 快速筛选 */}
+          <div 
+            className={`filter-item ${selectedKey === 'filter-today' ? 'active' : ''}`}
+            onClick={() => navigate('/?filter=today')}
+          >
+            <CalendarOutlined style={{ color: '#1677ff' }} />
+            <span>今天</span>
+          </div>
+          <div 
+            className={`filter-item ${selectedKey === 'filter-week' ? 'active' : ''}`}
+            onClick={() => navigate('/?filter=week')}
+          >
+            <CalendarOutlined style={{ color: '#52c41a' }} />
+            <span>最近7天</span>
+          </div>
+          <div 
+            className={`filter-item ${selectedKey === 'filter-inbox' ? 'active' : ''}`}
+            onClick={() => navigate('/?filter=inbox')}
+          >
+            <InboxOutlined />
+            <span>收集箱</span>
+          </div>
+
+          {/* 清单区域 */}
+          <div className="section-header">
+            <span onClick={() => setCollapsedFolders(prev => ({ ...prev, '_lists_': !prev['_lists_'] }))}>
+              {collapsedFolders['_lists_'] ? <RightOutlined style={{ fontSize: 10, marginRight: 4 }} /> : <DownOutlined style={{ fontSize: 10, marginRight: 4 }} />}
+              清单
+            </span>
+            <Dropdown menu={{ items: createMenuItems }} trigger={['click']}>
+              <PlusOutlined style={{ cursor: 'pointer' }} />
+            </Dropdown>
+          </div>
+          
+          {!collapsedFolders['_lists_'] && (
+            <div className="lists-container">
+              {topLevelLists.map(item => renderListItem(item))}
+            </div>
+          )}
+
+          {/* 已归档清单 */}
+          {archivedLists.length > 0 && (
+            <>
+              <div 
+                className="archived-header"
+                onClick={() => setShowArchived(!showArchived)}
+              >
+                {showArchived ? <DownOutlined style={{ fontSize: 10, marginRight: 4 }} /> : <RightOutlined style={{ fontSize: 10, marginRight: 4 }} />}
+                <FolderOutlined style={{ marginRight: 4 }} />
+                已归档的清单
+              </div>
+              {showArchived && (
+                <div className="lists-container">
+                  {archivedLists.map(item => renderListItem(item))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* 标签区域 */}
+          <div className="section-header">
+            <span onClick={() => {
+              if (tagDisplayMode === 'hidden') {
+                setTagDisplayMode('all');
+              }
+            }}>
+              {tagDisplayMode === 'hidden' 
+                ? <RightOutlined style={{ fontSize: 10, marginRight: 4 }} /> 
+                : <DownOutlined style={{ fontSize: 10, marginRight: 4 }} />
+              }
+              标签
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Dropdown menu={{ items: tagSectionMenuItems }} trigger={['click']}>
+                <MoreOutlined style={{ cursor: 'pointer' }} onClick={(e) => e.stopPropagation()} />
+              </Dropdown>
+              <PlusOutlined 
+                style={{ cursor: 'pointer' }} 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openCreateTagModal();
+                }} 
+              />
+            </div>
+          </div>
+          {tagDisplayMode !== 'hidden' && (
+            <div className="tags-container">
+              {tags
+                .filter(tag => {
+                  // 如果是 'non-empty' 模式，这里应该过滤只显示有任务关联的标签
+                  // 由于目前没有标签关联任务数的数据，暂时显示所有标签
+                  return true;
+                })
+                .map(tag => {
+                  const isTagHovered = hoveredTagId === tag.id;
+                  return (
+                    <div 
+                      key={tag.id}
+                      className={`tag-item ${selectedKey === `tag-${tag.name}` ? 'active' : ''}`}
+                      onClick={() => navigate(`/?tag=${tag.name}`)}
+                      onMouseEnter={() => setHoveredTagId(tag.id)}
+                      onMouseLeave={() => setHoveredTagId(null)}
+                    >
+                      <TagOutlined />
+                      <span>{tag.name}</span>
+                      {isTagHovered ? (
+                        <Dropdown 
+                          menu={{ items: getTagMoreMenuItems(tag) }} 
+                          trigger={['click']}
+                        >
+                          <MoreOutlined
+                            style={{ 
+                              marginLeft: 'auto',
+                              fontSize: 14,
+                              color: '#999',
+                              cursor: 'pointer'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </Dropdown>
+                      ) : (
+                        <span className="tag-dot" style={{ background: tag.color }} />
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+
+          {/* 过滤器区域 */}
+          <div className="section-header">
+            <span>过滤器</span>
+            <PlusOutlined style={{ cursor: 'pointer' }} onClick={openCreateFilterModal} />
+          </div>
+          
+          {filters.length === 0 ? (
+            <div className="filter-hint">
+              根据清单、时间、优先级、标签等过滤出特定的任务
+            </div>
+          ) : (
+            <div className="filters-container">
+              {filters.map(filter => {
+                const filterId = searchParams.get('filter_id');
+                const isFilterHovered = hoveredFilterId === filter.id;
+                const isActive = filterId === filter.id;
+                return (
+                  <div 
+                    key={filter.id}
+                    className={`filter-item ${isActive ? 'active' : ''}`}
+                    onClick={() => applyFilter(filter)}
+                    onMouseEnter={() => setHoveredFilterId(filter.id)}
+                    onMouseLeave={() => setHoveredFilterId(null)}
+                  >
+                    <FilterOutlined />
+                    <span>{filter.name}</span>
+                    {isFilterHovered && (
+                      <Dropdown 
+                        menu={{ items: getFilterMoreMenuItems(filter) }} 
+                        trigger={['click']}
+                      >
+                        <MoreOutlined
+                          style={{ 
+                            marginLeft: 'auto',
+                            fontSize: 14,
+                            color: '#999',
+                            cursor: 'pointer'
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </Dropdown>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* 底部固定项 */}
+          <div className="bottom-items">
+            <div 
+              className={`filter-item ${selectedKey === 'filter-completed' ? 'active' : ''}`}
+              onClick={() => navigate('/?filter=completed')}
+            >
+              <CheckCircleOutlined />
+              <span>已完成</span>
+            </div>
+            <div 
+              className={`filter-item ${selectedKey === 'filter-trash' ? 'active' : ''}`}
+              onClick={() => navigate('/?filter=trash')}
+            >
+              <DeleteOutlined />
+              <span>垃圾桶</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 新建清单/文件夹 Modal */}
+      <Modal
+        title={
+          createParentId 
+            ? `在「${lists.find(l => l.id === createParentId)?.name}」下新建清单`
+            : (createType === 'folder' ? '新建文件夹' : '新建清单')
+        }
+        open={createModalVisible}
+        onOk={handleCreateList}
+        onCancel={() => {
+          setCreateModalVisible(false);
+          setCreateParentId(null);
+        }}
+        confirmLoading={createLoading}
+        okText="创建"
+        cancelText="取消"
+      >
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8 }}>名称</div>
+          <Input 
+            placeholder={`请输入${createType === 'folder' ? '文件夹' : '清单'}名称`}
+            value={newListName}
+            onChange={e => setNewListName(e.target.value)}
+            onPressEnter={handleCreateList}
+          />
+        </div>
+        <div>
+          <div style={{ marginBottom: 8 }}>颜色</div>
+          <Select
+            value={newListColor}
+            onChange={setNewListColor}
+            style={{ width: '100%' }}
+            options={colorOptions}
+            optionRender={(option) => (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ 
+                  width: 16, 
+                  height: 16, 
+                  borderRadius: 4, 
+                  background: option.value as string 
+                }} />
+                {option.label}
+              </div>
+            )}
+          />
+        </div>
+      </Modal>
+
+      {/* 新建/编辑标签 Modal */}
+      <Modal
+        title={tagModalMode === 'create' ? '新建标签' : '编辑标签'}
+        open={tagModalVisible}
+        onOk={handleSaveTag}
+        onCancel={() => setTagModalVisible(false)}
+        confirmLoading={tagLoading}
+        okText="保存"
+        cancelText="取消"
+        className="tag-edit-modal"
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Input 
+            placeholder="请输入标签名"
+            value={tagName}
+            onChange={e => setTagName(e.target.value)}
+            onPressEnter={handleSaveTag}
+          />
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8, color: '#666' }}>颜色</div>
+          <div className="color-picker">
+            {TAG_COLORS.map((color, index) => (
+              <div
+                key={color}
+                className={`color-dot ${tagColor === color ? 'selected' : ''}`}
+                style={{ 
+                  background: color,
+                  border: index === 0 ? '1px solid #d9d9d9' : undefined,
+                  position: 'relative'
+                }}
+                onClick={() => setTagColor(color)}
+              >
+                {/* 第一个色块显示斜线表示无色 */}
+                {index === 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    width: '100%',
+                    height: '1px',
+                    background: '#ff4d4f',
+                    top: '50%',
+                    left: 0,
+                    transform: 'rotate(-45deg)'
+                  }} />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div style={{ marginBottom: 8, color: '#666' }}>上级标签</div>
+          <Select
+            value={undefined}
+            placeholder="无"
+            style={{ width: '100%' }}
+            allowClear
+            options={[
+              { value: '', label: '无' },
+              ...tags.filter(t => t.id !== editingTag?.id).map(t => ({ value: t.id, label: t.name }))
+            ]}
+            disabled // 目前标签没有 parent_id，暂时禁用
+          />
+        </div>
+      </Modal>
+
+      {/* 导入数据 Modal */}
+      <Modal
+        title="导入数据"
+        open={importModalVisible}
+        onCancel={() => {
+          setImportModalVisible(false);
+          setImportFileData(null);
+        }}
+        onOk={handleImport}
+        confirmLoading={importLoading}
+        okText="导入"
+        cancelText="取消"
+      >
+        <Upload
+          accept=".json"
+          beforeUpload={(file) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              try {
+                const data = JSON.parse(e.target?.result as string);
+                setImportFileData(data);
+                message.success(`已选择文件: ${file.name}`);
+              } catch {
+                message.error('文件格式错误');
+              }
+            };
+            reader.readAsText(file);
+            return false;
+          }}
+          maxCount={1}
+          showUploadList={true}
+        >
+          <Button icon={<UploadOutlined />}>选择 JSON 文件</Button>
+        </Upload>
+        <p style={{ marginTop: 8, color: '#999' }}>
+          支持从本应用导出的 JSON 格式数据文件
+        </p>
+      </Modal>
+
+      {/* 新建/编辑过滤器 Modal */}
+      <Modal
+        title={filterModalMode === 'create' ? '添加过滤器' : '编辑过滤器'}
+        open={filterModalVisible}
+        onCancel={() => setFilterModalVisible(false)}
+        footer={null}
+        width={600}
+        className="filter-edit-modal"
+      >
+        <Tabs
+          defaultActiveKey="normal"
+          items={[
+            { key: 'normal', label: '普通' },
+            { key: 'advanced', label: '高级', disabled: true }
+          ]}
+          centered
+        />
+
+        {/* 名称输入 */}
+        <div className="filter-field" style={{ marginBottom: 16 }}>
+          <Input 
+            prefix={<FilterOutlined style={{ color: '#bfbfbf' }} />}
+            placeholder="名称" 
+            value={filterName} 
+            onChange={e => setFilterName(e.target.value)}
+            style={{ borderRadius: 8 }}
+          />
+        </div>
+
+        {/* 清单选择 */}
+        <div className="filter-field">
+          <label>清单</label>
+          <Select
+            placeholder="所有"
+            value={filterConditions.list_id || undefined}
+            onChange={v => setFilterConditions({ ...filterConditions, list_id: v || undefined })}
+            style={{ width: '100%' }}
+            allowClear
+          >
+            {lists.filter(l => l.type === 'list').map(l => (
+              <Select.Option key={l.id} value={l.id}>{l.name}</Select.Option>
+            ))}
+          </Select>
+        </div>
+
+        {/* 标签选择 */}
+        <div className="filter-field">
+          <label>标签</label>
+          <Select
+            mode="multiple"
+            placeholder="所有"
+            value={filterConditions.tags || []}
+            onChange={v => setFilterConditions({ ...filterConditions, tags: v.length > 0 ? v : undefined })}
+            style={{ width: '100%' }}
+            allowClear
+          >
+            {tags.map(t => (
+              <Select.Option key={t.name} value={t.name}>{t.name}</Select.Option>
+            ))}
+          </Select>
+        </div>
+
+        {/* 日期选择 */}
+        <div className="filter-field">
+          <label>日期</label>
+          <Select
+            placeholder="所有"
+            value={filterConditions.date_range || undefined}
+            onChange={v => setFilterConditions({ ...filterConditions, date_range: v || undefined })}
+            style={{ width: '100%' }}
+            allowClear
+          >
+            <Select.Option value="today">今天</Select.Option>
+            <Select.Option value="week">最近7天</Select.Option>
+            <Select.Option value="month">本月</Select.Option>
+          </Select>
+        </div>
+
+        {/* 优先级 */}
+        <div className="filter-field">
+          <label>优先级</label>
+          <div className="priority-selector">
+            <Radio.Group value={prioritySelectAll ? 'all' : 'custom'} onChange={handlePrioritySelectAll}>
+              <Radio value="all">所有</Radio>
+            </Radio.Group>
+            <Checkbox 
+              checked={filterConditions.priority?.includes(1)}
+              onChange={e => handlePriorityChange(e.target.checked, 1)}
+            >高</Checkbox>
+            <Checkbox 
+              checked={filterConditions.priority?.includes(2)}
+              onChange={e => handlePriorityChange(e.target.checked, 2)}
+            >中</Checkbox>
+            <Checkbox 
+              checked={filterConditions.priority?.includes(3)}
+              onChange={e => handlePriorityChange(e.target.checked, 3)}
+            >低</Checkbox>
+            <Checkbox 
+              checked={filterConditions.priority?.includes(0)}
+              onChange={e => handlePriorityChange(e.target.checked, 0)}
+            >无</Checkbox>
+          </div>
+        </div>
+
+        {/* 内容包含 */}
+        <div className="filter-field">
+          <label>内容包含</label>
+          <Input 
+            placeholder="输入任务关键词" 
+            value={filterConditions.keyword || ''}
+            onChange={e => setFilterConditions({ ...filterConditions, keyword: e.target.value || undefined })}
+          />
+        </div>
+
+        {/* 底部按钮 */}
+        <div className="filter-modal-footer">
+          <Button type="primary" onClick={handleSaveFilter} loading={filterLoading}>保存</Button>
+          <Button onClick={() => setFilterModalVisible(false)}>取消</Button>
+        </div>
+      </Modal>
+    </div>
+  );
+};
+
+export default AppSider;

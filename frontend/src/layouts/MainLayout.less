@@ -1,0 +1,368 @@
+.main-layout {
+  min-height: 100vh;
+
+  .main-content {
+    background: #f0f2f5;
+    min-height: calc(100vh - 64px);
+    padding: 0;
+  }
+}
+
+// 双栏侧边栏
+.app-sider {
+  display: flex;
+  height: 100vh;
+  flex-shrink: 0;
+}
+
+// 图标栏
+.icon-bar {
+  width: 56px;
+  background: #fff;
+  border-right: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 16px;
+  padding-bottom: 16px;
+  
+  .icon-bar-top {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+  }
+  
+  .icon-bar-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: auto;
+  }
+  
+  .icon-item {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 20px;
+    color: #666;
+    margin-bottom: 4px;
+    transition: all 0.2s;
+    
+    &:hover {
+      background: #f5f5f5;
+    }
+    
+    &.active {
+      background: #e6f4ff;
+      color: #1677ff;
+    }
+  }
+}
+
+// 内容面板
+.secondary-panel {
+  width: 240px;
+  background: #fff;
+  border-right: 1px solid #f0f0f0;
+  overflow-y: auto;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  
+  .panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #333;
+  }
+  
+  .filter-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    gap: 8px;
+    color: #333;
+    font-size: 14px;
+    transition: all 0.2s;
+    
+    &:hover {
+      background: #f5f5f5;
+    }
+    
+    &.active {
+      background: #e6f4ff;
+      color: #1677ff;
+    }
+    
+    .filter-count {
+      margin-left: auto;
+      color: #999;
+      font-size: 12px;
+    }
+  }
+  
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0 8px 0;
+    color: #999;
+    font-size: 12px;
+    
+    > span {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      
+      &:hover {
+        color: #666;
+      }
+    }
+  }
+  
+  .lists-container {
+    margin-bottom: 4px;
+  }
+  
+  .list-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    gap: 8px;
+    font-size: 14px;
+    color: #333;
+    transition: all 0.2s;
+    
+    &:hover {
+      background: #f5f5f5;
+    }
+    
+    &.active {
+      background: #e6f4ff;
+      color: #1677ff;
+    }
+    
+    .list-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .list-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    
+    .list-count {
+      color: #999;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+  }
+  
+  .list-children {
+    .list-item {
+      padding-left: 28px;
+    }
+  }
+  
+  .archived-header {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    color: #999;
+    font-size: 13px;
+    cursor: pointer;
+    gap: 4px;
+    
+    &:hover {
+      color: #666;
+    }
+  }
+  
+  .tags-container {
+    margin-bottom: 4px;
+  }
+  
+  .tag-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    gap: 8px;
+    font-size: 14px;
+    color: #333;
+    transition: all 0.2s;
+    
+    &:hover {
+      background: #f5f5f5;
+    }
+    
+    &.active {
+      background: #e6f4ff;
+      color: #1677ff;
+    }
+    
+    .tag-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+  }
+  
+  .filter-hint {
+    padding: 8px 12px;
+    color: #999;
+    font-size: 12px;
+    background: #fafafa;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  
+  .bottom-items {
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+  }
+}
+
+// 标签编辑 Modal 样式
+.tag-edit-modal {
+  .color-picker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    
+    .color-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+      box-sizing: border-box;
+      
+      &:hover {
+        transform: scale(1.1);
+      }
+      
+      &.selected {
+        border-color: #1677ff;
+        box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.2);
+      }
+    }
+  }
+}
+
+// 过滤器列表容器
+.filters-container {
+  margin-bottom: 4px;
+}
+
+// 过滤器编辑 Modal 样式
+.filter-edit-modal {
+  .ant-modal-body {
+    padding: 16px 24px;
+  }
+  
+  .ant-tabs {
+    margin-bottom: 16px;
+    
+    .ant-tabs-nav {
+      margin-bottom: 16px;
+      
+      &::before {
+        border-bottom: none;
+      }
+    }
+    
+    .ant-tabs-tab {
+      padding: 6px 16px;
+      margin: 0 4px;
+      border-radius: 20px;
+      background: #f5f5f5;
+      
+      &.ant-tabs-tab-active {
+        background: #e6f4ff;
+        
+        .ant-tabs-tab-btn {
+          color: #1677ff;
+        }
+      }
+    }
+    
+    .ant-tabs-ink-bar {
+      display: none;
+    }
+  }
+  
+  .filter-field {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+    
+    > label {
+      width: 80px;
+      flex-shrink: 0;
+      color: #666;
+      font-size: 14px;
+    }
+    
+    > .ant-select,
+    > .ant-input {
+      flex: 1;
+    }
+    
+    .priority-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      
+      .ant-radio-group {
+        margin-right: 8px;
+      }
+      
+      .ant-checkbox-wrapper {
+        margin-left: 0;
+      }
+    }
+  }
+  
+  .filter-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f0;
+    
+    > a {
+      margin-right: auto;
+      color: #1677ff;
+      cursor: pointer;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
