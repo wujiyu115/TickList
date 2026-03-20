@@ -118,7 +118,6 @@ class TaskDAO:
         is_pinned: Optional[bool] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        no_start_time: Optional[bool] = None,
         skip: int = 0,
         limit: int = 100
     ) -> List[Dict]:
@@ -142,11 +141,6 @@ class TaskDAO:
                 "$gte": start_date.isoformat(),
                 "$lte": end_date.isoformat()
             }
-        elif no_start_time:
-            query["$or"] = [
-                {"start_time": None},
-                {"start_time": {"$exists": False}}
-            ]
         
         # 查询匹配的任务
         tasks = self.collection.find(query).sort([

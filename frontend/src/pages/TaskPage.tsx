@@ -106,8 +106,6 @@ const TaskPage: React.FC = () => {
         const weekLater = moment().add(7, 'days').format('YYYY-MM-DD');
         params.start_date = today;
         params.end_date = weekLater;
-      } else if (filter === 'inbox') {
-        params.no_start_time = true;
       } else if (filter === 'completed') {
         params.status = 'completed';
       } else if (filter === 'trash') {
@@ -151,6 +149,10 @@ const TaskPage: React.FC = () => {
     
     // 优先显示清单名称
     if (listId) {
+      // 收集箱是特殊的 list_id
+      if (listId === 'inbox') {
+        return '收集箱';
+      }
       const list = lists.find(l => l.id === listId);
       return list ? list.name : '清单';
     }
@@ -165,8 +167,7 @@ const TaskPage: React.FC = () => {
         return '今天';
       case 'week':
         return '最近7天';
-      case 'inbox':
-        return '收集箱';
+
       case 'completed':
         return '已完成';
       case 'trash':

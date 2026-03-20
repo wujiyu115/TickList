@@ -46,6 +46,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ visible, onClose, par
   // 当 Modal 打开时，根据 URL 参数设置默认值
   useEffect(() => {
     if (visible) {
+      // 如果在收集箱中创建任务，设置 list_id 为 'inbox'
       form.setFieldsValue({
         list_id: currentListId || undefined,
       });

@@ -111,7 +111,6 @@ async def get_tasks(
     is_pinned: Optional[bool] = Query(None),
     start_date: Optional[str] = Query(None),      # 开始时间范围 - 起始日期
     end_date: Optional[str] = Query(None),        # 开始时间范围 - 结束日期
-    no_start_time: Optional[bool] = Query(None),  # 筛选没有开始时间的任务（收集箱）
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     current_user_id: str = Depends(get_current_user)
@@ -145,7 +144,6 @@ async def get_tasks(
             is_pinned=is_pinned,
             start_date=start_date_dt,
             end_date=end_date_dt,
-            no_start_time=no_start_time,
             skip=skip,
             limit=limit
         )

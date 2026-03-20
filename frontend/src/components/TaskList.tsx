@@ -82,6 +82,7 @@ const TaskList: React.FC = () => {
     try {
       await addTask({
         title: newTaskTitle.trim(),
+        // 如果在收集箱中创建任务，设置 list_id 为 'inbox'
         list_id: currentListId || undefined,
         tags: currentTag ? [currentTag] : [],
       });

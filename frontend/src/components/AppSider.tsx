@@ -20,7 +20,8 @@ import {
   ExportOutlined,
   ImportOutlined,
   UploadOutlined,
-  FilterOutlined
+  FilterOutlined,
+  FileTextOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Dropdown, Modal, Input, Select, message, Upload, Button, Radio, Checkbox, Tabs } from 'antd';
@@ -799,11 +800,18 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
             <span>最近7天</span>
           </div>
           <div 
-            className={`filter-item ${selectedKey === 'filter-inbox' ? 'active' : ''}`}
-            onClick={() => navigate('/?filter=inbox')}
+            className={`filter-item ${selectedKey === 'list-inbox' ? 'active' : ''}`}
+            onClick={() => navigate('/?list_id=inbox')}
           >
             <InboxOutlined />
             <span>收集箱</span>
+          </div>
+          <div 
+            className={`filter-item ${location.pathname === '/summary' ? 'active' : ''}`}
+            onClick={() => navigate('/summary')}
+          >
+            <FileTextOutlined />
+            <span>摘要</span>
           </div>
 
           {/* 清单区域 */}
