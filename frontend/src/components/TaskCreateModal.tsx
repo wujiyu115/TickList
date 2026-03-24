@@ -4,7 +4,8 @@ import { useSearchParams } from 'react-router-dom';
 import { useTaskContext } from '../contexts/TaskContext';
 import { getLists } from '../api/list';
 import { getTags } from '../api/tag';
-import { TaskList, Tag as TagType } from '../types';
+import { getSettings } from '../api/settings';
+import { TaskList, Tag as TagType, UserSettings } from '../types';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -29,30 +30,43 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ visible, onClose, par
   const [lists, setLists] = useState<TaskList[]>([]);
   const [allTags, setAllTags] = useState<TagType[]>([]);
   
-  // 加载清单和标签
+  // 用户设置
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  
+  // 加载清单、标签和用户设置
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [listsRes, tagsRes] = await Promise.all([getLists(), getTags()]);
+        const [listsRes, tagsRes, settingsRes] = await Promise.all([
+          getLists(),
+          getTags(),
+          getSettings()
+        ]);
         setLists(listsRes.lists || []);
         setAllTags(tagsRes.tags || []);
+        setUserSettings(settingsRes);
       } catch (e) {
-        console.error('Failed to load lists/tags:', e);
+        console.error('Failed to load lists/tags/settings:', e);
       }
     };
     loadData();
   }, []);
 
-  // 当 Modal 打开时，根据 URL 参数设置默认值
+  // 当 Modal 打开时，根据 URL 参数和用户设置设置默认值
   useEffect(() => {
     if (visible) {
-      // 如果在收集箱中创建任务，设置 list_id 为 'inbox'
+      // 确定清单 ID：URL 参数 > 用户设置 > undefined
+      const listId = currentListId || userSettings?.default_list_id || undefined;
+      // 确定优先级：用户设置 > 0
+      const priority = userSettings?.default_priority ?? 0;
+      
       form.setFieldsValue({
-        list_id: currentListId || undefined,
+        list_id: listId,
+        priority: priority,
       });
       setTags(currentTag ? [currentTag] : []);
     }
-  }, [visible, currentListId, currentTag, form]);
+  }, [visible, currentListId, currentTag, form, userSettings]);
 
   const handleOk = async () => {
     try {
@@ -104,7 +118,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ visible, onClose, par
           <TextArea rows={4} placeholder="任务描述" />
         </Form.Item>
 
-        <Form.Item name="priority" label="优先级" initialValue={0}>
+        <Form.Item name="priority" label="优先级">
           <Select>
             <Option value={0}>无</Option>
             <Option value={1}><span style={{ color: 'red' }}>红旗</span></Option>

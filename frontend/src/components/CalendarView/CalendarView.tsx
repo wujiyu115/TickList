@@ -12,6 +12,7 @@ import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { Task, CalendarTasksByDate } from '../../types';
 import { getCalendarTasks } from '../../api/calendar';
+import { getSettings } from '../../api/settings';
 import { useTaskContext } from '../../contexts/TaskContext';
 import TaskPopover from './TaskPopover';
 import WeekView from './WeekView';
@@ -47,17 +48,25 @@ export const getTaskColor = (taskId: string): string => {
   return TASK_COLORS[Math.abs(hash) % TASK_COLORS.length];
 };
 
-// 计算日历显示的42天（6行7列）
-const getCalendarDays = (month: Dayjs): Dayjs[] => {
+// 计算日历显示的42天（6行7列），支持 weekStartDay
+const getCalendarDays = (month: Dayjs, weekStartDay: number = 0): Dayjs[] => {
   const startOfMonth = month.startOf('month');
   const endOfMonth = month.endOf('month');
-  const startDay = startOfMonth.day(); // 0=周日
+  const monthStartDayOfWeek = startOfMonth.day(); // 0=周日, 1=周一, ...
   const daysInMonth = endOfMonth.date();
 
   const days: Dayjs[] = [];
 
+  // 计算第一天之前需要填充的天数
+  // 如果 weekStartDay=1(周一), monthStartDayOfWeek=0(周日), 则需要填充6天
+  // 如果 weekStartDay=0(周日), monthStartDayOfWeek=0(周日), 则不需要填充
+  let daysToFill = monthStartDayOfWeek - weekStartDay;
+  if (daysToFill < 0) {
+    daysToFill += 7;
+  }
+
   // 上月末尾的日期
-  for (let i = startDay - 1; i >= 0; i--) {
+  for (let i = daysToFill - 1; i >= 0; i--) {
     days.push(startOfMonth.subtract(i + 1, 'day'));
   }
 
@@ -75,16 +84,42 @@ const getCalendarDays = (month: Dayjs): Dayjs[] => {
   return days;
 };
 
-const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+// 星期名称数组（0=周日，1=周一...）
+const WEEKDAYS_ALL = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+
+// 根据 weekStartDay 获取排序后的星期名称
+const getOrderedWeekdays = (weekStartDay: number = 0): string[] => {
+  const result: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    result.push(WEEKDAYS_ALL[(weekStartDay + i) % 7]);
+  }
+  return result;
+};
 
 const CalendarView: React.FC<CalendarViewProps> = ({ onTaskClick }) => {
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [tasksByDate, setTasksByDate] = useState<CalendarTasksByDate>({});
   const [loading, setLoading] = useState(false);
+  const [weekStartDay, setWeekStartDay] = useState<number>(0); // 0=周日, 1=周一
   
   // 使用 TaskContext 获取全局任务列表和更新方法
   const { tasks: allTasks, updateTaskData } = useTaskContext();
+
+  // 加载用户设置中的周起始日
+  useEffect(() => {
+    const loadWeekStartDay = async () => {
+      try {
+        const settings = await getSettings();
+        if (settings.week_start_day !== undefined) {
+          setWeekStartDay(settings.week_start_day);
+        }
+      } catch (e) {
+        console.error('Failed to load week start day:', e);
+      }
+    };
+    loadWeekStartDay();
+  }, []);
 
   // 切换任务完成状态
   const handleToggleComplete = useCallback(async (task: Task) => {
@@ -106,14 +141,20 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onTaskClick }) => {
     switch (mode) {
       case 'month': {
         const startOfMonth = date.startOf('month');
-        const startDay = startOfMonth.day();
-        const actualStart = startOfMonth.subtract(startDay, 'day');
+        const monthStartDayOfWeek = startOfMonth.day();
+        let daysToFill = monthStartDayOfWeek - weekStartDay;
+        if (daysToFill < 0) daysToFill += 7;
+        const actualStart = startOfMonth.subtract(daysToFill, 'day');
         const actualEnd = actualStart.add(41, 'day');
         return { start: actualStart, end: actualEnd };
       }
       case 'week': {
-        const startOfWeek = date.startOf('week');
-        const endOfWeek = date.endOf('week');
+        // 根据 weekStartDay 计算周的起始日
+        const currentDayOfWeek = date.day();
+        let daysFromStart = currentDayOfWeek - weekStartDay;
+        if (daysFromStart < 0) daysFromStart += 7;
+        const startOfWeek = date.subtract(daysFromStart, 'day');
+        const endOfWeek = startOfWeek.add(6, 'day').endOf('day');
         return { start: startOfWeek, end: endOfWeek };
       }
       case 'day': {
@@ -127,7 +168,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onTaskClick }) => {
       default:
         return { start: date, end: date };
     }
-  }, []);
+  }, [weekStartDay]);
 
   // 获取任务
   const fetchTasks = useCallback(async (date: Dayjs, mode: ViewMode) => {
@@ -248,7 +289,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onTaskClick }) => {
     setViewMode('month');
   };
 
-  const calendarDays = getCalendarDays(currentDate);
+  const calendarDays = getCalendarDays(currentDate, weekStartDay);
+  const orderedWeekdays = getOrderedWeekdays(weekStartDay);
 
   if (loading && Object.keys(tasksByDate).length === 0) {
     return (
@@ -294,7 +336,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onTaskClick }) => {
         <>
           {/* 星期行 */}
           <div className="calendar-weekdays">
-            {WEEKDAYS.map((day) => (
+            {orderedWeekdays.map((day) => (
               <div key={day} className="weekday-cell">
                 {day}
               </div>
@@ -383,6 +425,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onTaskClick }) => {
           allTasks={allTasks}
           onTaskClick={onTaskClick}
           onToggleComplete={handleToggleComplete}
+          weekStartDay={weekStartDay}
         />
       )}
 

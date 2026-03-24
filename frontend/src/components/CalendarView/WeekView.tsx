@@ -12,15 +12,28 @@ interface WeekViewProps {
   allTasks?: Task[];
   onTaskClick?: (task: Task) => void;
   onToggleComplete?: (task: Task) => void;
+  weekStartDay?: number; // 0=周日, 1=周一
 }
 
-const WEEKDAY_NAMES = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+const WEEKDAY_NAMES_ALL = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const HOUR_HEIGHT = 60;
 
-// 计算当前周的日期
-const getWeekDays = (date: Dayjs): Dayjs[] => {
-  const startOfWeek = date.startOf('week');
+// 根据 weekStartDay 获取排序后的星期名称
+const getOrderedWeekdayNames = (weekStartDay: number = 0): string[] => {
+  const result: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    result.push(WEEKDAY_NAMES_ALL[(weekStartDay + i) % 7]);
+  }
+  return result;
+};
+
+// 计算当前周的日期，支持 weekStartDay
+const getWeekDays = (date: Dayjs, weekStartDay: number = 0): Dayjs[] => {
+  const currentDayOfWeek = date.day();
+  let daysFromStart = currentDayOfWeek - weekStartDay;
+  if (daysFromStart < 0) daysFromStart += 7;
+  const startOfWeek = date.subtract(daysFromStart, 'day');
   return Array.from({ length: 7 }, (_, i) => startOfWeek.add(i, 'day'));
 };
 
@@ -57,9 +70,11 @@ const WeekView: React.FC<WeekViewProps> = ({
   allTasks = [],
   onTaskClick,
   onToggleComplete,
+  weekStartDay = 0,
 }) => {
-  const weekDays = getWeekDays(currentDate);
+  const weekDays = getWeekDays(currentDate, weekStartDay);
   const today = dayjs();
+  const orderedWeekdayNames = getOrderedWeekdayNames(weekStartDay);
 
   // 获取指定日期的任务
   const getTasksForDay = (day: Dayjs): Task[] => {
@@ -76,7 +91,7 @@ const WeekView: React.FC<WeekViewProps> = ({
           const isToday = day.isSame(today, 'day');
           return (
             <div key={index} className="week-day-header">
-              <div className="day-name">{WEEKDAY_NAMES[index]}</div>
+              <div className="day-name">{orderedWeekdayNames[index]}</div>
               <div className={`day-number ${isToday ? 'today-highlight' : ''}`}>
                 {day.date()}
               </div>

@@ -2,13 +2,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { message, Segmented, Empty } from 'antd';
 import { RightOutlined, PlusOutlined } from '@ant-design/icons';
 import { useTimer, TimerPhase } from '../../hooks/useTimer';
+import { getSettings } from '../../api/settings';
+import { UserSettings } from '../../types';
 import TimerDisplay from './TimerDisplay';
 import TimerControls from './TimerControls';
 import './PomodoroTimer.less';
 
-// 标准番茄钟时间配置（秒）
-const WORK_DURATION = 25 * 60; // 25分钟
-const BREAK_DURATION = 5 * 60; // 5分钟
+// 默认番茄钟时间配置（秒）
+const DEFAULT_WORK_DURATION = 25 * 60; // 25分钟
+const DEFAULT_BREAK_DURATION = 5 * 60; // 5分钟
+const DEFAULT_LONG_BREAK_DURATION = 15 * 60; // 15分钟
 
 // 本地存储键
 const STORAGE_KEY = 'pomodoro_stats';
@@ -20,6 +23,24 @@ interface PomodoroStats {
 
 const PomodoroTimer: React.FC = () => {
   const [completedToday, setCompletedToday] = useState(0);
+  
+  // 用户设置状态
+  const [settings, setSettings] = useState<Partial<UserSettings> | null>(null);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  
+  // 根据设置计算时长（秒）
+  const workDuration = settings?.pomodoro_duration 
+    ? settings.pomodoro_duration * 60 
+    : DEFAULT_WORK_DURATION;
+  const breakDuration = settings?.short_break_duration 
+    ? settings.short_break_duration * 60 
+    : DEFAULT_BREAK_DURATION;
+  const longBreakDuration = settings?.long_break_duration 
+    ? settings.long_break_duration * 60 
+    : DEFAULT_LONG_BREAK_DURATION;
+  const autoStart = settings?.pomodoro_auto_start ?? false;
+  const notificationEnabled = settings?.notification_enabled ?? true;
+  const notificationSound = settings?.notification_sound ?? true;
 
   // 获取今日日期字符串
   const getTodayString = () => {
@@ -56,6 +77,11 @@ const PomodoroTimer: React.FC = () => {
 
   // 播放提示音
   const playNotificationSound = useCallback(() => {
+    // 检查设置是否允许播放提示音
+    if (!notificationSound) {
+      return;
+    }
+    
     try {
       // 使用 Web Audio API 播放简单提示音
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -77,12 +103,15 @@ const PomodoroTimer: React.FC = () => {
     } catch (e) {
       console.error('播放提示音失败:', e);
     }
-  }, []);
+  }, [notificationSound]);
 
   // 计时完成回调
   const handleComplete = useCallback(
     (phase: TimerPhase) => {
-      playNotificationSound();
+      // 检查通知设置
+      if (notificationEnabled) {
+        playNotificationSound();
+      }
 
       if (phase === 'work') {
         // 工作阶段完成，增加计数
@@ -91,20 +120,41 @@ const PomodoroTimer: React.FC = () => {
           saveStats({ date: getTodayString(), completed: newCount });
           return newCount;
         });
-        message.success('工作完成！休息一下吧 🎉');
+        if (notificationEnabled) {
+          message.success('工作完成！休息一下吧 🎉');
+        }
       } else {
-        message.info('休息结束，继续加油！💪');
+        if (notificationEnabled) {
+          message.info('休息结束，继续加油！💪');
+        }
       }
     },
-    [playNotificationSound, saveStats]
+    [notificationEnabled, playNotificationSound, saveStats]
   );
 
   // 计时器
   const timer = useTimer({
-    workDuration: WORK_DURATION,
-    breakDuration: BREAK_DURATION,
+    workDuration,
+    breakDuration,
+    longBreakDuration,
+    autoStart,
     onComplete: handleComplete,
   });
+
+  // 加载用户设置
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const userSettings = await getSettings();
+        setSettings(userSettings);
+      } catch (e) {
+        console.error('加载用户设置失败:', e);
+      } finally {
+        setSettingsLoaded(true);
+      }
+    };
+    loadSettings();
+  }, []);
 
   // 初始化加载统计数据
   useEffect(() => {
@@ -145,7 +195,7 @@ const PomodoroTimer: React.FC = () => {
           <TimerDisplay
             timeLeft={timer.timeLeft}
             phase={timer.phase}
-            totalTime={timer.phase === 'break' ? BREAK_DURATION : WORK_DURATION}
+            totalTime={timer.phase === 'break' ? breakDuration : workDuration}
           />
           
           <TimerControls
@@ -169,7 +219,7 @@ const PomodoroTimer: React.FC = () => {
           </div>
           <div className="stat-card">
             <span className="stat-label">今日专注时长</span>
-            <span className="stat-number">{completedToday * 25}<span className="stat-suffix">m</span></span>
+            <span className="stat-number">{completedToday * (settings?.pomodoro_duration || 25)}<span className="stat-suffix">m</span></span>
           </div>
           <div className="stat-card">
             <span className="stat-label">总番茄</span>
@@ -177,7 +227,7 @@ const PomodoroTimer: React.FC = () => {
           </div>
           <div className="stat-card">
             <span className="stat-label">总专注时长</span>
-            <span className="stat-number">{completedToday * 25}<span className="stat-suffix">m</span></span>
+            <span className="stat-number">{completedToday * (settings?.pomodoro_duration || 25)}<span className="stat-suffix">m</span></span>
           </div>
         </div>
 

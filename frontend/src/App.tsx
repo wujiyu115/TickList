@@ -1,12 +1,12 @@
 import React, { useState, useEffect, createContext } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { message, ConfigProvider, theme as antdTheme } from 'antd';
 import MainLayout from './layouts/MainLayout';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { getCurrentUser } from './api/auth';
 import { getSettings } from './api/settings';
-import { User } from './types';
+import { User, UserSettings } from './types';
 
 // 配色方案映射
 const THEME_COLORS: Record<string, { color: string; isDark: boolean }> = {
@@ -27,11 +27,29 @@ export const ThemeContext = createContext<{
   setTheme: (color: string, isDark: boolean) => void;
 } | null>(null);
 
+// 根据 default_view 获取跳转路径
+const getDefaultViewPath = (defaultView: string): string => {
+  switch (defaultView) {
+    case 'calendar':
+      return '/calendar';
+    case 'statistics':
+      return '/statistics';
+    case 'pomodoro':
+      return '/pomodoro';
+    case 'tasks':
+    default:
+      return '/';
+  }
+};
+
 const App: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [primaryColor, setPrimaryColor] = useState('#1677ff');
   const [isDark, setIsDark] = useState(false);
+  const [defaultViewPath, setDefaultViewPath] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -43,13 +61,17 @@ const App: React.FC = () => {
       if (token) {
         const userData = await getCurrentUser();
         setUser(userData);
-        // 加载用户设置并应用主题
+        // 加载用户设置并应用主题和默认视图
         try {
           const settings = await getSettings();
           if (settings.theme && THEME_COLORS[settings.theme]) {
             const themeConfig = THEME_COLORS[settings.theme];
             setPrimaryColor(themeConfig.color);
             setIsDark(themeConfig.isDark);
+          }
+          // 设置默认视图路径，仅在首次加载时使用
+          if (settings.default_view) {
+            setDefaultViewPath(getDefaultViewPath(settings.default_view));
           }
         } catch (e) {
           console.error('Failed to load settings:', e);
@@ -68,10 +90,25 @@ const App: React.FC = () => {
     setIsDark(dark);
   };
 
-  const handleLogin = (userData: User, token: string) => {
+  const handleLogin = async (userData: User, token: string) => {
     localStorage.setItem('token', token);
     setUser(userData);
     message.success('登录成功');
+    // 加载用户设置并跳转到默认视图
+    try {
+      const settings = await getSettings();
+      if (settings.theme && THEME_COLORS[settings.theme]) {
+        const themeConfig = THEME_COLORS[settings.theme];
+        setPrimaryColor(themeConfig.color);
+        setIsDark(themeConfig.isDark);
+      }
+      // 登录成功后立即跳转到默认视图
+      const targetPath = getDefaultViewPath(settings.default_view || 'tasks');
+      navigate(targetPath, { replace: true });
+    } catch (e) {
+      console.error('Failed to load settings:', e);
+      navigate('/', { replace: true });
+    }
   };
 
   const handleLogout = () => {
@@ -99,7 +136,7 @@ const App: React.FC = () => {
             path="/login"
             element={
               user ? (
-                <Navigate to="/" replace />
+                <Navigate to={defaultViewPath || '/'} replace />
               ) : (
                 <LoginPage onLogin={handleLogin} />
               )
@@ -109,7 +146,7 @@ const App: React.FC = () => {
             path="/register"
             element={
               user ? (
-                <Navigate to="/" replace />
+                <Navigate to={defaultViewPath || '/'} replace />
               ) : (
                 <RegisterPage />
               )

@@ -10,7 +10,9 @@ interface TimerState {
 
 interface UseTimerOptions {
   workDuration: number; // 工作时长（秒）
-  breakDuration: number; // 休息时长（秒）
+  breakDuration: number; // 短休息时长（秒）
+  longBreakDuration?: number; // 长休息时长（秒）
+  autoStart?: boolean; // 计时完成后是否自动开始下一阶段
   onComplete?: (phase: TimerPhase) => void;
 }
 
@@ -20,19 +22,29 @@ interface UseTimerReturn extends TimerState {
   reset: () => void;
   skip: () => void;
   setTimeLeft: (seconds: number) => void;
+  pomodoroCount: number; // 已完成的番茄数
 }
 
 export const useTimer = (options: UseTimerOptions): UseTimerReturn => {
-  const { workDuration, breakDuration, onComplete } = options;
+  const { workDuration, breakDuration, longBreakDuration, autoStart = false, onComplete } = options;
 
   const [state, setState] = useState<TimerState>({
     phase: 'idle',
     timeLeft: workDuration,
     isRunning: false,
   });
+  
+  // 记录已完成的番茄数（用于决定长休息）
+  const [pomodoroCount, setPomodoroCount] = useState(0);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const endTimeRef = useRef<number | null>(null);
+  const autoStartRef = useRef(autoStart);
+  
+  // 保持 autoStart 最新值
+  useEffect(() => {
+    autoStartRef.current = autoStart;
+  }, [autoStart]);
 
   // 清除定时器
   const clearTimer = useCallback(() => {
@@ -53,23 +65,64 @@ export const useTimer = (options: UseTimerOptions): UseTimerReturn => {
     if (remaining <= 0) {
       clearTimer();
       setState((prev) => {
-        const newPhase = prev.phase === 'work' ? 'break' : 'work';
-        const newTimeLeft = newPhase === 'work' ? workDuration : breakDuration;
+        const wasWork = prev.phase === 'work';
+        const newPhase = wasWork ? 'break' : 'work';
+        
+        // 计算新的番茄计数和休息时长
+        let newPomodoroCount = pomodoroCount;
+        let newBreakDuration = breakDuration;
+        
+        if (wasWork) {
+          // 工作完成，增加番茄计数
+          newPomodoroCount = pomodoroCount + 1;
+          setPomodoroCount(newPomodoroCount);
+          
+          // 每4个番茄钟后使用长休息
+          if (longBreakDuration && newPomodoroCount % 4 === 0) {
+            newBreakDuration = longBreakDuration;
+          }
+        }
+        
+        const newTimeLeft = newPhase === 'work' ? workDuration : newBreakDuration;
         
         // 触发完成回调
         onComplete?.(prev.phase);
+
+        // 根据 autoStart 决定是否自动开始
+        const shouldAutoStart = autoStartRef.current;
+        
+        if (shouldAutoStart) {
+          // 设置结束时间并启动定时器
+          endTimeRef.current = Date.now() + newTimeLeft * 1000;
+          intervalRef.current = setInterval(updateTimeLeftInternal, 200);
+        }
 
         return {
           ...prev,
           phase: newPhase,
           timeLeft: newTimeLeft,
-          isRunning: false,
+          isRunning: shouldAutoStart,
         };
       });
     } else {
       setState((prev) => ({ ...prev, timeLeft: remaining }));
     }
-  }, [clearTimer, workDuration, breakDuration, onComplete]);
+  }, [clearTimer, workDuration, breakDuration, longBreakDuration, onComplete, pomodoroCount]);
+  
+  // 内部更新函数（避免循环依赖）
+  const updateTimeLeftInternal = useCallback(() => {
+    if (!endTimeRef.current) return;
+
+    const now = Date.now();
+    const remaining = Math.max(0, Math.floor((endTimeRef.current - now) / 1000));
+
+    if (remaining <= 0) {
+      // 时间到，触发 updateTimeLeft 处理
+      updateTimeLeft();
+    } else {
+      setState((prev) => ({ ...prev, timeLeft: remaining }));
+    }
+  }, [updateTimeLeft]);
 
   // 开始计时
   const start = useCallback(() => {
@@ -104,6 +157,7 @@ export const useTimer = (options: UseTimerOptions): UseTimerReturn => {
       timeLeft: workDuration,
       isRunning: false,
     });
+    setPomodoroCount(0);
   }, [clearTimer, workDuration]);
 
   // 跳过当前阶段
@@ -140,6 +194,7 @@ export const useTimer = (options: UseTimerOptions): UseTimerReturn => {
     reset,
     skip,
     setTimeLeft,
+    pomodoroCount,
   };
 };
 
