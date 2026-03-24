@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from 'antd';
-import { UnorderedListOutlined, SortAscendingOutlined, EllipsisOutlined, FilterOutlined } from '@ant-design/icons';
+import { UnorderedListOutlined, SortAscendingOutlined, EllipsisOutlined, FilterOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
 import moment from 'moment';
 import { useTaskContext } from '../contexts/TaskContext';
 import TaskList from '../components/TaskList';
+import CompletedTaskList from '../components/CompletedTaskList';
 import TaskEditor from '../components/TaskEditor';
 import { getLists } from '../api/list';
 import { getTags } from '../api/tag';
@@ -182,8 +183,14 @@ const TaskPage: React.FC = () => {
     if (activeFilter) {
       return <FilterOutlined className="toolbar-icon" />;
     }
+    if (filter === 'completed') {
+      return <CheckCircleOutlined className="toolbar-icon" />;
+    }
     return <UnorderedListOutlined className="toolbar-icon" />;
   };
+
+  // 是否是已完成视图
+  const isCompletedView = filter === 'completed';
 
   return (
     <div className="task-page">
@@ -200,7 +207,7 @@ const TaskPage: React.FC = () => {
             <Button type="text" icon={<EllipsisOutlined />} />
           </div>
         </div>
-        <TaskList />
+        {isCompletedView ? <CompletedTaskList /> : <TaskList />}
       </div>
       
       {/* 右侧详情区域 - 选中任务时显示 */}

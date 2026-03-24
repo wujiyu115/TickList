@@ -1,0 +1,204 @@
+.completed-task-list {
+  flex: 1;
+  overflow: auto;
+  padding: 0;
+
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    gap: 8px;
+    border-bottom: 1px solid #f0f0f0;
+
+    .filter-btn {
+      border-radius: 6px;
+      font-size: 13px;
+      color: #666;
+      border-color: #e8e8e8;
+      background: #fff;
+
+      &:hover {
+        color: #333;
+        border-color: #d9d9d9;
+      }
+
+      &:disabled {
+        color: #bfbfbf;
+        background: #f5f5f5;
+      }
+
+      .anticon-down {
+        font-size: 10px;
+        margin-left: 4px;
+      }
+    }
+  }
+
+  .completed-groups {
+    padding: 8px 0;
+  }
+
+  .completed-group {
+    margin-bottom: 4px;
+
+    .completed-group-header {
+      display: flex;
+      align-items: center;
+      padding: 10px 20px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: #f9f9f9;
+      }
+
+      .expand-icon {
+        width: 16px;
+        color: #999;
+        font-size: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .group-date {
+        font-size: 14px;
+        font-weight: 500;
+        color: #333;
+        margin-left: 4px;
+      }
+
+      .group-count {
+        font-size: 13px;
+        color: #999;
+        margin-left: 8px;
+      }
+    }
+
+    .completed-group-content {
+      padding-left: 4px;
+    }
+  }
+
+  .completed-task-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 20px 10px 36px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-left: 3px solid transparent;
+
+    &:hover {
+      background-color: #fafafa;
+    }
+
+    &.selected {
+      background-color: #f0f7ff;
+      border-left-color: #1677ff;
+    }
+
+    .task-checkbox-wrapper {
+      flex-shrink: 0;
+      margin-right: 10px;
+      margin-top: 2px;
+
+      &.completed {
+        .ant-checkbox-checked .ant-checkbox-inner {
+          background-color: #1677ff;
+          border-color: #1677ff;
+        }
+      }
+
+      .task-checkbox {
+        .ant-checkbox-inner {
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+        }
+
+        .ant-checkbox-inner::after {
+          left: 5px;
+          top: 9px;
+        }
+      }
+    }
+
+    .task-content {
+      flex: 1;
+      min-width: 0;
+
+      .task-title {
+        font-size: 14px;
+        color: #999;
+        text-decoration: line-through;
+        line-height: 1.5;
+        word-break: break-word;
+      }
+
+      .task-desc {
+        font-size: 12px;
+        color: #bfbfbf;
+        margin-top: 4px;
+        line-height: 1.4;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .task-list-tag {
+        display: inline-flex;
+        align-items: center;
+        margin-top: 6px;
+        gap: 4px;
+
+        .list-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+
+        .list-name {
+          font-size: 12px;
+          color: #999;
+        }
+      }
+    }
+
+    .task-meta {
+      flex-shrink: 0;
+      margin-left: 12px;
+      display: flex;
+      align-items: center;
+
+      .children-progress {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        color: #bfbfbf;
+
+        .anticon {
+          font-size: 12px;
+        }
+
+        .due-date {
+          margin-left: 4px;
+        }
+      }
+    }
+  }
+
+  .empty-state {
+    padding: 60px 20px;
+    color: #999;
+  }
+}
+
+.completed-task-list-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}

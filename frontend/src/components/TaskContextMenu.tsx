@@ -337,6 +337,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose }) => {
             onClick={() => {
               setTagPanelVisible(false);
               setSelectedTags(task.tags || []);
+              onClose();
             }}
           >
             取消
@@ -468,38 +469,42 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose }) => {
       key: 'move-to-list',
       icon: <FolderOutlined />,
       label: (
-        <Popover
-          content={renderMoveToContent()}
-          trigger="click"
-          placement="rightTop"
-          open={moveToVisible}
-          onOpenChange={setMoveToVisible}
-          overlayInnerStyle={{ padding: 0 }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-            <span>移动到</span>
-            <RightOutlined style={{ fontSize: 10, color: '#bfbfbf' }} />
-          </div>
-        </Popover>
+        <div onClick={(e) => e.stopPropagation()}>
+          <Popover
+            content={renderMoveToContent()}
+            trigger="click"
+            placement="rightTop"
+            open={moveToVisible}
+            onOpenChange={setMoveToVisible}
+            overlayInnerStyle={{ padding: 0 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+              <span>移动到</span>
+              <RightOutlined style={{ fontSize: 10, color: '#bfbfbf' }} />
+            </div>
+          </Popover>
+        </div>
       ),
     },
     {
       key: 'tags',
       icon: <TagOutlined />,
       label: (
-        <Popover
-          content={renderTagContent()}
-          trigger="click"
-          placement="rightTop"
-          open={tagPanelVisible}
-          onOpenChange={setTagPanelVisible}
-          overlayInnerStyle={{ padding: 0 }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-            <span>标签</span>
-            <RightOutlined style={{ fontSize: 10, color: '#bfbfbf' }} />
-          </div>
-        </Popover>
+        <div onClick={(e) => e.stopPropagation()}>
+          <Popover
+            content={renderTagContent()}
+            trigger="click"
+            placement="rightTop"
+            open={tagPanelVisible}
+            onOpenChange={setTagPanelVisible}
+            overlayInnerStyle={{ padding: 0 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+              <span>标签</span>
+              <RightOutlined style={{ fontSize: 10, color: '#bfbfbf' }} />
+            </div>
+          </Popover>
+        </div>
       ),
     },
     { type: 'divider' },
