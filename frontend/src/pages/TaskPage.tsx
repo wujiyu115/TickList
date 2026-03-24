@@ -1,21 +1,37 @@
-import React, { useEffect, useState } from 'react';
-import { Button } from 'antd';
-import { UnorderedListOutlined, SortAscendingOutlined, EllipsisOutlined, FilterOutlined, CheckCircleOutlined } from '@ant-design/icons';
-import { useSearchParams } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { Button, Popover, Checkbox, Divider, Tooltip } from 'antd';
+import { 
+  UnorderedListOutlined, 
+  SortAscendingOutlined, 
+  EllipsisOutlined, 
+  FilterOutlined, 
+  CheckCircleOutlined,
+  AppstoreOutlined,
+  ProjectOutlined,
+  SettingOutlined,
+  MenuOutlined
+} from '@ant-design/icons';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import moment from 'moment';
 import { useTaskContext } from '../contexts/TaskContext';
 import TaskList from '../components/TaskList';
+import KanbanView from '../components/KanbanView';
 import CompletedTaskList from '../components/CompletedTaskList';
 import TaskEditor from '../components/TaskEditor';
 import { getLists } from '../api/list';
 import { getTags } from '../api/tag';
 import { getFilters } from '../api/filter';
+import { getSettings } from '../api/settings';
 import { TaskList as TaskListType, Tag, Filter } from '../types';
 import './TaskPage.less';
+
+// 视图类型
+type ViewMode = 'list' | 'kanban';
 
 const TaskPage: React.FC = () => {
   const { fetchTasks, selectedTask } = useTaskContext();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const filter = searchParams.get('filter');
   const listId = searchParams.get('list_id');
   const tagFilter = searchParams.get('tag');
@@ -29,21 +45,111 @@ const TaskPage: React.FC = () => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [filters, setFilters] = useState<Filter[]>([]);
   const [activeFilter, setActiveFilter] = useState<Filter | null>(null);
+
+  // 视图模式状态 - 等待用户设置加载后更新
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const userManuallyChangedView = useRef(false); // 标记用户是否已手动切换视图
+  const [viewMenuOpen, setViewMenuOpen] = useState(false);
+  const [hideCompleted, setHideCompleted] = useState(() => {
+    return localStorage.getItem('hideCompleted') === 'true';
+  });
+  const [hideDetails, setHideDetails] = useState(() => {
+    return localStorage.getItem('hideDetails') === 'true';
+  });
   
-  // 加载清单、标签和过滤器
+  // 加载清单、标签、过滤器和用户设置
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [listsRes, tagsRes, filtersRes] = await Promise.all([getLists(), getTags(), getFilters()]);
+        const [listsRes, tagsRes, filtersRes, settingsRes] = await Promise.all([
+          getLists(), 
+          getTags(), 
+          getFilters(),
+          getSettings()
+        ]);
         setLists(listsRes.lists || []);
         setTags(tagsRes.tags || []);
         setFilters(filtersRes.filters || []);
+        
+        // 如果用户没有手动切换视图，使用用户设置中的默认任务视图
+        if (!userManuallyChangedView.current && settingsRes?.default_task_view) {
+          const defaultMode = settingsRes.default_task_view as ViewMode;
+          if (defaultMode === 'list' || defaultMode === 'kanban') {
+            setViewMode(defaultMode);
+          }
+        }
       } catch (e) {
         console.error('Failed to load lists/tags/filters:', e);
       }
     };
     loadData();
   }, []);
+
+  // 切换视图模式
+  const handleViewModeChange = (mode: ViewMode) => {
+    userManuallyChangedView.current = true; // 标记用户已手动切换
+    setViewMode(mode);
+  };
+
+  // 切换隐藏已完成
+  const handleHideCompletedChange = (checked: boolean) => {
+    setHideCompleted(checked);
+    localStorage.setItem('hideCompleted', String(checked));
+  };
+
+  // 切换隐藏详细
+  const handleHideDetailsChange = (checked: boolean) => {
+    setHideDetails(checked);
+    localStorage.setItem('hideDetails', String(checked));
+  };
+
+  // 跳转到设置页面
+  const handleGoToSettings = () => {
+    setViewMenuOpen(false);
+    navigate('/settings');
+  };
+
+  // 视图切换下拉菜单内容
+  const viewMenuContent = (
+    <div className="view-menu-content">
+      <div className="view-menu-section">
+        <div className="section-title">视图</div>
+        <div className="view-icons">
+          <Tooltip title="列表视图">
+            <div 
+              className={`view-icon ${viewMode === 'list' ? 'active' : ''}`}
+              onClick={() => handleViewModeChange('list')}
+            >
+              <UnorderedListOutlined />
+            </div>
+          </Tooltip>
+          <Tooltip title="看板视图">
+            <div 
+              className={`view-icon ${viewMode === 'kanban' ? 'active' : ''}`}
+              onClick={() => handleViewModeChange('kanban')}
+            >
+              <AppstoreOutlined />
+            </div>
+          </Tooltip>
+        </div>
+      </div>
+      <Divider style={{ margin: '12px 0' }} />
+      <div className="view-menu-options">
+        <div className="menu-option" onClick={() => handleHideCompletedChange(!hideCompleted)}>
+          <Checkbox checked={hideCompleted} />
+          <span>隐藏已完成</span>
+        </div>
+        <div className="menu-option" onClick={() => handleHideDetailsChange(!hideDetails)}>
+          <MenuOutlined style={{ fontSize: 14, marginRight: 8 }} />
+          <span>隐藏详细</span>
+        </div>
+        <div className="menu-option" onClick={handleGoToSettings}>
+          <SettingOutlined style={{ fontSize: 14, marginRight: 8 }} />
+          <span>显示设置</span>
+        </div>
+      </div>
+    </div>
+  );
 
   // 当 filter_id 变化时，查找对应的过滤器
   useEffect(() => {
@@ -192,6 +298,17 @@ const TaskPage: React.FC = () => {
   // 是否是已完成视图
   const isCompletedView = filter === 'completed';
 
+  // 渲染主内容区域
+  const renderContent = () => {
+    if (isCompletedView) {
+      return <CompletedTaskList />;
+    }
+    if (viewMode === 'kanban') {
+      return <KanbanView hideDetails={hideDetails} />;
+    }
+    return <TaskList hideCompleted={hideCompleted} hideDetails={hideDetails} />;
+  };
+
   return (
     <div className="task-page">
       {/* 左侧列表区域 */}
@@ -204,10 +321,19 @@ const TaskPage: React.FC = () => {
           </div>
           <div className="toolbar-right">
             <Button type="text" icon={<SortAscendingOutlined />} />
-            <Button type="text" icon={<EllipsisOutlined />} />
+            <Popover
+              content={viewMenuContent}
+              trigger="click"
+              placement="bottomRight"
+              open={viewMenuOpen}
+              onOpenChange={setViewMenuOpen}
+              overlayClassName="view-menu-popover"
+            >
+              <Button type="text" icon={<EllipsisOutlined />} />
+            </Popover>
           </div>
         </div>
-        {isCompletedView ? <CompletedTaskList /> : <TaskList />}
+        {renderContent()}
       </div>
       
       {/* 右侧详情区域 - 选中任务时显示 */}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Checkbox } from 'antd';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { Task, CalendarTasksByDate } from '../../types';
@@ -8,7 +9,9 @@ import TaskPopover from './TaskPopover';
 interface DayViewProps {
   currentDate: Dayjs;
   tasksByDate: CalendarTasksByDate;
+  allTasks?: Task[];
   onTaskClick?: (task: Task) => void;
+  onToggleComplete?: (task: Task) => void;
 }
 
 const WEEKDAY_NAMES = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -42,7 +45,13 @@ const getTaskPosition = (task: Task): { top: number; height: number } => {
   return { top, height };
 };
 
-const DayView: React.FC<DayViewProps> = ({ currentDate, tasksByDate, onTaskClick }) => {
+const DayView: React.FC<DayViewProps> = ({
+  currentDate,
+  tasksByDate,
+  allTasks = [],
+  onTaskClick,
+  onToggleComplete,
+}) => {
   const today = dayjs();
   const isToday = currentDate.isSame(today, 'day');
   const dayOfWeek = currentDate.day();
@@ -93,16 +102,19 @@ const DayView: React.FC<DayViewProps> = ({ currentDate, tasksByDate, onTaskClick
               const endTime = task.due_date
                 ? dayjs(task.due_date).add(1, 'hour').format('HH:mm')
                 : '';
+              const isCompleted = task.status === 'completed';
 
               return (
                 <TaskPopover
                   key={task.id}
                   tasks={[task]}
                   date={currentDate}
+                  allTasks={allTasks}
                   onTaskClick={onTaskClick}
+                  onToggleComplete={onToggleComplete}
                 >
                   <div
-                    className="task-block day-task-block"
+                    className={`task-block day-task-block ${isCompleted ? 'task-block-completed' : ''}`}
                     style={{
                       top: `${top}px`,
                       height: `${height}px`,
@@ -110,8 +122,17 @@ const DayView: React.FC<DayViewProps> = ({ currentDate, tasksByDate, onTaskClick
                     }}
                   >
                     <div className="task-block-title">
-                      <span className="task-checkbox">☐</span>
-                      {task.title}
+                      <Checkbox
+                        checked={isCompleted}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleComplete?.(task);
+                        }}
+                        className="task-block-checkbox"
+                      />
+                      <span className={isCompleted ? 'task-title-completed' : ''}>
+                        {task.title}
+                      </span>
                     </div>
                     <div className="task-block-time">
                       {time}-{endTime}

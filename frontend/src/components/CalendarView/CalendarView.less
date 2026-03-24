@@ -168,6 +168,16 @@
     filter: brightness(0.95);
   }
 
+  .task-bar-checkbox {
+    margin-right: 4px;
+    flex-shrink: 0;
+    
+    .ant-checkbox-inner {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
   .task-checkbox {
     margin-right: 4px;
     font-size: 11px;
@@ -181,6 +191,11 @@
     text-overflow: ellipsis;
     color: #333;
   }
+  
+  .task-name-completed {
+    text-decoration: line-through;
+    color: #999;
+  }
 
   .task-time {
     margin-left: auto;
@@ -188,6 +203,15 @@
     font-size: 11px;
     color: #666;
     flex-shrink: 0;
+  }
+  
+  &.task-bar-completed {
+    opacity: 0.7;
+    
+    .task-name {
+      text-decoration: line-through;
+      color: #999;
+    }
   }
 }
 
@@ -210,7 +234,7 @@
 }
 
 .task-popover-content {
-  max-width: 300px;
+  max-width: 320px;
   max-height: 400px;
   overflow-y: auto;
 
@@ -226,6 +250,34 @@
     &:hover {
       background: #f5f5f5;
     }
+    
+    &.task-completed {
+      opacity: 0.7;
+    }
+    
+    &.subtask-item {
+      padding: 6px 0;
+      
+      .task-popover-title {
+        font-size: 13px;
+      }
+    }
+  }
+  
+  .task-popover-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .task-popover-checkbox {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  
+  .task-popover-info {
+    flex: 1;
+    min-width: 0;
   }
 
   .task-popover-title {
@@ -234,11 +286,27 @@
     gap: 8px;
     font-weight: 500;
   }
+  
+  .task-title-completed {
+    text-decoration: line-through;
+    color: #999;
+  }
 
   .task-popover-meta {
     display: flex;
     gap: 4px;
     margin-top: 4px;
+  }
+  
+  // 子任务列表样式
+  .subtask-list {
+    margin-left: 24px;
+    border-left: 2px solid #f0f0f0;
+    padding-left: 8px;
+  }
+  
+  .subtask-wrapper {
+    // 子任务包装器
   }
 }
 
@@ -462,8 +530,14 @@
     transform: translateY(-1px);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   }
+  
+  &.task-block-completed {
+    opacity: 0.7;
+  }
 
   .task-block-title {
+    display: flex;
+    align-items: center;
     font-weight: 500;
     color: #333;
     white-space: nowrap;
@@ -474,6 +548,21 @@
       margin-right: 4px;
       font-size: 11px;
       color: #666;
+    }
+    
+    .task-block-checkbox {
+      margin-right: 4px;
+      flex-shrink: 0;
+      
+      .ant-checkbox-inner {
+        width: 14px;
+        height: 14px;
+      }
+    }
+    
+    .task-title-completed {
+      text-decoration: line-through;
+      color: #999;
     }
   }
 

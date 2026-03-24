@@ -11,9 +11,10 @@ interface TaskItemProps {
   task: Task;
   allTasks: Task[];
   depth?: number;
+  hideDetails?: boolean;
 }
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0 }) => {
+const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDetails }) => {
   const { updateTaskData, selectTask, selectedTask } = useTaskContext();
   const [expanded, setExpanded] = useState(true);
   const [contextMenuVisible, setContextMenuVisible] = useState(false);
@@ -151,7 +152,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0 }) => {
                 </span>
               )}
             </div>
-            {task.description && (
+            {!hideDetails && task.description && (
               <div className="task-desc">{task.description}</div>
             )}
           </div>
@@ -174,7 +175,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0 }) => {
       {hasChildren && expanded && (
         <div className="task-children">
           {children.map((child) => (
-            <TaskItem key={child.id} task={child} allTasks={allTasks} depth={depth + 1} />
+            <TaskItem key={child.id} task={child} allTasks={allTasks} depth={depth + 1} hideDetails={hideDetails} />
           ))}
         </div>
       )}

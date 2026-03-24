@@ -9,6 +9,7 @@ import CalendarPage from '../pages/CalendarPage';
 import PomodoroPage from '../pages/PomodoroPage';
 import CountdownPage from '../pages/CountdownPage';
 import SummaryPage from '../pages/SummaryPage';
+import SettingsPage from '../pages/SettingsPage';
 import { TaskProvider } from '../contexts/TaskContext';
 import { User } from '../types';
 import './MainLayout.less';
@@ -35,6 +36,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
               <Route path="/pomodoro" element={<PomodoroPage />} />
               <Route path="/statistics" element={<StatisticsPage />} />
               <Route path="/summary" element={<SummaryPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
             </Routes>
           </Content>
         </Layout>

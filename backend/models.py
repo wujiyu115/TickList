@@ -310,3 +310,95 @@ class Filter:
             if hasattr(self, key):
                 setattr(self, key, value)
         self.updated_at = datetime.now()
+
+
+class UserSettings:
+    """用户设置模型"""
+    def __init__(
+        self,
+        user_id: str,
+        # 外观设置
+        theme: str = "default",                    # 配色方案: default/blue/green/purple/orange/rose/dark/midnight
+        language: str = "zh-CN",                   # 语言: zh-CN/en-US
+        # 任务默认设置
+        default_view: str = "tasks",               # 默认视图: tasks/calendar/statistics/pomodoro
+        default_task_view: str = "list",           # 默认任务视图模式: list/kanban
+        default_priority: int = 0,                 # 默认优先级: 0-4
+        default_list_id: Optional[str] = None,     # 默认清单ID
+        # 日期与时间
+        week_start_day: int = 1,                   # 周起始日: 0=周日, 1=周一
+        date_format: str = "MM-DD",                # 日期格式: MM-DD/DD-MM/YYYY-MM-DD
+        time_format: str = "24h",                  # 时间格式: 24h/12h
+        timezone: str = "Asia/Shanghai",           # 时区
+        # 番茄钟设置
+        pomodoro_duration: int = 25,               # 番茄钟时长（分钟）
+        short_break_duration: int = 5,             # 短休息时长
+        long_break_duration: int = 15,             # 长休息时长
+        pomodoro_auto_start: bool = False,         # 是否自动开始下一个
+        # 通知设置
+        notification_enabled: bool = True,         # 是否启用通知
+        notification_sound: bool = True,           # 是否播放提示音
+        # 时间戳
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None
+    ):
+        self.user_id = user_id
+        # 外观设置
+        self.theme = theme
+        self.language = language
+        # 任务默认设置
+        self.default_view = default_view
+        self.default_task_view = default_task_view
+        self.default_priority = default_priority
+        self.default_list_id = default_list_id
+        # 日期与时间
+        self.week_start_day = week_start_day
+        self.date_format = date_format
+        self.time_format = time_format
+        self.timezone = timezone
+        # 番茄钟设置
+        self.pomodoro_duration = pomodoro_duration
+        self.short_break_duration = short_break_duration
+        self.long_break_duration = long_break_duration
+        self.pomodoro_auto_start = pomodoro_auto_start
+        # 通知设置
+        self.notification_enabled = notification_enabled
+        self.notification_sound = notification_sound
+        # 时间戳
+        self.created_at = created_at or datetime.now()
+        self.updated_at = updated_at or datetime.now()
+    
+    def to_dict(self) -> Dict:
+        return {
+            'user_id': self.user_id,
+            'theme': self.theme,
+            'language': self.language,
+            'default_view': self.default_view,
+            'default_task_view': self.default_task_view,
+            'default_priority': self.default_priority,
+            'default_list_id': self.default_list_id,
+            'week_start_day': self.week_start_day,
+            'date_format': self.date_format,
+            'time_format': self.time_format,
+            'timezone': self.timezone,
+            'pomodoro_duration': self.pomodoro_duration,
+            'short_break_duration': self.short_break_duration,
+            'long_break_duration': self.long_break_duration,
+            'pomodoro_auto_start': self.pomodoro_auto_start,
+            'notification_enabled': self.notification_enabled,
+            'notification_sound': self.notification_sound,
+            'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else self.created_at,
+            'updated_at': self.updated_at.isoformat() if isinstance(self.updated_at, datetime) else self.updated_at,
+        }
+    
+    def update(self, **kwargs):
+        """更新用户设置属性"""
+        for key, value in kwargs.items():
+            if hasattr(self, key) and key != 'user_id':  # 不允许修改 user_id
+                setattr(self, key, value)
+        self.updated_at = datetime.now()
+    
+    @staticmethod
+    def get_default_settings(user_id: str) -> Dict:
+        """获取默认设置字典"""
+        return UserSettings(user_id=user_id).to_dict()

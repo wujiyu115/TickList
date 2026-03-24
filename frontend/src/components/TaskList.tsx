@@ -15,6 +15,7 @@ interface TaskGroupProps {
   onToggle: () => void;
   tasks: Task[];
   allTasks: Task[];
+  hideDetails?: boolean;
 }
 
 const TaskGroup: React.FC<TaskGroupProps> = ({ 
@@ -23,7 +24,8 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
   collapsed, 
   onToggle, 
   tasks,
-  allTasks 
+  allTasks,
+  hideDetails
 }) => {
   if (tasks.length === 0 && title !== '进行中') {
     return null;
@@ -42,7 +44,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
         <div className="task-group-content">
           {tasks.length > 0 ? (
             tasks.map(task => (
-              <TaskItem key={task.id} task={task} allTasks={allTasks} depth={0} />
+              <TaskItem key={task.id} task={task} allTasks={allTasks} depth={0} hideDetails={hideDetails} />
             ))
           ) : (
             <div className="empty-group">暂无任务</div>
@@ -53,7 +55,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
   );
 };
 
-const TaskList: React.FC = () => {
+const TaskList: React.FC<{ hideCompleted?: boolean; hideDetails?: boolean }> = ({ hideCompleted, hideDetails }) => {
   const { tasks, loading, addTask } = useTaskContext();
   const [searchParams] = useSearchParams();
   const currentListId = searchParams.get('list_id');
@@ -72,7 +74,7 @@ const TaskList: React.FC = () => {
   // 按状态分组
   const pendingTasks = topLevelTasks.filter(t => t.status === 'pending');
   const inProgressTasks = topLevelTasks.filter(t => t.status === 'in_progress');
-  const completedTasks = topLevelTasks.filter(t => t.status === 'completed');
+  const completedTasks = hideCompleted ? [] : topLevelTasks.filter(t => t.status === 'completed');
 
   // 内联添加任务
   const handleAddTask = async () => {
@@ -131,6 +133,7 @@ const TaskList: React.FC = () => {
           onToggle={() => toggleGroup('pending')}
           tasks={pendingTasks}
           allTasks={tasks}
+          hideDetails={hideDetails}
         />
 
         {/* 进行中 */}
@@ -141,6 +144,7 @@ const TaskList: React.FC = () => {
           onToggle={() => toggleGroup('in_progress')}
           tasks={inProgressTasks}
           allTasks={tasks}
+          hideDetails={hideDetails}
         />
 
         {/* 已完成 */}
@@ -151,6 +155,7 @@ const TaskList: React.FC = () => {
           onToggle={() => toggleGroup('completed')}
           tasks={completedTasks}
           allTasks={tasks}
+          hideDetails={hideDetails}
         />
       </div>
 

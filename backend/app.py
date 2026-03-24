@@ -28,6 +28,7 @@ from routes.list import router as list_router
 from routes.tag import router as tag_router
 from routes.data import router as data_router
 from routes.filter import router as filter_router
+from routes.settings import router as settings_router
 
 # 导入中间件
 from middleware.logging_middleware import RequestLoggingMiddleware
@@ -88,6 +89,7 @@ def create_app():
     app.include_router(tag_router)
     app.include_router(data_router)
     app.include_router(filter_router)
+    app.include_router(settings_router)
     
     # 挂载静态文件
     if os.path.exists(static_folder):

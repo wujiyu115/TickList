@@ -17,19 +17,15 @@ import {
   DownOutlined,
   MoreOutlined,
   SettingOutlined,
-  ExportOutlined,
-  ImportOutlined,
-  UploadOutlined,
   FilterOutlined,
   FileTextOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { Dropdown, Modal, Input, Select, message, Upload, Button, Radio, Checkbox, Tabs } from 'antd';
+import { Dropdown, Modal, Input, Select, message, Button, Radio, Checkbox, Tabs } from 'antd';
 import type { MenuProps, RadioChangeEvent } from 'antd';
 import { User, TaskList, Tag, Filter, FilterConditions } from '../types';
 import { getLists, createList, deleteList } from '../api/list';
 import { getTags, createTag, updateTag, deleteTag } from '../api/tag';
-import { exportData, importData } from '../api/data';
 import { getFilters, createFilter, updateFilter, deleteFilter } from '../api/filter';
 
 interface AppSiderProps {
@@ -102,11 +98,6 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
   const [tagName, setTagName] = useState('');
   const [tagColor, setTagColor] = useState('#1677ff');
   const [tagLoading, setTagLoading] = useState(false);
-  
-  // 导入导出状态
-  const [importModalVisible, setImportModalVisible] = useState(false);
-  const [importFileData, setImportFileData] = useState<any>(null);
-  const [importLoading, setImportLoading] = useState(false);
 
   // 过滤器状态
   const [filters, setFilters] = useState<Filter[]>([]);
@@ -520,62 +511,6 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
     }
   };
 
-  // 导出数据
-  const handleExport = async () => {
-    try {
-      const response = await exportData();
-      // 将 JSON 数据下载为文件
-      const blob = new Blob([JSON.stringify(response.data || response, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ticklist-export-${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      message.success('数据导出成功');
-    } catch (error) {
-      message.error('导出失败');
-    }
-  };
-
-  // 导入数据
-  const handleImport = async () => {
-    if (!importFileData) {
-      message.warning('请先选择文件');
-      return;
-    }
-    setImportLoading(true);
-    try {
-      const result: any = await importData(importFileData);
-      const stats = result.data?.stats || result.stats;
-      message.success(`导入成功：${stats.tasks} 个任务，${stats.lists} 个清单，${stats.tags} 个标签`);
-      setImportModalVisible(false);
-      setImportFileData(null);
-      // 刷新页面数据
-      window.location.reload();
-    } catch (error) {
-      message.error('导入失败');
-    } finally {
-      setImportLoading(false);
-    }
-  };
-
-  // 设置菜单项
-  const settingsMenuItems: MenuProps['items'] = [
-    {
-      key: 'export',
-      icon: <ExportOutlined />,
-      label: '导出数据',
-      onClick: handleExport
-    },
-    {
-      key: 'import',
-      icon: <ImportOutlined />,
-      label: '导入数据',
-      onClick: () => setImportModalVisible(true)
-    }
-  ];
-
   // 渲染清单项
   const renderListItem = (item: TaskList, level = 0) => {
     const children = lists.filter(l => l.parent_id === item.id && !l.is_archived);
@@ -771,11 +706,13 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
           })}
         </div>
         <div className="icon-bar-bottom">
-          <Dropdown menu={{ items: settingsMenuItems }} trigger={['click']} placement="topRight">
-            <div className="icon-item" title="设置">
-              <SettingOutlined />
-            </div>
-          </Dropdown>
+          <div 
+            className={`icon-item ${location.pathname === '/settings' ? 'active' : ''}`} 
+            title="设置"
+            onClick={() => navigate('/settings')}
+          >
+            <SettingOutlined />
+          </div>
         </div>
       </div>
 
@@ -1099,45 +1036,6 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
             disabled // 目前标签没有 parent_id，暂时禁用
           />
         </div>
-      </Modal>
-
-      {/* 导入数据 Modal */}
-      <Modal
-        title="导入数据"
-        open={importModalVisible}
-        onCancel={() => {
-          setImportModalVisible(false);
-          setImportFileData(null);
-        }}
-        onOk={handleImport}
-        confirmLoading={importLoading}
-        okText="导入"
-        cancelText="取消"
-      >
-        <Upload
-          accept=".json"
-          beforeUpload={(file) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              try {
-                const data = JSON.parse(e.target?.result as string);
-                setImportFileData(data);
-                message.success(`已选择文件: ${file.name}`);
-              } catch {
-                message.error('文件格式错误');
-              }
-            };
-            reader.readAsText(file);
-            return false;
-          }}
-          maxCount={1}
-          showUploadList={true}
-        >
-          <Button icon={<UploadOutlined />}>选择 JSON 文件</Button>
-        </Upload>
-        <p style={{ marginTop: 8, color: '#999' }}>
-          支持从本应用导出的 JSON 格式数据文件
-        </p>
       </Modal>
 
       {/* 新建/编辑过滤器 Modal */}

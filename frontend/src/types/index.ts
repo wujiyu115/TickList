@@ -216,3 +216,32 @@ export interface FilterConditions {
   priority?: number[];    // 优先级列表
   keyword?: string;       // 内容包含
 }
+
+// 用户设置类型
+export interface UserSettings {
+  user_id: string;
+  // 外观设置
+  theme: string;                    // 配色方案: default/green/purple/orange/rose/minimal/dark/midnight
+  language: string;                 // 语言: zh-CN/en-US
+  // 任务默认设置
+  default_view: string;             // 默认视图: tasks/calendar/statistics/pomodoro
+  default_task_view: string;        // 默认任务视图模式: list/kanban
+  default_priority: number;         // 默认优先级: 0-4
+  default_list_id: string | null;   // 默认清单ID
+  // 日期与时间
+  week_start_day: number;           // 周起始日: 0=周日, 1=周一
+  date_format: string;              // 日期格式: MM-DD/DD-MM/YYYY-MM-DD
+  time_format: string;              // 时间格式: 24h/12h
+  timezone: string;                 // 时区
+  // 番茄钟设置
+  pomodoro_duration: number;        // 番茄钟时长（分钟）
+  short_break_duration: number;     // 短休息时长
+  long_break_duration: number;      // 长休息时长
+  pomodoro_auto_start: boolean;     // 是否自动开始下一个
+  // 通知设置
+  notification_enabled: boolean;    // 是否启用通知
+  notification_sound: boolean;      // 是否播放提示音
+  // 时间戳
+  created_at?: string;
+  updated_at?: string;
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Spin, Dropdown } from 'antd';
+import { Button, Spin, Dropdown, Checkbox } from 'antd';
 import {
   CalendarOutlined,
   PlusOutlined,
@@ -12,6 +12,7 @@ import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { Task, CalendarTasksByDate } from '../../types';
 import { getCalendarTasks } from '../../api/calendar';
+import { useTaskContext } from '../../contexts/TaskContext';
 import TaskPopover from './TaskPopover';
 import WeekView from './WeekView';
 import DayView from './DayView';
@@ -81,6 +82,24 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onTaskClick }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [tasksByDate, setTasksByDate] = useState<CalendarTasksByDate>({});
   const [loading, setLoading] = useState(false);
+  
+  // 使用 TaskContext 获取全局任务列表和更新方法
+  const { tasks: allTasks, updateTaskData } = useTaskContext();
+
+  // 切换任务完成状态
+  const handleToggleComplete = useCallback(async (task: Task) => {
+    const isCompleting = task.status !== 'completed';
+    try {
+      await updateTaskData(task.id, {
+        status: isCompleting ? 'completed' : 'pending',
+        completed_at: isCompleting ? dayjs().toISOString() : null,
+      });
+      // 刷新日历任务
+      fetchTasks(currentDate, viewMode);
+    } catch (error) {
+      console.error('更新任务状态失败:', error);
+    }
+  }, [updateTaskData, currentDate, viewMode]);
 
   // 计算日期范围
   const getDateRange = useCallback((date: Dayjs, mode: ViewMode): { start: Dayjs; end: Dayjs } => {
@@ -303,24 +322,49 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onTaskClick }) => {
                     </span>
                   </div>
                   <div className="cell-tasks">
-                    {tasks.slice(0, 5).map((task) => (
-                      <TaskPopover key={task.id} tasks={[task]} date={day} onTaskClick={onTaskClick}>
-                        <div
-                          className="task-bar"
-                          style={{ background: getTaskColor(task.id) }}
+                    {tasks.slice(0, 5).map((task) => {
+                      const isCompleted = task.status === 'completed';
+                      return (
+                        <TaskPopover
+                          key={task.id}
+                          tasks={[task]}
+                          date={day}
+                          allTasks={allTasks}
+                          onTaskClick={onTaskClick}
+                          onToggleComplete={handleToggleComplete}
                         >
-                          <span className="task-checkbox">☐</span>
-                          <span className="task-name">{task.title}</span>
-                          {task.due_date && (
-                            <span className="task-time">
-                              {dayjs(task.due_date).format('H:mm')}
+                          <div
+                            className={`task-bar ${isCompleted ? 'task-bar-completed' : ''}`}
+                            style={{ background: getTaskColor(task.id) }}
+                          >
+                            <Checkbox
+                              checked={isCompleted}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleComplete(task);
+                              }}
+                              className="task-bar-checkbox"
+                            />
+                            <span className={`task-name ${isCompleted ? 'task-name-completed' : ''}`}>
+                              {task.title}
                             </span>
-                          )}
-                        </div>
-                      </TaskPopover>
-                    ))}
+                            {task.due_date && (
+                              <span className="task-time">
+                                {dayjs(task.due_date).format('H:mm')}
+                              </span>
+                            )}
+                          </div>
+                        </TaskPopover>
+                      );
+                    })}
                     {tasks.length > 5 && (
-                      <TaskPopover tasks={tasks} date={day} onTaskClick={onTaskClick}>
+                      <TaskPopover
+                        tasks={tasks}
+                        date={day}
+                        allTasks={allTasks}
+                        onTaskClick={onTaskClick}
+                        onToggleComplete={handleToggleComplete}
+                      >
                         <div className="more-tasks">+{tasks.length - 5} 更多</div>
                       </TaskPopover>
                     )}
@@ -336,7 +380,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onTaskClick }) => {
         <WeekView
           currentDate={currentDate}
           tasksByDate={tasksByDate}
+          allTasks={allTasks}
           onTaskClick={onTaskClick}
+          onToggleComplete={handleToggleComplete}
         />
       )}
 
@@ -344,7 +390,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onTaskClick }) => {
         <DayView
           currentDate={currentDate}
           tasksByDate={tasksByDate}
+          allTasks={allTasks}
           onTaskClick={onTaskClick}
+          onToggleComplete={handleToggleComplete}
         />
       )}
 
