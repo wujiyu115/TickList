@@ -1,13 +1,14 @@
 # TickList - 任务管理系统
 
-基于 FastAPI + MongoDB + React + TypeScript + Ant Design 的任务管理系统，支持多级嵌套任务、任务统计等功能。
+基于 FastAPI + SQLAlchemy + React + TypeScript + Ant Design 的任务管理系统，支持多级嵌套任务、任务统计等功能。
 
 ## 技术栈
 
 ### 后端
 - FastAPI - 现代化的 Python Web 框架
-- MongoDB - NoSQL 数据库
-- PyMongo - MongoDB Python 驱动
+- SQLAlchemy - ORM 框架（支持 SQLite/MySQL）
+- SQLite - 默认数据库（零配置，开箱即用）
+- MySQL - 可选生产数据库
 - JWT - 用户认证
 - bcrypt - 密码加密
 
@@ -104,8 +105,9 @@ ticklist/
 
 - Python 3.8+
 - Node.js 14+
-- MongoDB 4.0+
 - Docker（可选，用于容器化部署）
+
+> **数据库说明**：默认使用 SQLite，无需额外安装和配置。如需使用 MySQL，请确保 MySQL 5.7+ 服务可用。
 
 ### Docker 部署（推荐）
 
@@ -125,22 +127,18 @@ environment: production
 jwt:
   secret_key: "your-secure-secret-key"    # 生产环境务必修改为强密钥
   algorithm: "HS256"
-  access_token_expire_hours: 24             # Token 有效期（小时）
+  access_token_expire_hours: 24           # Token 有效期（小时）
 
-mongodb:
-  host: "host.docker.internal"              # Docker 中连接宿主机 MongoDB
-  port: 27017
-  database: "ticklist"
-  username: ""                              # MongoDB 用户名（如有）
-  password: ""                              # MongoDB 密码（如有）
-  auth_source: "admin"                      # 认证数据库
-  replica_set: ""                           # 副本集名称（如有）
-  ssl: false
-  ssl_cert_reqs: "CERT_NONE"
-  connect_timeout: 10000
-  server_selection_timeout: 10000
-  max_pool_size: 100
-  min_pool_size: 10
+database:
+  type: "sqlite"                          # sqlite（默认）或 mysql
+  # SQLite 配置（零配置，适合开发和小型部署）
+  sqlite_path: "ticklist.db"
+  # MySQL 配置（生产环境推荐）
+  mysql_host: "localhost"                 # MySQL 主机地址
+  mysql_port: 3306                        # MySQL 端口
+  mysql_database: "ticklist"              # 数据库名
+  mysql_username: ""                      # MySQL 用户名
+  mysql_password: ""                      # MySQL 密码
 
 cors:
   allowed_origins:
@@ -155,9 +153,10 @@ logging:
   log_dir: "logs"
 ```
 
-> **注意**：
-> - `mongodb.host` 在 Docker 中连接宿主机 MongoDB 应使用 `host.docker.internal`（Docker Desktop）或宿主机实际 IP
-> - 若 MongoDB 也运行在 Docker 中，可使用容器名或 Docker 网络地址
+> **数据库配置说明**：
+> - **SQLite（默认）**：零配置，数据存储在 `sqlite_path` 指定的文件中，适合开发和小型部署
+> - **MySQL**：将 `database.type` 设为 `mysql`，并配置 `mysql_*` 相关参数
+> - Docker 中使用 MySQL 时，`mysql_host` 可设为 `host.docker.internal`（Docker Desktop）或宿主机 IP
 > - `jwt.secret_key` 生产环境务必修改为安全的随机字符串
 
 #### 2. 构建镜像
@@ -343,21 +342,21 @@ npm run build
 
 ### 数据库索引
 
-系统会自动创建以下索引以优化查询性能：
-- `user_id` - 用户任务查询
-- `child_ids` - 子任务索引
+系统使用 SQLAlchemy ORM，会自动管理以下索引以优化查询性能：
+- `user_id` - 用户数据查询
 - `status` - 状态过滤
 - `due_date` - 日期排序
+- `list_id` - 清单关联查询
 - `(user_id, order)` - 任务排序
-- `tags` - 标签过滤
 - `(user_id, is_pinned)` - 置顶任务
 
 ## 注意事项
 
 1. 本项目使用本地用户名密码认证
-2. MongoDB 需要提前安装并启动
-3. 生产环境需要修改 `config.yaml` 中的 `secret_key`
-4. 前后端集成部署时，后端会自动服务前端静态文件
+2. 默认使用 SQLite 数据库，无需额外安装，数据库文件自动创建
+3. 如需使用 MySQL，修改 `config.yaml` 中的 `database.type` 为 `mysql` 并配置连接参数
+4. 生产环境需要修改 `config.yaml` 中的 `jwt.secret_key`
+5. 前后端集成部署时，后端会自动服务前端静态文件
 
 ## 许可证
 
