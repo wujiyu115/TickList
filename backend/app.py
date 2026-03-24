@@ -10,9 +10,13 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from utils.logger import logger
+from database.connection import db_connection
 
 # 加载环境变量
 load_dotenv()
+
+# 在应用启动时创建所有表
+db_connection.create_tables()
 
 # 添加项目根目录到 Python 路径
 current_dir = os.path.dirname(os.path.abspath(__file__))

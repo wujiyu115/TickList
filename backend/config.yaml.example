@@ -5,20 +5,16 @@ jwt:
   algorithm: "HS256"
   access_token_expire_hours: 24
 
-mongodb:
-  host: "localhost"
-  port: 27017
-  database: "ticklist"
-  username: ""
-  password: ""
-  auth_source: "admin"
-  replica_set: ""
-  ssl: false
-  ssl_cert_reqs: "CERT_NONE"
-  connect_timeout: 10000
-  server_selection_timeout: 10000
-  max_pool_size: 100
-  min_pool_size: 10
+database:
+  type: "sqlite"          # sqlite / mysql
+  # SQLite 配置
+  sqlite_path: "ticklist.db"
+  # MySQL 配置
+  mysql_host: "localhost"
+  mysql_port: 3306
+  mysql_database: "ticklist"
+  mysql_username: ""
+  mysql_password: ""
 
 cors:
   allowed_origins:

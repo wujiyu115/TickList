@@ -97,50 +97,26 @@ class ConfigLoader:
             'access_token_expire_hours': self.get('jwt.access_token_expire_hours', 24)
         }
     
-    def get_mongodb_config(self) -> Dict[str, Any]:
-        """获取MongoDB配置"""
-        env = self.get_environment()
-        base_key = f'mongodb.{env}'
-        database = self.get(
-            f"{base_key}.database",
-            "kun_workflow_dev",
-            "MONGODB_DATABASE",
-        )
-        logger.info(f"MongoDB Config: Key: {base_key} DataBase:{database}")
+    def get_database_url(self) -> str:
+        """获取数据库连接URL（SQLAlchemy格式）"""
+        db_type = self.get('database.type', 'sqlite', 'DATABASE_TYPE')
         
-        return {
-            "host": self.get(f"{base_key}.host", "localhost", "MONGODB_HOST"),
-            "port": self.get(f"{base_key}.port", 27017, "MONGODB_PORT"),
-            "database": database,
-            "username": self.get(f"{base_key}.username", "", "MONGODB_USERNAME"),
-            "password": self.get(f"{base_key}.password", "", "MONGODB_PASSWORD"),
-            "auth_source": self.get(
-                f"{base_key}.auth_source", "admin", "MONGODB_AUTH_SOURCE"
-            ),
-            "replica_set": self.get(
-                f"{base_key}.replica_set", "", "MONGODB_REPLICA_SET"
-            ),
-            "ssl": self.get(f"{base_key}.ssl", False, "MONGODB_SSL"),
-            "ssl_cert_reqs": self.get(
-                f"{base_key}.ssl_cert_reqs", "CERT_REQUIRED", "MONGODB_SSL_CERT_REQS"
-            ),
-            "connect_timeout": self.get(
-                f"{base_key}.connect_timeout", 30000, "MONGODB_CONNECT_TIMEOUT"
-            ),
-            "server_selection_timeout": self.get(
-                f"{base_key}.server_selection_timeout",
-                30000,
-                "MONGODB_SERVER_SELECTION_TIMEOUT",
-            ),
-            "max_pool_size": self.get(
-                f"{base_key}.max_pool_size",
-                100 if env == "production" else 10,
-                "MONGODB_MAX_POOL_SIZE",
-            ),
-            "min_pool_size": self.get(
-                f"{base_key}.min_pool_size", 0, "MONGODB_MIN_POOL_SIZE"
-            ),
-        }
+        if db_type == 'sqlite':
+            sqlite_path = self.get('database.sqlite_path', 'ticklist.db', 'DATABASE_SQLITE_PATH')
+            return f"sqlite:///{sqlite_path}"
+        elif db_type == 'mysql':
+            host = self.get('database.mysql_host', 'localhost', 'DATABASE_MYSQL_HOST')
+            port = self.get('database.mysql_port', 3306, 'DATABASE_MYSQL_PORT')
+            database = self.get('database.mysql_database', 'ticklist', 'DATABASE_MYSQL_DATABASE')
+            username = self.get('database.mysql_username', '', 'DATABASE_MYSQL_USERNAME')
+            password = self.get('database.mysql_password', '', 'DATABASE_MYSQL_PASSWORD')
+            
+            if username and password:
+                return f"mysql+pymysql://{username}:{password}@{host}:{port}/{database}?charset=utf8mb4"
+            else:
+                return f"mysql+pymysql://{host}:{port}/{database}?charset=utf8mb4"
+        else:
+            raise ValueError(f"Unsupported database type: {db_type}")
     
     def get_kun_config(self) -> Dict[str, Any]:
         """获取Kun SDK配置"""

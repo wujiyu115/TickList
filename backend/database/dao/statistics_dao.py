@@ -2,68 +2,127 @@
 
 from typing import List, Dict, Optional
 from datetime import datetime, date, timedelta
-from pymongo.collection import Collection
-from database.connection import get_collection
-from database.table_names import TASK_STATISTICS, TASKS
-from models import TaskStatistics
+from sqlalchemy import func
+from database.connection import db_connection
+from database.models import TaskStatisticsModel, TaskModel, TaskTagModel, TagModel
+from utils.logger import logger
+
 
 class StatisticsDAO:
     """统计数据访问对象"""
     
-    def __init__(self):
-        self.statistics_collection: Collection = get_collection(TASK_STATISTICS)
-        self.tasks_collection: Collection = get_collection(TASKS)
-        self._ensure_indexes()
+    def _get_session(self):
+        return db_connection.get_session()
     
-    def _ensure_indexes(self):
-        """确保索引存在"""
-        try:
-            # 用户ID和日期组合索引
-            self.statistics_collection.create_index([("user_id", 1), ("date", -1)])
-        except Exception as e:
-            print(f"创建索引失败: {e}")
+    def _model_to_dict(self, model: TaskStatisticsModel) -> Optional[Dict]:
+        """将 ORM 模型转为 Dict"""
+        if model is None:
+            return None
+        return {
+            'id': model.id,
+            'user_id': model.user_id,
+            'date': model.date,
+            'total_tasks': model.total_tasks,
+            'completed_tasks': model.completed_tasks,
+            'pending_tasks': model.pending_tasks,
+            'in_progress_tasks': model.in_progress_tasks,
+            'cancelled_tasks': model.cancelled_tasks,
+            'completion_rate': model.completion_rate,
+            'created_at': model.created_at,
+            'updated_at': model.updated_at
+        }
     
     def update_daily_statistics(self, user_id: str, target_date: date) -> Dict:
         """更新每日统计"""
-        # 统计当天的任务数据
-        date_str = target_date.isoformat()
-        
-        # 获取所有任务
-        all_tasks = list(self.tasks_collection.find({"user_id": user_id}))
-        
-        # 统计各状态任务数
-        total_tasks = len(all_tasks)
-        completed_tasks = len([t for t in all_tasks if t.get('status') == 'completed'])
-        pending_tasks = len([t for t in all_tasks if t.get('status') == 'pending'])
-        in_progress_tasks = len([t for t in all_tasks if t.get('status') == 'in_progress'])
-        cancelled_tasks = len([t for t in all_tasks if t.get('status') == 'cancelled'])
-        
-        # 创建统计对象
-        stats = TaskStatistics(
-            user_id=user_id,
-            date=target_date,
-            total_tasks=total_tasks,
-            completed_tasks=completed_tasks,
-            pending_tasks=pending_tasks,
-            in_progress_tasks=in_progress_tasks,
-            cancelled_tasks=cancelled_tasks
-        )
-        
-        stats_dict = stats.to_dict()
-        
-        # 更新或插入统计数据
-        self.statistics_collection.update_one(
-            {"user_id": user_id, "date": date_str},
-            {"$set": stats_dict},
-            upsert=True
-        )
-        
-        return stats_dict
+        session = self._get_session()
+        try:
+            date_str = target_date.isoformat()
+            now = datetime.now().isoformat()
+            
+            # 统计各状态任务数
+            total_tasks = session.query(func.count(TaskModel.id)).filter(
+                TaskModel.user_id == user_id
+            ).scalar() or 0
+            
+            completed_tasks = session.query(func.count(TaskModel.id)).filter(
+                TaskModel.user_id == user_id,
+                TaskModel.status == 'completed'
+            ).scalar() or 0
+            
+            pending_tasks = session.query(func.count(TaskModel.id)).filter(
+                TaskModel.user_id == user_id,
+                TaskModel.status == 'pending'
+            ).scalar() or 0
+            
+            in_progress_tasks = session.query(func.count(TaskModel.id)).filter(
+                TaskModel.user_id == user_id,
+                TaskModel.status == 'in_progress'
+            ).scalar() or 0
+            
+            cancelled_tasks = session.query(func.count(TaskModel.id)).filter(
+                TaskModel.user_id == user_id,
+                TaskModel.status == 'cancelled'
+            ).scalar() or 0
+            
+            completion_rate = int(completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+            
+            # 查找现有统计记录
+            existing = session.query(TaskStatisticsModel).filter(
+                TaskStatisticsModel.user_id == user_id,
+                TaskStatisticsModel.date == date_str
+            ).first()
+            
+            if existing:
+                # 更新现有记录
+                existing.total_tasks = total_tasks
+                existing.completed_tasks = completed_tasks
+                existing.pending_tasks = pending_tasks
+                existing.in_progress_tasks = in_progress_tasks
+                existing.cancelled_tasks = cancelled_tasks
+                existing.completion_rate = completion_rate
+                existing.updated_at = now
+                session.commit()
+                return self._model_to_dict(existing)
+            else:
+                # 创建新记录
+                stats_model = TaskStatisticsModel(
+                    user_id=user_id,
+                    date=date_str,
+                    total_tasks=total_tasks,
+                    completed_tasks=completed_tasks,
+                    pending_tasks=pending_tasks,
+                    in_progress_tasks=in_progress_tasks,
+                    cancelled_tasks=cancelled_tasks,
+                    completion_rate=completion_rate,
+                    created_at=now,
+                    updated_at=now
+                )
+                session.add(stats_model)
+                session.commit()
+                return self._model_to_dict(stats_model)
+                
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Failed to update daily statistics for user {user_id}: {e}")
+            return {}
+        finally:
+            session.close()
     
     def get_statistics_by_date(self, user_id: str, target_date: date) -> Optional[Dict]:
         """获取指定日期的统计"""
-        date_str = target_date.isoformat()
-        return self.statistics_collection.find_one({"user_id": user_id, "date": date_str})
+        session = self._get_session()
+        try:
+            date_str = target_date.isoformat()
+            stats = session.query(TaskStatisticsModel).filter(
+                TaskStatisticsModel.user_id == user_id,
+                TaskStatisticsModel.date == date_str
+            ).first()
+            return self._model_to_dict(stats)
+        except Exception as e:
+            logger.error(f"Failed to get statistics by date for user {user_id}: {e}")
+            return None
+        finally:
+            session.close()
     
     def get_statistics_by_date_range(
         self,
@@ -72,56 +131,111 @@ class StatisticsDAO:
         end_date: date
     ) -> List[Dict]:
         """获取时间范围内的统计"""
-        query = {
-            "user_id": user_id,
-            "date": {
-                "$gte": start_date.isoformat(),
-                "$lte": end_date.isoformat()
-            }
-        }
-        return list(self.statistics_collection.find(query).sort("date", 1))
+        session = self._get_session()
+        try:
+            stats = session.query(TaskStatisticsModel).filter(
+                TaskStatisticsModel.user_id == user_id,
+                TaskStatisticsModel.date >= start_date.isoformat(),
+                TaskStatisticsModel.date <= end_date.isoformat()
+            ).order_by(TaskStatisticsModel.date).all()
+            return [self._model_to_dict(s) for s in stats]
+        except Exception as e:
+            logger.error(f"Failed to get statistics by date range for user {user_id}: {e}")
+            return []
+        finally:
+            session.close()
     
     def get_user_statistics(self, user_id: str) -> Dict:
         """获取用户统计概览"""
-        # 获取实时统计
-        all_tasks = list(self.tasks_collection.find({"user_id": user_id}))
-        
-        total_tasks = len(all_tasks)
-        completed_tasks = len([t for t in all_tasks if t.get('status') == 'completed'])
-        pending_tasks = len([t for t in all_tasks if t.get('status') == 'pending'])
-        in_progress_tasks = len([t for t in all_tasks if t.get('status') == 'in_progress'])
-        cancelled_tasks = len([t for t in all_tasks if t.get('status') == 'cancelled'])
-        
-        completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
-        
-        # 获取最近7天的统计
-        end_date = date.today()
-        start_date = end_date - timedelta(days=6)
-        daily_stats = self.get_statistics_by_date_range(user_id, start_date, end_date)
-        
-        # 统计标签分布
-        tag_distribution = {}
-        for task in all_tasks:
-            for tag in task.get('tags', []):
-                tag_distribution[tag] = tag_distribution.get(tag, 0) + 1
-        
-        # 统计优先级分布
-        priority_distribution = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
-        for task in all_tasks:
-            priority = task.get('priority', 0)
-            priority_distribution[priority] = priority_distribution.get(priority, 0) + 1
-        
-        return {
-            'total_tasks': total_tasks,
-            'completed_tasks': completed_tasks,
-            'pending_tasks': pending_tasks,
-            'in_progress_tasks': in_progress_tasks,
-            'cancelled_tasks': cancelled_tasks,
-            'completion_rate': round(completion_rate, 2),
-            'daily_stats': daily_stats,
-            'tag_distribution': tag_distribution,
-            'priority_distribution': priority_distribution
-        }
+        session = self._get_session()
+        try:
+            # 获取实时统计
+            total_tasks = session.query(func.count(TaskModel.id)).filter(
+                TaskModel.user_id == user_id
+            ).scalar() or 0
+            
+            completed_tasks = session.query(func.count(TaskModel.id)).filter(
+                TaskModel.user_id == user_id,
+                TaskModel.status == 'completed'
+            ).scalar() or 0
+            
+            pending_tasks = session.query(func.count(TaskModel.id)).filter(
+                TaskModel.user_id == user_id,
+                TaskModel.status == 'pending'
+            ).scalar() or 0
+            
+            in_progress_tasks = session.query(func.count(TaskModel.id)).filter(
+                TaskModel.user_id == user_id,
+                TaskModel.status == 'in_progress'
+            ).scalar() or 0
+            
+            cancelled_tasks = session.query(func.count(TaskModel.id)).filter(
+                TaskModel.user_id == user_id,
+                TaskModel.status == 'cancelled'
+            ).scalar() or 0
+            
+            completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+            
+            # 获取最近7天的统计
+            end_date = date.today()
+            start_date = end_date - timedelta(days=6)
+            daily_stats = self.get_statistics_by_date_range(user_id, start_date, end_date)
+            
+            # 统计标签分布 - 通过关联表查询
+            tag_distribution = {}
+            tag_stats = session.query(
+                TagModel.name,
+                func.count(TaskTagModel.task_id)
+            ).join(
+                TaskTagModel, TagModel.id == TaskTagModel.tag_id
+            ).join(
+                TaskModel, TaskTagModel.task_id == TaskModel.id
+            ).filter(
+                TaskModel.user_id == user_id
+            ).group_by(TagModel.name).all()
+            
+            for tag_name, count in tag_stats:
+                tag_distribution[tag_name] = count
+            
+            # 统计优先级分布
+            priority_distribution = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
+            priority_stats = session.query(
+                TaskModel.priority,
+                func.count(TaskModel.id)
+            ).filter(
+                TaskModel.user_id == user_id
+            ).group_by(TaskModel.priority).all()
+            
+            for priority, count in priority_stats:
+                if priority in priority_distribution:
+                    priority_distribution[priority] = count
+            
+            return {
+                'total_tasks': total_tasks,
+                'completed_tasks': completed_tasks,
+                'pending_tasks': pending_tasks,
+                'in_progress_tasks': in_progress_tasks,
+                'cancelled_tasks': cancelled_tasks,
+                'completion_rate': round(completion_rate, 2),
+                'daily_stats': daily_stats,
+                'tag_distribution': tag_distribution,
+                'priority_distribution': priority_distribution
+            }
+        except Exception as e:
+            logger.error(f"Failed to get user statistics for user {user_id}: {e}")
+            return {
+                'total_tasks': 0,
+                'completed_tasks': 0,
+                'pending_tasks': 0,
+                'in_progress_tasks': 0,
+                'cancelled_tasks': 0,
+                'completion_rate': 0,
+                'daily_stats': [],
+                'tag_distribution': {},
+                'priority_distribution': {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
+            }
+        finally:
+            session.close()
     
     def get_completion_trend(self, user_id: str, days: int = 30) -> List[Dict]:
         """获取完成趋势"""
@@ -150,6 +264,7 @@ class StatisticsDAO:
             current_date += timedelta(days=1)
         
         return result
+
 
 # 全局实例
 statistics_dao = StatisticsDAO()

@@ -1,118 +1,102 @@
 # -*- coding: utf-8 -*-
 
-from pymongo import MongoClient
-from pymongo.database import Database
-from pymongo.collection import Collection
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase
 from typing import Optional
-import logging
-from config.database import db_config, share_db_config
-
+from config.config_loader import ConfigLoader
 from utils.logger import logger
 
-class MongoDBConnection:
-    """MongoDB连接管理器"""
+
+class Base(DeclarativeBase):
+    """SQLAlchemy 声明式基类"""
+    pass
+
+
+class DatabaseConnection:
+    """SQLAlchemy 数据库连接管理器（单例模式）"""
     
-    _instance: Optional['MongoDBConnection'] = None
-    _client: Optional[MongoClient] = None
-    _database: Optional[Database] = None
+    _instance: Optional['DatabaseConnection'] = None
     
-    def __new__(cls) -> 'MongoDBConnection':
+    def __new__(cls) -> 'DatabaseConnection':
         if cls._instance is None:
             cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
         return cls._instance
     
     def __init__(self):
-        if self._client is None:
-            self._connect()
+        if self._initialized:
+            return
+        
+        config_loader = ConfigLoader()
+        database_url = config_loader.get_database_url()
+        
+        logger.info(f"Connecting to database: {database_url.split('@')[-1] if '@' in database_url else database_url}")
+        
+        # 根据数据库类型配置引擎参数
+        db_type = config_loader.get('database.type', 'sqlite', 'DATABASE_TYPE')
+        
+        if db_type == 'sqlite':
+            # SQLite 特殊配置：支持多线程
+            self.engine = create_engine(
+                database_url,
+                echo=False,
+                connect_args={"check_same_thread": False}
+            )
+        else:
+            # MySQL 配置：连接池
+            self.engine = create_engine(
+                database_url,
+                echo=False,
+                pool_pre_ping=True,
+                pool_size=10,
+                max_overflow=20
+            )
+        
+        self.SessionLocal = sessionmaker(
+            bind=self.engine,
+            autocommit=False,
+            autoflush=False
+        )
+        
+        self._initialized = True
+        logger.info("Database connection initialized successfully")
     
-    def _connect(self):
-        """建立数据库连接"""
-        try:
-            uri = db_config.get_mongodb_uri()
-            database_name = db_config.get_database_name()
-            
-            logger.info(f"Connecting to MongoDB: {database_name}")
-            
-            self._client = MongoClient(uri)
-            self._database = self._client[database_name]
-            
-            # 测试连接
-            self._client.admin.command('ping')
-            logger.info("MongoDB connection established successfully")
-            
-        except Exception as e:
-            logger.error(f"Failed to connect to MongoDB: {e}")
-            raise
+    def get_session(self) -> Session:
+        """获取数据库会话"""
+        return self.SessionLocal()
     
-    def get_database(self) -> Database:
-        """获取数据库实例"""
-        if self._database is None:
-            self._connect()
-        return self._database
+    def create_tables(self):
+        """创建所有表"""
+        # 需要先导入所有模型，确保它们被注册到 Base.metadata
+        from database import models  # noqa: F401
+        Base.metadata.create_all(self.engine)
+        logger.info("Database tables created successfully")
     
-    def get_collection(self, collection_name: str) -> Collection:
-        """获取集合实例"""
-        database = self.get_database()
-        return database[collection_name]
+    def drop_tables(self):
+        """删除所有表（谨慎使用）"""
+        Base.metadata.drop_all(self.engine)
+        logger.info("Database tables dropped")
     
     def close(self):
         """关闭数据库连接"""
-        if self._client:
-            self._client.close()
-            self._client = None
-            self._database = None
-            logger.info("MongoDB connection closed")
-    
-    def is_connected(self) -> bool:
-        """检查连接状态"""
-        try:
-            if self._client:
-                self._client.admin.command('ping')
-                return True
-        except Exception:
-            pass
-        return False
+        if hasattr(self, 'engine') and self.engine:
+            self.engine.dispose()
+            logger.info("Database connection closed")
 
-class ShareDbConnection():
-    """ShareDb连接管理器"""
-    
-    _instance: Optional['ShareDbConnection'] = None
-    _client: Optional[MongoClient] = None
-    _database: Optional[Database] = None
-    
-    def __new__(cls) -> 'ShareDbConnection':
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-    
-    def get_connect(self, region, dataType):
-        """建立数据库连接"""
-        try:
-            uri = share_db_config.get_mongodb_uri(region, dataType)
-            
-            client = MongoClient(uri)
-        
-            # 测试连接
-            client.admin.command('ping')
-            logger.info("ShareDb connection established successfully")
-            return client
-        except Exception as e:
-            logger.error(f"Failed to connect to MongoDB: {e}")
-            raise
-    
+
 # 全局连接实例
-mongo_connection = MongoDBConnection()
-# 测试环境kun使用sharedb
-share_db_connection = ShareDbConnection()
+db_connection = DatabaseConnection()
 
-def get_database() -> Database:
-    """获取数据库实例的便捷函数"""
-    return mongo_connection.get_database()
 
-def get_collection(collection_name: str) -> Collection:
-    """获取集合实例的便捷函数"""
-    return mongo_connection.get_collection(collection_name)
+def get_session() -> Session:
+    """获取数据库会话的便捷函数"""
+    return db_connection.get_session()
 
-def get_share_db_connect(region: str, dataType: str) -> MongoClient:
-    """获取共享数据库实例的便捷函数"""
-    return share_db_connection.get_connect(region, dataType)
+
+def get_db():
+    """FastAPI 依赖注入用的会话生成器"""
+    session = db_connection.get_session()
+    try:
+        yield session
+    finally:
+        session.close()

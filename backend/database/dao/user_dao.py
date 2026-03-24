@@ -1,36 +1,38 @@
 # -*- coding: utf-8 -*-
 
 from typing import List, Dict, Optional
-from pymongo.collection import Collection
-from pymongo.errors import DuplicateKeyError
-from database.connection import get_collection
-from database.table_names import USERS
-from models import User
+from sqlalchemy.exc import IntegrityError
+from database.connection import db_connection
+from database.models import UserModel
 import bcrypt
+from datetime import datetime
 from utils.logger import logger
+
 
 class UserDAO:
     """用户数据访问对象"""
     
-    def __init__(self):
-        self.collection: Collection = get_collection(USERS)
-        self._ensure_indexes()
+    def _get_session(self):
+        return db_connection.get_session()
     
-    def _ensure_indexes(self):
-        """确保索引存在"""
-        try:
-            # 创建用户名唯一索引
-            self.collection.create_index("username", unique=True)
-            # 创建ID索引
-            self.collection.create_index("id", unique=True)
-            # 创建用户组索引
-            self.collection.create_index("role_group")
-        except Exception as e:
-            logger.warning(f"Failed to create indexes: {e}")
+    def _model_to_dict(self, model: UserModel) -> Optional[Dict]:
+        """将 ORM 模型转为 Dict"""
+        if model is None:
+            return None
+        return {
+            'id': model.id,
+            'username': model.username,
+            'password': model.password,
+            'email': model.email,
+            'name': model.name,
+            'role_group': model.role_group,
+            'created_at': model.created_at
+        }
     
     def create_user(self, username: str, password: str = '', email: str = '', 
                    role_group: str = 'user', name: str = '') -> Dict:
         """创建用户"""
+        session = self._get_session()
         try:
             user_id = username
             
@@ -39,52 +41,56 @@ class UserDAO:
             if password:
                 hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
             
-            user_doc = {
-                'id': user_id,
-                'username': username,
-                'password': hashed_password,
-                'email': email,
-                'role_group': role_group,
-                'name': name or username,
-                'created_at': User(user_id, username, hashed_password, email, role_group).created_at.isoformat()
-            }
+            user_model = UserModel(
+                id=user_id,
+                username=username,
+                password=hashed_password,
+                email=email,
+                role_group=role_group,
+                name=name or username,
+                created_at=datetime.now().isoformat()
+            )
             
-            result = self.collection.insert_one(user_doc)
+            session.add(user_model)
+            session.commit()
             
-            if result.inserted_id:
-                logger.info(f"User created successfully: {username}")
-                return self.find_by_username(username)
-            else:
-                raise Exception("Failed to insert user")
+            logger.info(f"User created successfully: {username}")
+            return self._model_to_dict(user_model)
                 
-        except DuplicateKeyError:
+        except IntegrityError:
+            session.rollback()
             logger.warning(f"User already exists: {username}")
             raise ValueError(f"User with username '{username}' already exists")
         except Exception as e:
+            session.rollback()
             logger.error(f"Failed to create user {username}: {e}")
             raise
+        finally:
+            session.close()
     
     def find_by_id(self, user_id: str) -> Optional[Dict]:
         """根据ID查找用户"""
+        session = self._get_session()
         try:
-            user_doc = self.collection.find_one({'id': user_id})
-            if user_doc:
-                user_doc.pop('_id', None)
-            return user_doc
+            user = session.query(UserModel).filter(UserModel.id == user_id).first()
+            return self._model_to_dict(user)
         except Exception as e:
             logger.error(f"Failed to find user by id {user_id}: {e}")
             return None
+        finally:
+            session.close()
     
     def find_by_username(self, username: str) -> Optional[Dict]:
         """根据用户名查找用户"""
+        session = self._get_session()
         try:
-            user_doc = self.collection.find_one({'username': username})
-            if user_doc:
-                user_doc.pop('_id', None)
-            return user_doc
+            user = session.query(UserModel).filter(UserModel.username == username).first()
+            return self._model_to_dict(user)
         except Exception as e:
             logger.error(f"Failed to find user by username {username}: {e}")
             return None
+        finally:
+            session.close()
     
     def find_or_create_by_account(self, account: str, name: str, email: str = '') -> Dict:
         """根据账号查找或创建用户"""
@@ -104,21 +110,20 @@ class UserDAO:
     
     def update_user(self, user_id: str, update_data: Dict) -> bool:
         """更新用户信息"""
+        session = self._get_session()
         try:
             # 移除不允许更新的字段
-            forbidden_fields = ['id', '_id', 'created_at']
+            forbidden_fields = ['id', 'created_at']
             for field in forbidden_fields:
                 update_data.pop(field, None)
             
             if not update_data:
                 return True
             
-            result = self.collection.update_one(
-                {'id': user_id},
-                {'$set': update_data}
-            )
+            result = session.query(UserModel).filter(UserModel.id == user_id).update(update_data)
+            session.commit()
             
-            success = result.modified_count > 0
+            success = result > 0
             if success:
                 logger.info(f"User updated successfully: {user_id}")
             else:
@@ -127,14 +132,20 @@ class UserDAO:
             return success
             
         except Exception as e:
+            session.rollback()
             logger.error(f"Failed to update user {user_id}: {e}")
             return False
+        finally:
+            session.close()
     
     def delete_user(self, user_id: str) -> bool:
         """删除用户"""
+        session = self._get_session()
         try:
-            result = self.collection.delete_one({'id': user_id})
-            success = result.deleted_count > 0
+            result = session.query(UserModel).filter(UserModel.id == user_id).delete()
+            session.commit()
+            
+            success = result > 0
             
             if success:
                 logger.info(f"User deleted successfully: {user_id}")
@@ -144,34 +155,35 @@ class UserDAO:
             return success
             
         except Exception as e:
+            session.rollback()
             logger.error(f"Failed to delete user {user_id}: {e}")
             return False
+        finally:
+            session.close()
     
     def list_users(self, skip: int = 0, limit: int = 100) -> List[Dict]:
         """获取用户列表"""
+        session = self._get_session()
         try:
-            cursor = self.collection.find({}).skip(skip).limit(limit)
-            users = []
-            for user_doc in cursor:
-                user_doc.pop('_id', None)
-                users.append(user_doc)
-            return users
+            users = session.query(UserModel).offset(skip).limit(limit).all()
+            return [self._model_to_dict(u) for u in users]
         except Exception as e:
             logger.error(f"Failed to list users: {e}")
             return []
+        finally:
+            session.close()
     
     def find_by_role_group(self, role_group: str) -> List[Dict]:
         """根据用户组查找用户"""
+        session = self._get_session()
         try:
-            cursor = self.collection.find({'role_group': role_group})
-            users = []
-            for user_doc in cursor:
-                user_doc.pop('_id', None)
-                users.append(user_doc)
-            return users
+            users = session.query(UserModel).filter(UserModel.role_group == role_group).all()
+            return [self._model_to_dict(u) for u in users]
         except Exception as e:
             logger.error(f"Failed to find users by role_group {role_group}: {e}")
             return []
+        finally:
+            session.close()
     
     def verify_password(self, password: str, hashed_password: str) -> bool:
         """验证密码"""
@@ -180,6 +192,7 @@ class UserDAO:
         except Exception as e:
             logger.error(f"Failed to verify password: {e}")
             return False
+
 
 # 全局DAO实例
 user_dao = UserDAO()
