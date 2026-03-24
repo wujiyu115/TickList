@@ -2,7 +2,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--ant-color-bg-container);
 }
 
 .calendar-loading {
@@ -19,7 +19,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--ant-color-border);
   flex-shrink: 0;
 
   .toolbar-left {
@@ -29,14 +29,14 @@
 
     .calendar-icon {
       font-size: 20px;
-      color: #666;
+      color: var(--ant-color-text-secondary);
     }
 
     .month-title {
       font-size: 22px;
       font-weight: 600;
       margin: 0;
-      color: #333;
+      color: var(--ant-color-text);
     }
   }
 
@@ -46,7 +46,7 @@
     gap: 8px;
 
     .toolbar-btn {
-      color: #666;
+      color: var(--ant-color-text-secondary);
     }
 
     .view-dropdown {
@@ -65,15 +65,15 @@
 .calendar-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
+  border-bottom: 1px solid var(--ant-color-border);
+  background: var(--ant-color-bg-layout);
   flex-shrink: 0;
 
   .weekday-cell {
     text-align: center;
     padding: 8px 0;
     font-size: 13px;
-    color: #999;
+    color: var(--ant-color-text-tertiary);
     font-weight: 500;
   }
 }
@@ -87,8 +87,8 @@
   min-height: 0;
 
   .calendar-cell {
-    border-right: 1px solid #f5f5f5;
-    border-bottom: 1px solid #f5f5f5;
+    border-right: 1px solid var(--ant-color-bg-text-hover);
+    border-bottom: 1px solid var(--ant-color-bg-text-hover);
     padding: 4px;
     min-height: 0;
     overflow: hidden;
@@ -104,7 +104,7 @@
     }
 
     &.other-month {
-      background: #fafafa;
+      background: var(--ant-color-bg-layout);
 
       .date-number {
         color: #bbb;
@@ -112,7 +112,7 @@
     }
 
     &.today {
-      background: #f0f7ff;
+      background: var(--ant-color-primary-bg);
     }
 
     .cell-date {
@@ -121,7 +121,7 @@
 
       .date-number {
         font-size: 13px;
-        color: #333;
+        color: var(--ant-color-text);
         line-height: 24px;
       }
 
@@ -133,8 +133,8 @@
         height: 24px;
         padding: 0 4px;
         border-radius: 12px;
-        background: #1677ff;
-        color: #fff;
+        background: var(--ant-color-primary);
+        color: var(--ant-color-bg-container);
         font-weight: 600;
       }
     }
@@ -181,7 +181,7 @@
   .task-checkbox {
     margin-right: 4px;
     font-size: 11px;
-    color: #666;
+    color: var(--ant-color-text-secondary);
     flex-shrink: 0;
   }
 
@@ -189,19 +189,19 @@
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #333;
+    color: var(--ant-color-text);
   }
   
   .task-name-completed {
     text-decoration: line-through;
-    color: #999;
+    color: var(--ant-color-text-tertiary);
   }
 
   .task-time {
     margin-left: auto;
     padding-left: 8px;
     font-size: 11px;
-    color: #666;
+    color: var(--ant-color-text-secondary);
     flex-shrink: 0;
   }
   
@@ -210,7 +210,7 @@
     
     .task-name {
       text-decoration: line-through;
-      color: #999;
+      color: var(--ant-color-text-tertiary);
     }
   }
 }
@@ -218,7 +218,7 @@
 // 更多任务
 .more-tasks {
   font-size: 11px;
-  color: #1677ff;
+  color: var(--ant-color-primary);
   padding: 1px 6px;
   cursor: pointer;
   flex-shrink: 0;
@@ -240,7 +240,7 @@
 
   .task-popover-item {
     padding: 8px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--ant-color-border);
     cursor: pointer;
 
     &:last-child {
@@ -248,7 +248,7 @@
     }
 
     &:hover {
-      background: #f5f5f5;
+      background: var(--ant-color-bg-text-hover);
     }
     
     &.task-completed {
@@ -289,7 +289,7 @@
   
   .task-title-completed {
     text-decoration: line-through;
-    color: #999;
+    color: var(--ant-color-text-tertiary);
   }
 
   .task-popover-meta {
@@ -301,7 +301,7 @@
   // 子任务列表样式
   .subtask-list {
     margin-left: 24px;
-    border-left: 2px solid #f0f0f0;
+    border-left: 2px solid var(--ant-color-border);
     padding-left: 8px;
   }
   
@@ -349,7 +349,7 @@
 // 周视图头部
 .week-view-header {
   display: flex;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--ant-color-border);
   flex-shrink: 0;
 
   .time-axis-placeholder {
@@ -361,18 +361,18 @@
     flex: 1;
     text-align: center;
     padding: 8px 0;
-    border-left: 1px solid #f5f5f5;
+    border-left: 1px solid var(--ant-color-bg-text-hover);
 
     .day-name {
       font-size: 13px;
-      color: #999;
+      color: var(--ant-color-text-tertiary);
       margin-bottom: 4px;
     }
 
     .day-number {
       font-size: 22px;
       font-weight: 500;
-      color: #333;
+      color: var(--ant-color-text);
 
       &.today-highlight {
         display: inline-flex;
@@ -381,8 +381,8 @@
         width: 36px;
         height: 36px;
         border-radius: 50%;
-        background: #1677ff;
-        color: #fff;
+        background: var(--ant-color-primary);
+        color: var(--ant-color-bg-container);
       }
     }
   }
@@ -391,7 +391,7 @@
 // 日视图头部
 .day-view-header {
   display: flex;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--ant-color-border);
   flex-shrink: 0;
 
   .time-axis-placeholder {
@@ -406,14 +406,14 @@
 
     .day-name {
       font-size: 13px;
-      color: #999;
+      color: var(--ant-color-text-tertiary);
       margin-bottom: 4px;
     }
 
     .day-number {
       font-size: 28px;
       font-weight: 500;
-      color: #333;
+      color: var(--ant-color-text);
 
       &.today-highlight {
         display: inline-flex;
@@ -422,8 +422,8 @@
         width: 44px;
         height: 44px;
         border-radius: 50%;
-        background: #1677ff;
-        color: #fff;
+        background: var(--ant-color-primary);
+        color: var(--ant-color-bg-container);
       }
     }
   }
@@ -439,12 +439,12 @@
   .time-axis {
     width: 50px;
     flex-shrink: 0;
-    border-right: 1px solid #f0f0f0;
+    border-right: 1px solid var(--ant-color-border);
 
     .hour-label {
       height: 60px;
       font-size: 12px;
-      color: #999;
+      color: var(--ant-color-text-tertiary);
       text-align: right;
       padding-right: 8px;
       padding-top: 2px;
@@ -466,10 +466,10 @@
 
       .hour-row {
         height: 60px;
-        border-bottom: 1px solid #f5f5f5;
+        border-bottom: 1px solid var(--ant-color-bg-text-hover);
 
         &:nth-child(even) {
-          background: #fafafa;
+          background: var(--ant-color-bg-layout);
         }
       }
     }
@@ -488,7 +488,7 @@
   .week-column {
     flex: 1;
     position: relative;
-    border-left: 1px solid #f5f5f5;
+    border-left: 1px solid var(--ant-color-bg-text-hover);
 
     &:first-child {
       border-left: none;
@@ -539,7 +539,7 @@
     display: flex;
     align-items: center;
     font-weight: 500;
-    color: #333;
+    color: var(--ant-color-text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -547,7 +547,7 @@
     .task-checkbox {
       margin-right: 4px;
       font-size: 11px;
-      color: #666;
+      color: var(--ant-color-text-secondary);
     }
     
     .task-block-checkbox {
@@ -562,7 +562,7 @@
     
     .task-title-completed {
       text-decoration: line-through;
-      color: #999;
+      color: var(--ant-color-text-tertiary);
     }
   }
 
@@ -600,11 +600,11 @@
       font-weight: 600;
       margin-bottom: 8px;
       cursor: pointer;
-      color: #333;
+      color: var(--ant-color-text);
       transition: color 0.2s;
 
       &:hover {
-        color: #1677ff;
+        color: var(--ant-color-primary);
       }
     }
 
@@ -616,7 +616,7 @@
       .mini-weekday {
         text-align: center;
         font-size: 12px;
-        color: #999;
+        color: var(--ant-color-text-tertiary);
         padding: 4px 0;
       }
     }
@@ -631,15 +631,15 @@
         font-size: 13px;
         cursor: pointer;
         border-radius: 4px;
-        color: #333;
+        color: var(--ant-color-text);
         transition: background 0.2s, color 0.2s;
 
         &:hover {
-          background: #f0f0f0;
+          background: var(--ant-color-border);
         }
 
         &.other-month {
-          color: #ccc;
+          color: var(--ant-color-text-quaternary);
         }
 
         &.has-tasks {
@@ -649,12 +649,12 @@
 
         &.has-many-tasks {
           background: #93C5FD;
-          color: #fff;
+          color: var(--ant-color-bg-container);
         }
 
         &.today {
-          background: #1677ff;
-          color: #fff;
+          background: var(--ant-color-primary);
+          color: var(--ant-color-bg-container);
           font-weight: 600;
         }
       }

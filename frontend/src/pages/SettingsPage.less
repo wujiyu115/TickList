@@ -1,12 +1,12 @@
 .settings-page {
   display: flex;
   height: calc(100vh - 112px);
-  background: #fff;
+  background: var(--ant-color-bg-container);
 
   // 左侧导航
   .settings-nav {
     width: 200px;
-    border-right: 1px solid #f0f0f0;
+    border-right: 1px solid var(--ant-color-border);
     padding: 16px 0;
     flex-shrink: 0;
 
@@ -16,18 +16,18 @@
       gap: 8px;
       padding: 12px 20px;
       cursor: pointer;
-      color: #666;
+      color: var(--ant-color-text-secondary);
       font-size: 14px;
       transition: all 0.2s;
 
       &:hover {
-        background: #f5f5f5;
-        color: #333;
+        background: var(--ant-color-bg-text-hover);
+        color: var(--ant-color-text);
       }
 
       &.active {
-        background: #e6f4ff;
-        color: #1677ff;
+        background: var(--ant-color-primary-bg);
+        color: var(--ant-color-primary);
         font-weight: 500;
       }
 
@@ -49,10 +49,10 @@
       .section-title {
         font-size: 18px;
         font-weight: 600;
-        color: #333;
+        color: var(--ant-color-text);
         margin-bottom: 20px;
         padding-bottom: 12px;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid var(--ant-color-border);
       }
     }
 
@@ -71,7 +71,7 @@
       }
 
       .theme-card {
-        border: 2px solid #f0f0f0;
+        border: 2px solid var(--ant-color-border);
         border-radius: 8px;
         padding: 12px;
         cursor: pointer;
@@ -79,19 +79,19 @@
         position: relative;
 
         &:hover {
-          border-color: #d9d9d9;
+          border-color: var(--ant-color-border-secondary);
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         &.selected {
-          border-color: #1677ff;
+          border-color: var(--ant-color-primary);
         }
 
         &.dark-theme {
           background: #1f1f1f;
 
           .theme-name {
-            color: #fff;
+            color: var(--ant-color-bg-container);
           }
         }
 
@@ -103,7 +103,7 @@
 
         .theme-name {
           font-size: 13px;
-          color: #333;
+          color: var(--ant-color-text);
           text-align: center;
         }
 
@@ -113,12 +113,12 @@
           right: 8px;
           width: 20px;
           height: 20px;
-          background: #1677ff;
+          background: var(--ant-color-primary);
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #fff;
+          color: var(--ant-color-bg-container);
           font-size: 12px;
         }
       }
@@ -130,7 +130,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 16px 0;
-      border-bottom: 1px solid #f5f5f5;
+      border-bottom: 1px solid var(--ant-color-bg-text-hover);
 
       &:last-child {
         border-bottom: none;
@@ -143,12 +143,12 @@
 
         .label-text {
           font-size: 14px;
-          color: #333;
+          color: var(--ant-color-text);
         }
 
         .label-desc {
           font-size: 12px;
-          color: #999;
+          color: var(--ant-color-text-tertiary);
         }
       }
 
@@ -174,7 +174,7 @@
 
         .data-action-card {
           flex: 1;
-          border: 1px solid #f0f0f0;
+          border: 1px solid var(--ant-color-border);
           border-radius: 8px;
           padding: 20px;
           display: flex;
@@ -185,24 +185,24 @@
           transition: all 0.2s;
 
           &:hover {
-            border-color: #1677ff;
-            background: #f6f9ff;
+            border-color: var(--ant-color-primary);
+            background: var(--ant-color-primary-bg);
           }
 
           .anticon {
             font-size: 32px;
-            color: #1677ff;
+            color: var(--ant-color-primary);
           }
 
           .action-title {
             font-size: 14px;
             font-weight: 500;
-            color: #333;
+            color: var(--ant-color-text);
           }
 
           .action-desc {
             font-size: 12px;
-            color: #999;
+            color: var(--ant-color-text-tertiary);
             text-align: center;
           }
         }
@@ -223,7 +223,7 @@
 
   .import-hint {
     margin-top: 12px;
-    color: #999;
+    color: var(--ant-color-text-tertiary);
     font-size: 12px;
   }
 }

@@ -23,12 +23,12 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout }) => {
 
   return (
     <Header style={{ 
-      background: '#fff', 
+      background: 'var(--ant-color-bg-container)', 
       padding: '0 24px', 
       display: 'flex', 
       justifyContent: 'space-between',
       alignItems: 'center',
-      borderBottom: '1px solid #f0f0f0'
+      borderBottom: '1px solid var(--ant-color-border)'
     }}>
       <Dropdown menu={{ items }} placement="bottomRight">
         <Space style={{ cursor: 'pointer', marginLeft: 'auto' }}>

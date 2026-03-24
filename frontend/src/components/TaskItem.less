@@ -9,23 +9,23 @@
     min-height: 44px;
 
     &:hover {
-      background-color: #f5f5f5;
+      background-color: var(--ant-color-bg-text-hover);
     }
 
     &.selected {
-      background-color: #e6f4ff;
-      border-left: 3px solid #1677ff;
+      background-color: var(--ant-color-primary-bg);
+      border-left: 3px solid var(--ant-color-primary);
       padding-left: 9px;
     }
 
     &.completed {
       .task-title {
-        color: #999;
+        color: var(--ant-color-text-tertiary);
         text-decoration: line-through;
       }
       
       .task-desc {
-        color: #ccc;
+        color: var(--ant-color-text-quaternary);
       }
     }
 
@@ -35,7 +35,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #999;
+      color: var(--ant-color-text-tertiary);
       font-size: 10px;
       flex-shrink: 0;
       cursor: pointer;
@@ -110,7 +110,7 @@
 
       .task-title {
         font-size: 14px;
-        color: #333;
+        color: var(--ant-color-text);
         line-height: 22px;
         word-break: break-word;
         cursor: text;
@@ -136,7 +136,7 @@
 
       .task-desc {
         font-size: 12px;
-        color: #999;
+        color: var(--ant-color-text-tertiary);
         line-height: 18px;
         margin-top: 2px;
         overflow: hidden;
@@ -154,15 +154,15 @@
 
       .children-progress {
         font-size: 12px;
-        color: #999;
-        background: #f0f0f0;
+        color: var(--ant-color-text-tertiary);
+        background: var(--ant-color-border);
         padding: 2px 6px;
         border-radius: 4px;
       }
 
       .task-due {
         font-size: 12px;
-        color: #999;
+        color: var(--ant-color-text-tertiary);
       }
     }
   }

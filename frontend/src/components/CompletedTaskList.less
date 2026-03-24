@@ -8,23 +8,23 @@
     align-items: center;
     padding: 12px 20px;
     gap: 8px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--ant-color-border);
 
     .filter-btn {
       border-radius: 6px;
       font-size: 13px;
-      color: #666;
+      color: var(--ant-color-text-secondary);
       border-color: #e8e8e8;
-      background: #fff;
+      background: var(--ant-color-bg-container);
 
       &:hover {
-        color: #333;
-        border-color: #d9d9d9;
+        color: var(--ant-color-text);
+        border-color: var(--ant-color-border-secondary);
       }
 
       &:disabled {
         color: #bfbfbf;
-        background: #f5f5f5;
+        background: var(--ant-color-bg-text-hover);
       }
 
       .anticon-down {
@@ -55,7 +55,7 @@
 
       .expand-icon {
         width: 16px;
-        color: #999;
+        color: var(--ant-color-text-tertiary);
         font-size: 10px;
         display: flex;
         align-items: center;
@@ -65,13 +65,13 @@
       .group-date {
         font-size: 14px;
         font-weight: 500;
-        color: #333;
+        color: var(--ant-color-text);
         margin-left: 4px;
       }
 
       .group-count {
         font-size: 13px;
-        color: #999;
+        color: var(--ant-color-text-tertiary);
         margin-left: 8px;
       }
     }
@@ -94,8 +94,8 @@
     }
 
     &.selected {
-      background-color: #f0f7ff;
-      border-left-color: #1677ff;
+      background-color: var(--ant-color-primary-bg);
+      border-left-color: var(--ant-color-primary);
     }
 
     .task-checkbox-wrapper {
@@ -105,8 +105,8 @@
 
       &.completed {
         .ant-checkbox-checked .ant-checkbox-inner {
-          background-color: #1677ff;
-          border-color: #1677ff;
+          background-color: var(--ant-color-primary);
+          border-color: var(--ant-color-primary);
         }
       }
 
@@ -130,7 +130,7 @@
 
       .task-title {
         font-size: 14px;
-        color: #999;
+        color: var(--ant-color-text-tertiary);
         text-decoration: line-through;
         line-height: 1.5;
         word-break: break-word;
@@ -161,7 +161,7 @@
 
         .list-name {
           font-size: 12px;
-          color: #999;
+          color: var(--ant-color-text-tertiary);
         }
       }
     }
@@ -192,7 +192,7 @@
 
   .empty-state {
     padding: 60px 20px;
-    color: #999;
+    color: var(--ant-color-text-tertiary);
   }
 }
 

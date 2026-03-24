@@ -2,7 +2,7 @@
   min-height: 100vh;
 
   .main-content {
-    background: #f0f2f5;
+    background: var(--ant-color-bg-layout);
     min-height: calc(100vh - 64px);
     padding: 0;
   }
@@ -18,8 +18,8 @@
 // 图标栏
 .icon-bar {
   width: 56px;
-  background: #fff;
-  border-right: 1px solid #f0f0f0;
+  background: var(--ant-color-bg-container);
+  border-right: 1px solid var(--ant-color-border);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -49,17 +49,17 @@
     border-radius: 8px;
     cursor: pointer;
     font-size: 20px;
-    color: #666;
+    color: var(--ant-color-text-secondary);
     margin-bottom: 4px;
     transition: all 0.2s;
     
     &:hover {
-      background: #f5f5f5;
+      background: var(--ant-color-bg-text-hover);
     }
     
     &.active {
-      background: #e6f4ff;
-      color: #1677ff;
+      background: var(--ant-color-primary-bg);
+      color: var(--ant-color-primary);
     }
   }
 }
@@ -67,8 +67,8 @@
 // 内容面板
 .secondary-panel {
   width: 240px;
-  background: #fff;
-  border-right: 1px solid #f0f0f0;
+  background: var(--ant-color-bg-container);
+  border-right: 1px solid var(--ant-color-border);
   overflow-y: auto;
   padding: 16px 12px;
   display: flex;
@@ -78,7 +78,7 @@
     font-size: 14px;
     font-weight: 600;
     margin-bottom: 12px;
-    color: #333;
+    color: var(--ant-color-text);
   }
   
   .filter-item {
@@ -88,22 +88,22 @@
     border-radius: 8px;
     cursor: pointer;
     gap: 8px;
-    color: #333;
+    color: var(--ant-color-text);
     font-size: 14px;
     transition: all 0.2s;
     
     &:hover {
-      background: #f5f5f5;
+      background: var(--ant-color-bg-text-hover);
     }
     
     &.active {
-      background: #e6f4ff;
-      color: #1677ff;
+      background: var(--ant-color-primary-bg);
+      color: var(--ant-color-primary);
     }
     
     .filter-count {
       margin-left: auto;
-      color: #999;
+      color: var(--ant-color-text-tertiary);
       font-size: 12px;
     }
   }
@@ -113,7 +113,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px 0 8px 0;
-    color: #999;
+    color: var(--ant-color-text-tertiary);
     font-size: 12px;
     
     > span {
@@ -122,7 +122,7 @@
       align-items: center;
       
       &:hover {
-        color: #666;
+        color: var(--ant-color-text-secondary);
       }
     }
   }
@@ -139,16 +139,16 @@
     cursor: pointer;
     gap: 8px;
     font-size: 14px;
-    color: #333;
+    color: var(--ant-color-text);
     transition: all 0.2s;
     
     &:hover {
-      background: #f5f5f5;
+      background: var(--ant-color-bg-text-hover);
     }
     
     &.active {
-      background: #e6f4ff;
-      color: #1677ff;
+      background: var(--ant-color-primary-bg);
+      color: var(--ant-color-primary);
     }
     
     .list-name {
@@ -166,7 +166,7 @@
     }
     
     .list-count {
-      color: #999;
+      color: var(--ant-color-text-tertiary);
       font-size: 12px;
       flex-shrink: 0;
     }
@@ -182,13 +182,13 @@
     display: flex;
     align-items: center;
     padding: 8px 12px;
-    color: #999;
+    color: var(--ant-color-text-tertiary);
     font-size: 13px;
     cursor: pointer;
     gap: 4px;
     
     &:hover {
-      color: #666;
+      color: var(--ant-color-text-secondary);
     }
   }
   
@@ -204,16 +204,16 @@
     cursor: pointer;
     gap: 8px;
     font-size: 14px;
-    color: #333;
+    color: var(--ant-color-text);
     transition: all 0.2s;
     
     &:hover {
-      background: #f5f5f5;
+      background: var(--ant-color-bg-text-hover);
     }
     
     &.active {
-      background: #e6f4ff;
-      color: #1677ff;
+      background: var(--ant-color-primary-bg);
+      color: var(--ant-color-primary);
     }
     
     .tag-dot {
@@ -227,9 +227,9 @@
   
   .filter-hint {
     padding: 8px 12px;
-    color: #999;
+    color: var(--ant-color-text-tertiary);
     font-size: 12px;
-    background: #fafafa;
+    background: var(--ant-color-fill-quaternary);
     border-radius: 6px;
     margin-bottom: 12px;
     line-height: 1.5;
@@ -238,7 +238,7 @@
   .bottom-items {
     margin-top: auto;
     padding-top: 12px;
-    border-top: 1px solid #f0f0f0;
+    border-top: 1px solid var(--ant-color-border);
   }
 }
 
@@ -264,8 +264,8 @@
       }
       
       &.selected {
-        border-color: #1677ff;
-        box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.2);
+        border-color: var(--ant-color-primary);
+        box-shadow: 0 0 0 2px var(--ant-color-primary-bg);
       }
     }
   }
@@ -297,13 +297,13 @@
       padding: 6px 16px;
       margin: 0 4px;
       border-radius: 20px;
-      background: #f5f5f5;
+      background: var(--ant-color-bg-text-hover);
       
       &.ant-tabs-tab-active {
-        background: #e6f4ff;
+        background: var(--ant-color-primary-bg);
         
         .ant-tabs-tab-btn {
-          color: #1677ff;
+          color: var(--ant-color-primary);
         }
       }
     }
@@ -321,7 +321,7 @@
     > label {
       width: 80px;
       flex-shrink: 0;
-      color: #666;
+      color: var(--ant-color-text-secondary);
       font-size: 14px;
     }
     
@@ -353,11 +353,11 @@
     gap: 12px;
     margin-top: 24px;
     padding-top: 16px;
-    border-top: 1px solid #f0f0f0;
+    border-top: 1px solid var(--ant-color-border);
     
     > a {
       margin-right: auto;
-      color: #1677ff;
+      color: var(--ant-color-primary);
       cursor: pointer;
       
       &:hover {

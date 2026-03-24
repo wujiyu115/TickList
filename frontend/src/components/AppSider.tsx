@@ -566,7 +566,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
               <MoreOutlined
                 style={{ 
                   fontSize: 14,
-                  color: '#999',
+                  color: 'var(--ant-color-text-tertiary)',
                   cursor: 'pointer',
                   marginRight: 4
                 }}
@@ -586,7 +586,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
               style={{ 
                 marginLeft: 'auto',
                 fontSize: 14,
-                color: '#999',
+                color: 'var(--ant-color-text-tertiary)',
                 cursor: 'pointer',
                 marginRight: 4
               }}
@@ -726,7 +726,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
             className={`filter-item ${selectedKey === 'filter-today' ? 'active' : ''}`}
             onClick={() => navigate('/?filter=today')}
           >
-            <CalendarOutlined style={{ color: '#1677ff' }} />
+            <CalendarOutlined style={{ color: 'var(--ant-color-primary)' }} />
             <span>今天</span>
           </div>
           <div 
@@ -842,7 +842,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
                             style={{ 
                               marginLeft: 'auto',
                               fontSize: 14,
-                              color: '#999',
+                              color: 'var(--ant-color-text-tertiary)',
                               cursor: 'pointer'
                             }}
                             onClick={(e) => e.stopPropagation()}
@@ -892,7 +892,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
                           style={{ 
                             marginLeft: 'auto',
                             fontSize: 14,
-                            color: '#999',
+                            color: 'var(--ant-color-text-tertiary)',
                             cursor: 'pointer'
                           }}
                           onClick={(e) => e.stopPropagation()}
@@ -993,7 +993,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
           />
         </div>
         <div style={{ marginBottom: 16 }}>
-          <div style={{ marginBottom: 8, color: '#666' }}>颜色</div>
+          <div style={{ marginBottom: 8, color: 'var(--ant-color-text-secondary)' }}>颜色</div>
           <div className="color-picker">
             {TAG_COLORS.map((color, index) => (
               <div
@@ -1001,7 +1001,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
                 className={`color-dot ${tagColor === color ? 'selected' : ''}`}
                 style={{ 
                   background: color,
-                  border: index === 0 ? '1px solid #d9d9d9' : undefined,
+                  border: index === 0 ? '1px solid var(--ant-color-border-secondary)' : undefined,
                   position: 'relative'
                 }}
                 onClick={() => setTagColor(color)}
@@ -1023,7 +1023,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
           </div>
         </div>
         <div>
-          <div style={{ marginBottom: 8, color: '#666' }}>上级标签</div>
+          <div style={{ marginBottom: 8, color: 'var(--ant-color-text-secondary)' }}>上级标签</div>
           <Select
             value={undefined}
             placeholder="无"
