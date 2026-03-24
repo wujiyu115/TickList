@@ -44,8 +44,8 @@ jobs:
         file: ./Dockerfile
         push: true
         tags: |
-          wujiyu115/TickList:${{ github.ref_name }} 
-          wujiyu115/TickList:latest
+          wujiyu115/ticklist:${{ github.ref_name }} 
+          wujiyu115/ticklist:latest
         platforms: linux/amd64,linux/arm64
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache
