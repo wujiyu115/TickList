@@ -9,7 +9,7 @@ WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 
 # 安装前端依赖
-RUN npm ci --registry=https://registry.npmmirror.com
+RUN npm ci
 
 # 复制前端源代码
 COPY frontend/ ./
@@ -32,7 +32,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY backend/requirements.txt ./
 
 # 安装 Python 依赖
-RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip install --no-cache-dir -r requirements.txt
 
 # 复制后端代码
 COPY backend/ ./
@@ -42,6 +42,12 @@ COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 # 设置前端静态文件路径环境变量
 ENV FRONTEND=/app/frontend/dist
+
+# 数据库连接字符串（可通过 docker run -e 覆盖）
+# 示例:
+#   SQLite: sqlite:///ticklist.db
+#   MySQL: mysql+pymysql://user:password@host:3306/dbname?charset=utf8mb4
+# ENV DB_CONNECT_STRING=sqlite:///ticklist.db
 
 # 创建日志目录
 RUN mkdir -p /app/logs

@@ -98,25 +98,19 @@ class ConfigLoader:
         }
     
     def get_database_url(self) -> str:
-        """获取数据库连接URL（SQLAlchemy格式）"""
-        db_type = self.get('database.type', 'sqlite', 'DATABASE_TYPE')
+        """获取数据库连接URL（SQLAlchemy格式）
         
-        if db_type == 'sqlite':
-            sqlite_path = self.get('database.sqlite_path', 'ticklist.db', 'DATABASE_SQLITE_PATH')
-            return f"sqlite:///{sqlite_path}"
-        elif db_type == 'mysql':
-            host = self.get('database.mysql_host', 'localhost', 'DATABASE_MYSQL_HOST')
-            port = self.get('database.mysql_port', 3306, 'DATABASE_MYSQL_PORT')
-            database = self.get('database.mysql_database', 'ticklist', 'DATABASE_MYSQL_DATABASE')
-            username = self.get('database.mysql_username', '', 'DATABASE_MYSQL_USERNAME')
-            password = self.get('database.mysql_password', '', 'DATABASE_MYSQL_PASSWORD')
-            
-            if username and password:
-                return f"mysql+pymysql://{username}:{password}@{host}:{port}/{database}?charset=utf8mb4"
-            else:
-                return f"mysql+pymysql://{host}:{port}/{database}?charset=utf8mb4"
-        else:
-            raise ValueError(f"Unsupported database type: {db_type}")
+        优先级：
+        1. 环境变量 DB_CONNECT_STRING
+        2. 配置文件 database.connect_string
+        3. 默认值 sqlite:///ticklist.db
+        """
+        # 优先环境变量
+        env_url = os.environ.get('DB_CONNECT_STRING')
+        if env_url:
+            return env_url
+        # 从配置文件读取
+        return self.get('database.connect_string', 'sqlite:///ticklist.db')
     
     def get_kun_config(self) -> Dict[str, Any]:
         """获取Kun SDK配置"""

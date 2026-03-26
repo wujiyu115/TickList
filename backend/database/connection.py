@@ -32,10 +32,8 @@ class DatabaseConnection:
         
         logger.info(f"Connecting to database: {database_url.split('@')[-1] if '@' in database_url else database_url}")
         
-        # 根据数据库类型配置引擎参数
-        db_type = config_loader.get('database.type', 'sqlite', 'DATABASE_TYPE')
-        
-        if db_type == 'sqlite':
+        # 根据连接字符串判断数据库类型
+        if database_url.startswith('sqlite'):
             # SQLite 特殊配置：支持多线程
             self.engine = create_engine(
                 database_url,

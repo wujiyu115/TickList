@@ -130,15 +130,10 @@ jwt:
   access_token_expire_hours: 24           # Token 有效期（小时）
 
 database:
-  type: "sqlite"                          # sqlite（默认）或 mysql
-  # SQLite 配置（零配置，适合开发和小型部署）
-  sqlite_path: "ticklist.db"
-  # MySQL 配置（生产环境推荐）
-  mysql_host: "localhost"                 # MySQL 主机地址
-  mysql_port: 3306                        # MySQL 端口
-  mysql_database: "ticklist"              # 数据库名
-  mysql_username: ""                      # MySQL 用户名
-  mysql_password: ""                      # MySQL 密码
+  connect_string: "sqlite:///ticklist.db"
+  # 连接字符串示例:
+  # SQLite: sqlite:///ticklist.db
+  # MySQL: mysql+pymysql://username:password@host:3306/ticklist?charset=utf8mb4
 
 cors:
   allowed_origins:
@@ -154,9 +149,10 @@ logging:
 ```
 
 > **数据库配置说明**：
-> - **SQLite（默认）**：零配置，数据存储在 `sqlite_path` 指定的文件中，适合开发和小型部署
-> - **MySQL**：将 `database.type` 设为 `mysql`，并配置 `mysql_*` 相关参数
-> - Docker 中使用 MySQL 时，`mysql_host` 可设为 `host.docker.internal`（Docker Desktop）或宿主机 IP
+> - **SQLite（默认）**：`sqlite:///ticklist.db`，数据存储在指定文件中，适合开发和小型部署
+> - **MySQL**：使用 `mysql+pymysql://用户名:密码@主机:端口/数据库名?charset=utf8mb4` 格式
+> - **环境变量优先**：可通过 `DB_CONNECT_STRING` 环境变量覆盖配置文件的设置
+> - Docker 中使用 MySQL 时，主机可设为 `host.docker.internal`（Docker Desktop）或宿主机 IP
 > - `jwt.secret_key` 生产环境务必修改为安全的随机字符串
 
 #### 2. 构建镜像
@@ -167,9 +163,22 @@ docker build -t ticklist:latest .
 
 #### 3. 运行容器
 
+**使用 SQLite（默认）：**
+
 ```bash
 docker run -d \
   -p 5000:5000 \
+  -v $(pwd)/backend/config.yaml:/app/config.yaml \
+  --name ticklist \
+  ticklist:latest
+```
+
+**使用 MySQL（通过环境变量）：**
+
+```bash
+docker run -d \
+  -p 5000:5000 \
+  -e DB_CONNECT_STRING="mysql+pymysql://user:password@mysql-host:3306/ticklist?charset=utf8mb4" \
   -v $(pwd)/backend/config.yaml:/app/config.yaml \
   --name ticklist \
   ticklist:latest
@@ -354,9 +363,10 @@ npm run build
 
 1. 本项目使用本地用户名密码认证
 2. 默认使用 SQLite 数据库，无需额外安装，数据库文件自动创建
-3. 如需使用 MySQL，修改 `config.yaml` 中的 `database.type` 为 `mysql` 并配置连接参数
-4. 生产环境需要修改 `config.yaml` 中的 `jwt.secret_key`
-5. 前后端集成部署时，后端会自动服务前端静态文件
+3. 数据库连接通过 `database.connect_string` 配置，支持 SQLite 和 MySQL
+4. 可通过环境变量 `DB_CONNECT_STRING` 覆盖配置文件中的数据库设置（优先级更高）
+5. 生产环境需要修改 `config.yaml` 中的 `jwt.secret_key`
+6. 前后端集成部署时，后端会自动服务前端静态文件
 
 ## 许可证
 

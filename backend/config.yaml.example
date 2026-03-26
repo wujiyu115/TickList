@@ -6,15 +6,10 @@ jwt:
   access_token_expire_hours: 24
 
 database:
-  type: "sqlite"          # sqlite / mysql
-  # SQLite 配置
-  sqlite_path: "ticklist.db"
-  # MySQL 配置
-  mysql_host: "localhost"
-  mysql_port: 3306
-  mysql_database: "ticklist"
-  mysql_username: ""
-  mysql_password: ""
+  connect_string: "sqlite:///ticklist.db"
+  # 连接字符串示例:
+  # SQLite: sqlite:///ticklist.db
+  # MySQL: mysql+pymysql://username:password@host:port/database?charset=utf8mb4
 
 cors:
   allowed_origins:
