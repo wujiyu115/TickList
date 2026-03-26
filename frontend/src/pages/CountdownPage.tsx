@@ -27,6 +27,7 @@ import {
   DeleteOutlined,
   MoreOutlined,
   HourglassOutlined,
+  SendOutlined,
 } from '@ant-design/icons';
 import moment from 'moment';
 import { Countdown, CountdownCreateRequest, CountdownUpdateRequest } from '../types';
@@ -137,6 +138,7 @@ const CountdownPage: React.FC = () => {
       repeat_annually: false,
       is_pinned: false,
       color: '#1890ff',
+      push_due_notify: false,
     });
     setModalVisible(true);
   };
@@ -152,6 +154,7 @@ const CountdownPage: React.FC = () => {
       is_pinned: countdown.is_pinned,
       color: countdown.color || '#1890ff',
       note: countdown.note,
+      push_due_notify: countdown.push_due_notify || false,
     });
     setModalVisible(true);
   };
@@ -190,6 +193,7 @@ const CountdownPage: React.FC = () => {
         is_pinned: values.is_pinned,
         color: values.color,
         note: values.note,
+        push_due_notify: values.push_due_notify,
       };
 
       if (editingCountdown) {
@@ -391,6 +395,20 @@ const CountdownPage: React.FC = () => {
               </Form.Item>
             </Col>
           </Row>
+
+          <Form.Item 
+            name="push_due_notify" 
+            label={
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <SendOutlined style={{ color: '#52c41a' }} />
+                到期推送
+              </span>
+            }
+            valuePropName="checked"
+            extra="开启后，到期当天会收到推送通知"
+          >
+            <Switch />
+          </Form.Item>
 
           <Form.Item name="color" label="颜色">
             <div className="color-picker">

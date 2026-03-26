@@ -23,6 +23,7 @@ class CountdownCreate(BaseModel):
     color: str = ''
     repeat_annually: bool = False
     note: str = ''
+    push_due_notify: bool = False
 
 
 class CountdownUpdate(BaseModel):
@@ -33,6 +34,7 @@ class CountdownUpdate(BaseModel):
     color: Optional[str] = None
     repeat_annually: Optional[bool] = None
     note: Optional[str] = None
+    push_due_notify: Optional[bool] = None
 
 
 @router.post('/countdowns')
@@ -55,7 +57,8 @@ async def create_countdown(
             is_pinned=data.is_pinned,
             color=data.color,
             repeat_annually=data.repeat_annually,
-            note=data.note
+            note=data.note,
+            push_due_notify=data.push_due_notify
         )
         
         result = countdown_dao.create_countdown(countdown)

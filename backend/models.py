@@ -44,7 +44,8 @@ class Task:
         reminder_time: Optional[datetime] = None,
         is_pinned: bool = False,
         tags: Optional[List[str]] = None,
-        order: int = 0
+        order: int = 0,
+        push_due_notify: bool = False
     ):
         self.id = id
         self.title = title
@@ -60,6 +61,7 @@ class Task:
         self.is_pinned = is_pinned
         self.tags = tags or []
         self.order = order
+        self.push_due_notify = push_due_notify
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
         self.completed_at: Optional[datetime] = None
@@ -80,6 +82,7 @@ class Task:
             'is_pinned': self.is_pinned,
             'tags': self.tags,
             'order': self.order,
+            'push_due_notify': self.push_due_notify,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'completed_at': self.completed_at.isoformat() if self.completed_at else None
@@ -155,6 +158,7 @@ class Countdown:
         color: str = '',
         repeat_annually: bool = False,
         note: str = '',
+        push_due_notify: bool = False,
         created_at: Optional[datetime] = None,
         updated_at: Optional[datetime] = None
     ):
@@ -167,6 +171,7 @@ class Countdown:
         self.color = color
         self.repeat_annually = repeat_annually
         self.note = note
+        self.push_due_notify = push_due_notify
         self.created_at = created_at or datetime.now()
         self.updated_at = updated_at or datetime.now()
     
@@ -181,6 +186,7 @@ class Countdown:
             'color': self.color,
             'repeat_annually': self.repeat_annually,
             'note': self.note,
+            'push_due_notify': self.push_due_notify,
             'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else self.created_at,
             'updated_at': self.updated_at.isoformat() if isinstance(self.updated_at, datetime) else self.updated_at,
         }
@@ -338,6 +344,11 @@ class UserSettings:
         # 通知设置
         notification_enabled: bool = True,         # 是否启用通知
         notification_sound: bool = True,           # 是否播放提示音
+        # 推送设置
+        push_enabled: bool = False,                # 全局推送开关
+        push_channels: str = "[]",                 # 推送渠道配置 JSON 字符串
+        push_interval: int = 30,                   # 推送检查间隔（分钟）
+        push_batch_size: int = 5,                  # 每次推送合并的最大条数
         # 时间戳
         created_at: Optional[datetime] = None,
         updated_at: Optional[datetime] = None
@@ -364,6 +375,11 @@ class UserSettings:
         # 通知设置
         self.notification_enabled = notification_enabled
         self.notification_sound = notification_sound
+        # 推送设置
+        self.push_enabled = push_enabled
+        self.push_channels = push_channels
+        self.push_interval = push_interval
+        self.push_batch_size = push_batch_size
         # 时间戳
         self.created_at = created_at or datetime.now()
         self.updated_at = updated_at or datetime.now()
@@ -387,6 +403,10 @@ class UserSettings:
             'pomodoro_auto_start': self.pomodoro_auto_start,
             'notification_enabled': self.notification_enabled,
             'notification_sound': self.notification_sound,
+            'push_enabled': self.push_enabled,
+            'push_channels': self.push_channels,
+            'push_interval': self.push_interval,
+            'push_batch_size': self.push_batch_size,
             'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else self.created_at,
             'updated_at': self.updated_at.isoformat() if isinstance(self.updated_at, datetime) else self.updated_at,
         }

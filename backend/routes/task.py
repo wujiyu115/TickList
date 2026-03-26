@@ -26,6 +26,7 @@ class TaskCreate(BaseModel):
     is_pinned: bool = False
     tags: List[str] = []
     order: int = 0
+    push_due_notify: bool = False
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
@@ -39,6 +40,7 @@ class TaskUpdate(BaseModel):
     is_pinned: Optional[bool] = None
     tags: Optional[List[str]] = None
     order: Optional[int] = None
+    push_due_notify: Optional[bool] = None
 
 class TaskMove(BaseModel):
     new_parent_id: Optional[str] = None
@@ -90,7 +92,8 @@ async def create_task(
             reminder_time=reminder_time,
             is_pinned=task_data.is_pinned,
             tags=task_data.tags,
-            order=task_data.order
+            order=task_data.order,
+            push_due_notify=task_data.push_due_notify
         )
         
         result = task_dao.create_task(task)
@@ -204,6 +207,7 @@ async def update_task(
         
         # 返回更新后的任务
         updated_task = task_dao.get_task_by_id(task_id, current_user_id)
+        
         return updated_task
     except HTTPException:
         raise

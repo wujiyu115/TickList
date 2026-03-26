@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Input, Checkbox, Button, Popover, DatePicker, TimePicker, Switch, Segmented } from 'antd';
-import { CalendarOutlined, MinusOutlined, CloseOutlined, PlusOutlined, ClockCircleOutlined, CheckOutlined } from '@ant-design/icons';
+import { CalendarOutlined, MinusOutlined, CloseOutlined, PlusOutlined, ClockCircleOutlined, CheckOutlined, SendOutlined } from '@ant-design/icons';
 import { useTaskContext } from '../contexts/TaskContext';
 import { Task } from '../types';
 import dayjs, { Dayjs } from 'dayjs';
@@ -492,6 +492,31 @@ const TaskEditor: React.FC = () => {
             <span>{getReminderLabel()}</span>
           </div>
           <span style={{ color: '#999' }}>&gt;</span>
+        </div>
+      )}
+
+      {/* 截止推送开关 - 仅时间段模式且有结束日期时显示 */}
+      {dateMode === 'range' && !reminderPanelVisible && (
+        <div 
+          style={{ 
+            padding: '8px 12px', 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            borderTop: '1px solid #f0f0f0'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <SendOutlined style={{ color: '#52c41a' }} />
+            <span>截止推送</span>
+          </div>
+          <Switch
+            size="small"
+            checked={selectedTask?.push_due_notify || false}
+            onChange={(checked) => {
+              updateTaskData(selectedTask.id, { push_due_notify: checked });
+            }}
+          />
         </div>
       )}
 

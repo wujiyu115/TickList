@@ -39,6 +39,8 @@ class TaskModel(Base):
     reminder_time = Column(String(50))
     is_pinned = Column(Boolean, default=False)
     order = Column(Integer, default=0)
+    push_due_notify = Column(Boolean, default=False)
+    push_notified_date = Column(String(10), nullable=True, default=None)  # 格式 "YYYY-MM-DD"
     created_at = Column(String(50))
     updated_at = Column(String(50))
     completed_at = Column(String(50))
@@ -168,6 +170,12 @@ class UserSettingsModel(Base):
     notification_enabled = Column(Boolean, default=True)
     notification_sound = Column(Boolean, default=True)
     
+    # 推送设置
+    push_enabled = Column(Boolean, default=False)
+    push_channels = Column(Text, default='[]')  # JSON 字符串
+    push_interval = Column(Integer, default=30)  # 推送检查间隔（分钟）
+    push_batch_size = Column(Integer, default=5)  # 每次推送合并的最大条数
+    
     # 时间戳
     created_at = Column(String(50))
     updated_at = Column(String(50))
@@ -208,6 +216,8 @@ class CountdownModel(Base):
     color = Column(String(50), default='')
     repeat_annually = Column(Boolean, default=False)
     note = Column(Text)
+    push_due_notify = Column(Boolean, default=False)
+    push_notified_date = Column(String(10), nullable=True, default=None)  # 格式 "YYYY-MM-DD"
     created_at = Column(String(50))
     updated_at = Column(String(50))
     

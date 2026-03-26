@@ -37,6 +37,9 @@ from routes.settings import router as settings_router
 # 导入中间件
 from middleware.logging_middleware import RequestLoggingMiddleware
 
+# 导入调度服务
+from services.scheduler_service import scheduler_service
+
 # 导入配置
 from config.config_loader import config
 
@@ -153,6 +156,18 @@ def create_app():
 
 # 创建全局应用实例
 app = create_app()
+
+# 启动事件 - 启动调度器
+@app.on_event("startup")
+async def startup_event():
+    scheduler_service.start()
+    logger.info("Application startup complete")
+
+# 关闭事件 - 关闭调度器
+@app.on_event("shutdown")
+async def shutdown_event():
+    scheduler_service.shutdown()
+    logger.info("Application shutdown complete")
 
 # 健康检查端点
 @app.get("/api/health")

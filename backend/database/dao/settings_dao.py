@@ -44,6 +44,10 @@ class SettingsDAO:
             'pomodoro_auto_start': False,
             'notification_enabled': True,
             'notification_sound': True,
+            'push_enabled': False,
+            'push_channels': '[]',
+            'push_interval': 30,
+            'push_batch_size': 5,
             'created_at': None,
             'updated_at': None
         }
@@ -71,6 +75,10 @@ class SettingsDAO:
             'pomodoro_auto_start': model.pomodoro_auto_start,
             'notification_enabled': model.notification_enabled,
             'notification_sound': model.notification_sound,
+            'push_enabled': model.push_enabled,
+            'push_channels': model.push_channels,
+            'push_interval': model.push_interval,
+            'push_batch_size': model.push_batch_size,
             'created_at': model.created_at,
             'updated_at': model.updated_at
         }

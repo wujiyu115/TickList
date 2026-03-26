@@ -23,6 +23,7 @@ export interface Task {
   is_pinned: boolean;
   tags: string[];
   order: number;
+  push_due_notify?: boolean;  // 截止推送通知
   created_at: string;
   updated_at: string;
   completed_at?: string;
@@ -58,6 +59,7 @@ export interface TaskUpdateRequest {
   is_pinned?: boolean;
   tags?: string[];
   order?: number;
+  push_due_notify?: boolean;
 }
 
 // 任务统计
@@ -126,6 +128,7 @@ export interface Countdown {
   color: string;
   repeat_annually: boolean;
   note: string;
+  push_due_notify?: boolean;  // 到期推送通知
   created_at: string;
   updated_at: string;
 }
@@ -138,6 +141,7 @@ export interface CountdownCreateRequest {
   color?: string;
   repeat_annually?: boolean;
   note?: string;
+  push_due_notify?: boolean;
 }
 
 export interface CountdownUpdateRequest {
@@ -148,6 +152,7 @@ export interface CountdownUpdateRequest {
   color?: string;
   repeat_annually?: boolean;
   note?: string;
+  push_due_notify?: boolean;
 }
 
 // 清单类型
@@ -241,7 +246,35 @@ export interface UserSettings {
   // 通知设置
   notification_enabled: boolean;    // 是否启用通知
   notification_sound: boolean;      // 是否播放提示音
+  // 推送设置
+  push_enabled: boolean;            // 全局推送开关
+  push_channels: string;            // 推送渠道配置 JSON 字符串
+  push_interval: number;            // 推送检查间隔（分钟）
+  push_batch_size: number;          // 每次推送合并的最大条数
   // 时间戳
   created_at?: string;
   updated_at?: string;
+}
+
+// 推送渠道配置类型
+export interface BarkConfig {
+  device_key: string;
+  server_url: string;
+  sound: string;
+  group: string;
+}
+
+export interface CustomHttpConfig {
+  url: string;
+  method: string;
+  headers: Record<string, string>;
+  body_template: string;
+}
+
+export interface PushChannelConfig {
+  id: string;
+  type: 'bark' | 'custom_http';
+  name: string;
+  enabled: boolean;
+  config: BarkConfig | CustomHttpConfig;
 }

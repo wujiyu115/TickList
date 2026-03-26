@@ -35,6 +35,8 @@ class TaskDAO:
             'reminder_time': task_model.reminder_time,
             'is_pinned': task_model.is_pinned,
             'order': task_model.order,
+            'push_due_notify': task_model.push_due_notify,
+            'push_notified_date': task_model.push_notified_date,
             'created_at': task_model.created_at,
             'updated_at': task_model.updated_at,
             'completed_at': task_model.completed_at,
@@ -75,6 +77,7 @@ class TaskDAO:
                 reminder_time=task_dict.get('reminder_time'),
                 is_pinned=task_dict.get('is_pinned', False),
                 order=task_dict.get('order', 0),
+                push_due_notify=task_dict.get('push_due_notify', False),
                 created_at=task_dict.get('created_at'),
                 updated_at=task_dict.get('updated_at'),
                 completed_at=task_dict.get('completed_at'),
@@ -127,6 +130,10 @@ class TaskDAO:
         session = self._get_session()
         try:
             update_data['updated_at'] = datetime.now().isoformat()
+            
+            # 如果 due_date 被修改，重置 push_notified_date
+            if 'due_date' in update_data:
+                update_data['push_notified_date'] = None
             
             # 提取 child_ids 和 tags（需要单独处理）
             child_ids = update_data.pop('child_ids', None)
@@ -538,6 +545,7 @@ class TaskDAO:
                 reminder_time=original_task.reminder_time,
                 is_pinned=original_task.is_pinned,
                 order=original_task.order,
+                push_due_notify=original_task.push_due_notify,
                 created_at=now,
                 updated_at=now,
                 completed_at=None,

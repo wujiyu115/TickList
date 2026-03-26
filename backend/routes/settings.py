@@ -33,6 +33,17 @@ class SettingsUpdate(BaseModel):
     # 通知设置
     notification_enabled: Optional[bool] = None
     notification_sound: Optional[bool] = None
+    # 推送设置
+    push_enabled: Optional[bool] = None
+    push_channels: Optional[str] = None
+    push_interval: Optional[int] = None
+    push_batch_size: Optional[int] = None
+
+
+class PushTestRequest(BaseModel):
+    """推送测试请求模型"""
+    type: str  # bark / custom_http
+    config: dict
 
 
 @router.get("")
@@ -64,3 +75,21 @@ async def update_settings(
         return updated_settings
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'更新设置失败: {str(e)}')
+
+
+@router.post("/push/test")
+async def test_push(
+    request: PushTestRequest,
+    current_user_id: str = Depends(get_current_user)
+):
+    """测试单个推送渠道"""
+    try:
+        from services.push_service import push_service
+        channel_config = {
+            'type': request.type,
+            'config': request.config
+        }
+        result = push_service.test_channel(channel_config)
+        return {"success": result["success"], "message": result.get("message", "")}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'推送测试失败: {str(e)}')

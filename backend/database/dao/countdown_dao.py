@@ -51,6 +51,11 @@ class CountdownDAO:
         session = self._get_session()
         try:
             update_data['updated_at'] = datetime.now().isoformat()
+            
+            # 如果 target_date 被修改，重置 push_notified_date
+            if 'target_date' in update_data:
+                update_data['push_notified_date'] = None
+            
             result = session.query(CountdownModel).filter(
                 CountdownModel.id == countdown_id,
                 CountdownModel.user_id == user_id
