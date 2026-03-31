@@ -1,15 +1,15 @@
 # ==========================================
 # Stage 1: Frontend Build
 # ==========================================
-FROM node:20-alpine AS frontend-build
+FROM --platform=$BUILDPLATFORM node:20-alpine AS frontend-build
 
 WORKDIR /app/frontend
 
 # 复制前端依赖文件
 COPY frontend/package.json frontend/package-lock.json ./
 
-# 安装前端依赖
-RUN npm ci
+# 安装前端依赖（使用缓存加速）
+RUN --mount=type=cache,target=/root/.npm npm ci
 
 # 复制前端源代码
 COPY frontend/ ./
@@ -31,8 +31,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 复制后端依赖文件
 COPY backend/requirements.txt ./
 
-# 安装 Python 依赖
-RUN pip install --no-cache-dir -r requirements.txt
+# 安装 Python 依赖（使用缓存加速）
+RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
 
 # 复制后端代码
 COPY backend/ ./
