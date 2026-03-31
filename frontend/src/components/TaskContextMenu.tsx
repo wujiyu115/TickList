@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, message, Input, Button, Popover, Checkbox } from 'antd';
+import { Menu, message, Input, Button, Popover, Checkbox, Modal, DatePicker } from 'antd';
 import moment from 'moment';
 import {
   CalendarOutlined,
@@ -50,6 +50,10 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose }) => {
   const [tagPanelVisible, setTagPanelVisible] = useState(false);
   const [tagSearchText, setTagSearchText] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>(task.tags || []);
+  
+  // 自定义日期弹窗状态
+  const [customDateVisible, setCustomDateVisible] = useState(false);
+  const [customDate, setCustomDate] = useState<moment.Moment | null>(null);
   
   // 加载清单和标签
   useEffect(() => {
@@ -393,25 +397,31 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose }) => {
           break;
 
         case 'today':
-          await updateTaskData(task.id, { start_time: moment().toISOString() });
+          await updateTaskData(task.id, { 
+            due_date: moment().endOf('day').toISOString()
+          });
           message.success('已设置为今天');
           await refreshTasks();
           break;
 
         case 'tomorrow':
-          await updateTaskData(task.id, { start_time: moment().add(1, 'day').toISOString() });
+          await updateTaskData(task.id, { 
+            due_date: moment().add(1, 'day').endOf('day').toISOString()
+          });
           message.success('已设置为明天');
           await refreshTasks();
           break;
 
         case 'next-week':
-          await updateTaskData(task.id, { start_time: moment().add(1, 'week').startOf('week').add(1, 'day').toISOString() });
+          await updateTaskData(task.id, { 
+            due_date: moment().add(1, 'week').startOf('week').add(1, 'day').endOf('day').toISOString()
+          });
           message.success('已设置为下周一');
           await refreshTasks();
           break;
 
         case 'custom':
-          message.info('请使用任务编辑器设置自定义日期');
+          setCustomDateVisible(true);
           break;
 
         case 'cancel':
@@ -552,12 +562,47 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose }) => {
     },
   ];
 
+  // 处理自定义日期确认
+  const handleCustomDateOk = async () => {
+    if (customDate && task) {
+      await updateTaskData(task.id, { due_date: customDate.toISOString() });
+      message.success('截止日期已设置');
+      await refreshTasks();
+    }
+    setCustomDateVisible(false);
+    setCustomDate(null);
+  };
+
+  // 处理自定义日期取消
+  const handleCustomDateCancel = () => {
+    setCustomDateVisible(false);
+    setCustomDate(null);
+  };
+
   return (
-    <Menu
-      onClick={handleMenuClick}
-      items={items}
-      style={{ minWidth: 200 }}
-    />
+    <>
+      <Menu
+        onClick={handleMenuClick}
+        items={items}
+        style={{ minWidth: 200 }}
+      />
+      <Modal
+        title="设置截止日期"
+        open={customDateVisible}
+        onOk={handleCustomDateOk}
+        onCancel={handleCustomDateCancel}
+        okText="确定"
+        cancelText="取消"
+      >
+        <DatePicker
+          showTime
+          value={customDate}
+          onChange={setCustomDate}
+          style={{ width: '100%' }}
+          placeholder="选择截止日期和时间"
+        />
+      </Modal>
+    </>
   );
 };
 

@@ -183,7 +183,7 @@ const TaskPage: React.FC = () => {
         const today = moment().format('YYYY-MM-DD');
         if (conditions.date_range === 'today') {
           params.start_date = today;
-          params.end_date = today;
+          params.end_date = moment().add(1, 'day').format('YYYY-MM-DD');
         } else if (conditions.date_range === 'week') {
           params.start_date = today;
           params.end_date = moment().add(7, 'days').format('YYYY-MM-DD');
@@ -207,7 +207,7 @@ const TaskPage: React.FC = () => {
       if (filter === 'today') {
         const today = moment().format('YYYY-MM-DD');
         params.start_date = today;
-        params.end_date = today;
+        params.end_date = moment().add(1, 'day').format('YYYY-MM-DD');
       } else if (filter === 'week') {
         const today = moment().format('YYYY-MM-DD');
         const weekLater = moment().add(7, 'days').format('YYYY-MM-DD');
