@@ -41,6 +41,8 @@ class TaskModel(Base):
     order = Column(Integer, default=0)
     push_due_notify = Column(Boolean, default=False)
     push_notified_date = Column(String(10), nullable=True, default=None)  # 格式 "YYYY-MM-DD"
+    pomodoro_count = Column(Integer, default=0)    # 累计番茄数
+    focus_duration = Column(Integer, default=0)     # 累计专注秒数
     created_at = Column(String(50))
     updated_at = Column(String(50))
     completed_at = Column(String(50))
@@ -165,6 +167,7 @@ class UserSettingsModel(Base):
     short_break_duration = Column(Integer, default=5)
     long_break_duration = Column(Integer, default=15)
     pomodoro_auto_start = Column(Boolean, default=False)
+    focus_min_duration = Column(Integer, default=5)  # 最短专注时长（分钟）
     
     # 通知设置
     notification_enabled = Column(Boolean, default=True)
@@ -223,6 +226,25 @@ class CountdownModel(Base):
     
     __table_args__ = (
         Index('idx_countdowns_user', 'user_id'),
+    )
+
+
+class FocusSessionModel(Base):
+    """专注记录表"""
+    __tablename__ = 'focus_sessions'
+    
+    id = Column(String(36), primary_key=True)
+    user_id = Column(String(36), nullable=False, index=True)
+    task_id = Column(String(36), nullable=True)  # 可空，支持独立专注
+    type = Column(String(20), nullable=False)     # "pomodoro" / "stopwatch"
+    duration = Column(Integer, default=0)          # 实际专注秒数
+    started_at = Column(String(50))
+    ended_at = Column(String(50))
+    created_at = Column(String(50))
+    
+    __table_args__ = (
+        Index('idx_focus_sessions_user', 'user_id'),
+        Index('idx_focus_sessions_user_started', 'user_id', 'started_at'),
     )
 
 

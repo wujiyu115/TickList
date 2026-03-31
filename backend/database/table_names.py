@@ -21,6 +21,7 @@ USER_SETTINGS = "user_settings"
 TASK_STATISTICS = "task_statistics"
 COUNTDOWNS = "countdowns"
 FILTERS = "filters"
+FOCUS_SESSIONS = "focus_sessions"
 
 # 兼容旧代码（别名）
 SETTINGS = USER_SETTINGS

@@ -62,6 +62,8 @@ class Task:
         self.tags = tags or []
         self.order = order
         self.push_due_notify = push_due_notify
+        self.pomodoro_count = 0       # 累计番茄数
+        self.focus_duration = 0        # 累计专注秒数
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
         self.completed_at: Optional[datetime] = None
@@ -83,6 +85,8 @@ class Task:
             'tags': self.tags,
             'order': self.order,
             'push_due_notify': self.push_due_notify,
+            'pomodoro_count': self.pomodoro_count,
+            'focus_duration': self.focus_duration,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'completed_at': self.completed_at.isoformat() if self.completed_at else None
@@ -103,6 +107,41 @@ class Task:
             if hasattr(self, key):
                 setattr(self, key, value)
         self.updated_at = datetime.now()
+
+
+class FocusSession:
+    """专注记录模型"""
+    def __init__(
+        self,
+        id: str = "",
+        user_id: str = "",
+        task_id: Optional[str] = None,
+        type: str = "pomodoro",  # "pomodoro" / "stopwatch"
+        duration: int = 0,
+        started_at: str = "",
+        ended_at: str = "",
+        created_at: Optional[datetime] = None
+    ):
+        self.id = id
+        self.user_id = user_id
+        self.task_id = task_id
+        self.type = type
+        self.duration = duration
+        self.started_at = started_at
+        self.ended_at = ended_at
+        self.created_at = created_at or datetime.now()
+    
+    def to_dict(self) -> Dict:
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'task_id': self.task_id,
+            'type': self.type,
+            'duration': self.duration,
+            'started_at': self.started_at,
+            'ended_at': self.ended_at,
+            'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else self.created_at,
+        }
 
 
 class TaskStatistics:
@@ -341,6 +380,7 @@ class UserSettings:
         short_break_duration: int = 5,             # 短休息时长
         long_break_duration: int = 15,             # 长休息时长
         pomodoro_auto_start: bool = False,         # 是否自动开始下一个
+        focus_min_duration: int = 5,               # 最短专注时长（分钟）
         # 通知设置
         notification_enabled: bool = True,         # 是否启用通知
         notification_sound: bool = True,           # 是否播放提示音
@@ -372,6 +412,7 @@ class UserSettings:
         self.short_break_duration = short_break_duration
         self.long_break_duration = long_break_duration
         self.pomodoro_auto_start = pomodoro_auto_start
+        self.focus_min_duration = focus_min_duration
         # 通知设置
         self.notification_enabled = notification_enabled
         self.notification_sound = notification_sound
@@ -401,6 +442,7 @@ class UserSettings:
             'short_break_duration': self.short_break_duration,
             'long_break_duration': self.long_break_duration,
             'pomodoro_auto_start': self.pomodoro_auto_start,
+            'focus_min_duration': self.focus_min_duration,
             'notification_enabled': self.notification_enabled,
             'notification_sound': self.notification_sound,
             'push_enabled': self.push_enabled,

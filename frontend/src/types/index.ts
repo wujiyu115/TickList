@@ -24,6 +24,8 @@ export interface Task {
   tags: string[];
   order: number;
   push_due_notify?: boolean;  // 截止推送通知
+  pomodoro_count?: number;     // 番茄专注次数
+  focus_duration?: number;     // 专注时长（秒）
   created_at: string;
   updated_at: string;
   completed_at?: string;
@@ -243,6 +245,7 @@ export interface UserSettings {
   short_break_duration: number;     // 短休息时长
   long_break_duration: number;      // 长休息时长
   pomodoro_auto_start: boolean;     // 是否自动开始下一个
+  focus_min_duration: number;       // 最短专注时长（分钟）
   // 通知设置
   notification_enabled: boolean;    // 是否启用通知
   notification_sound: boolean;      // 是否播放提示音

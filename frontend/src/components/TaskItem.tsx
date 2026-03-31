@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Checkbox, Dropdown, Input } from 'antd';
-import { CaretDownOutlined, CaretRightOutlined } from '@ant-design/icons';
+import { CaretDownOutlined, CaretRightOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import { Task } from '../types';
 import { useTaskContext } from '../contexts/TaskContext';
@@ -20,6 +20,19 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
   const [contextMenuVisible, setContextMenuVisible] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
+
+  // 格式化专注时长
+  const formatFocusDuration = (seconds: number): string => {
+    if (seconds < 60) {
+      return `${seconds}s`;
+    } else if (seconds < 3600) {
+      return `${Math.floor(seconds / 60)}m`;
+    } else {
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      return minutes > 0 ? `${hours}h${minutes}m` : `${hours}h`;
+    }
+  };
 
   // 找到子任务（通过 child_ids 查找）
   const children = (task.child_ids || [])
@@ -155,6 +168,19 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
             {!hideDetails && task.description && (
               <div className="task-desc">{task.description}</div>
             )}
+            {/* 专注数据显示 */}
+            {(task.pomodoro_count && task.pomodoro_count > 0) || (task.focus_duration && task.focus_duration > 0) ? (
+              <div className="task-focus-info">
+                {task.pomodoro_count && task.pomodoro_count > 0 && (
+                  <span className="focus-pomodoro">🍅 {task.pomodoro_count}</span>
+                )}
+                {task.focus_duration && task.focus_duration > 0 && (
+                  <span className="focus-duration">
+                    <ClockCircleOutlined /> {formatFocusDuration(task.focus_duration)}
+                  </span>
+                )}
+              </div>
+            ) : null}
           </div>
 
           {/* 右侧信息 */}

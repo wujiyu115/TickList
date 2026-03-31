@@ -369,8 +369,12 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose }) => {
           }
           break;
 
-        case 'focus':
-          navigate('/pomodoro');
+        case 'focus-pomodoro':
+          navigate(`/pomodoro?task_id=${task.id}&mode=pomodoro`);
+          break;
+
+        case 'focus-stopwatch':
+          navigate(`/pomodoro?task_id=${task.id}&mode=stopwatch`);
           break;
 
         case 'pin':
@@ -523,6 +527,10 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose }) => {
       key: 'focus',
       icon: <ClockCircleOutlined />,
       label: '开始专注',
+      children: [
+        { key: 'focus-pomodoro', label: '开始番茄专注' },
+        { key: 'focus-stopwatch', label: '开始正计时' },
+      ],
     },
     { type: 'divider' },
     {

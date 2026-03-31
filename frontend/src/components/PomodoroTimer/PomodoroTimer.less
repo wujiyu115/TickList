@@ -67,6 +67,10 @@
       font-size: 14px;
       margin-bottom: 40px;
       cursor: pointer;
+      max-width: 300px;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
       
       &:hover {
         color: #666;
@@ -97,14 +101,21 @@
     margin-bottom: 32px;
     
     .stat-card {
-      background: #fff;
       border-radius: 12px;
       padding: 16px;
+      
+      &.stat-card-purple {
+        background: linear-gradient(135deg, #f0ebff 0%, #e8e0ff 100%);
+      }
+      
+      &.stat-card-blue {
+        background: linear-gradient(135deg, #e6f4ff 0%, #d6ebff 100%);
+      }
       
       .stat-label {
         display: block;
         font-size: 12px;
-        color: #999;
+        color: #666;
         margin-bottom: 8px;
       }
       
@@ -151,6 +162,86 @@
       justify-content: center;
       min-height: 300px;
     }
+    
+    .records-list {
+      .records-date-group {
+        margin-bottom: 20px;
+        
+        .date-label {
+          font-size: 14px;
+          font-weight: 600;
+          color: #1677ff;
+          margin-bottom: 12px;
+        }
+        
+        .record-item {
+          margin-bottom: 12px;
+          
+          .record-main {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            
+            .record-type-icon {
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              width: 24px;
+              height: 24px;
+              border-radius: 50%;
+              flex-shrink: 0;
+              
+              &.icon-pomodoro {
+                background: #1677ff;
+                color: white;
+                font-size: 13px;
+              }
+              
+              &.icon-stopwatch {
+                background: #1677ff;
+                color: white;
+                font-size: 13px;
+              }
+            }
+            
+            .record-time-range {
+              flex: 1;
+              font-size: 14px;
+              color: #666;
+            }
+            
+            .record-duration {
+              font-size: 14px;
+              color: #999;
+              text-align: right;
+              min-width: 50px;
+            }
+          }
+          
+          .record-task {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+            padding-left: 34px;
+            
+            .task-dot {
+              font-size: 12px;
+              color: #1677ff;
+            }
+            
+            .task-name {
+              font-size: 13px;
+              color: #333;
+              max-width: 260px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            }
+          }
+        }
+      }
+    }
   }
 }
 
@@ -173,6 +264,12 @@
       color: #333;
       letter-spacing: 2px;
     }
+    
+    .paused-label {
+      font-size: 14px;
+      color: #999;
+      margin-top: 8px;
+    }
   }
 }
 
@@ -183,18 +280,46 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 12px;
   
-  .main-action-btn {
-    width: 200px;
-    height: 48px;
+  .control-btn {
+    min-width: 160px;
+    height: 44px;
+    border-radius: 22px;
     font-size: 16px;
-    border-radius: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    
+    &:hover {
+      transform: translateY(-1px);
+    }
   }
   
-  .secondary-actions {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    margin-top: 16px;
+  .control-btn-primary {
+    background: var(--ant-color-primary);
+    color: white;
+    border: none;
+    
+    &:hover {
+      background: var(--ant-color-primary-hover);
+      color: white;
+    }
   }
+  
+  .control-btn-outline {
+    background: transparent;
+    border: 1px solid var(--ant-color-primary);
+    color: var(--ant-color-primary);
+    
+    &:hover {
+      background: var(--ant-color-primary-bg);
+      color: var(--ant-color-primary);
+      border-color: var(--ant-color-primary);
+    }
+  }
+}
+
+// 任务选择弹窗样式
+.selected-task {
+  background-color: #f0f5ff;
 }

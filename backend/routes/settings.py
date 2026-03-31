@@ -30,6 +30,7 @@ class SettingsUpdate(BaseModel):
     short_break_duration: Optional[int] = None
     long_break_duration: Optional[int] = None
     pomodoro_auto_start: Optional[bool] = None
+    focus_min_duration: Optional[int] = None  # 最短专注时长（分钟）
     # 通知设置
     notification_enabled: Optional[bool] = None
     notification_sound: Optional[bool] = None

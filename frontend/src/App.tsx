@@ -4,6 +4,7 @@ import { message, ConfigProvider, theme as antdTheme } from 'antd';
 import MainLayout from './layouts/MainLayout';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import { FocusProvider } from './contexts/FocusContext';
 import { getCurrentUser } from './api/auth';
 import { getSettings } from './api/settings';
 import { User, UserSettings } from './types';
@@ -132,6 +133,7 @@ const App: React.FC = () => {
       }}
     >
       <ThemeContext.Provider value={{ primaryColor, isDark, setTheme }}>
+        <FocusProvider>
         <Routes>
           <Route
             path="/login"
@@ -164,6 +166,7 @@ const App: React.FC = () => {
             }
           />
         </Routes>
+        </FocusProvider>
       </ThemeContext.Provider>
     </ConfigProvider>
   );

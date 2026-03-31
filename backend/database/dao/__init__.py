@@ -9,6 +9,7 @@ from .list_dao import list_dao
 from .tag_dao import tag_dao
 from .filter_dao import filter_dao
 from .countdown_dao import countdown_dao
+from .focus_dao import focus_dao
 
 __all__ = [
     'task_dao',
@@ -20,4 +21,5 @@ __all__ = [
     'tag_dao',
     'filter_dao',
     'countdown_dao',
+    'focus_dao',
 ]

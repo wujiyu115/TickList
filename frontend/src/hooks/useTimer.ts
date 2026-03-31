@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 export type TimerPhase = 'work' | 'break' | 'idle';
+export type TimerMode = 'pomodoro' | 'stopwatch';
 
 interface TimerState {
   phase: TimerPhase;
@@ -9,6 +10,7 @@ interface TimerState {
 }
 
 interface UseTimerOptions {
+  mode?: TimerMode; // 计时模式，默认 'pomodoro'
   workDuration: number; // 工作时长（秒）
   breakDuration: number; // 短休息时长（秒）
   longBreakDuration?: number; // 长休息时长（秒）
@@ -23,10 +25,12 @@ interface UseTimerReturn extends TimerState {
   skip: () => void;
   setTimeLeft: (seconds: number) => void;
   pomodoroCount: number; // 已完成的番茄数
+  elapsedTime: number; // 正计时已过秒数
+  isPaused: boolean; // 是否处于暂停状态
 }
 
 export const useTimer = (options: UseTimerOptions): UseTimerReturn => {
-  const { workDuration, breakDuration, longBreakDuration, autoStart = false, onComplete } = options;
+  const { mode = 'pomodoro', workDuration, breakDuration, longBreakDuration, autoStart = false, onComplete } = options;
 
   const [state, setState] = useState<TimerState>({
     phase: 'idle',
@@ -36,10 +40,15 @@ export const useTimer = (options: UseTimerOptions): UseTimerReturn => {
   
   // 记录已完成的番茄数（用于决定长休息）
   const [pomodoroCount, setPomodoroCount] = useState(0);
+  
+  // 正计时模式：已过时间（秒）
+  const [elapsedTime, setElapsedTime] = useState(0);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const endTimeRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null); // 正计时开始时间戳
   const autoStartRef = useRef(autoStart);
+  const isPausedRef = useRef(false); // 正计时暂停状态
   
   // 保持 autoStart 最新值
   useEffect(() => {
@@ -53,6 +62,7 @@ export const useTimer = (options: UseTimerOptions): UseTimerReturn => {
       intervalRef.current = null;
     }
     endTimeRef.current = null;
+    startTimeRef.current = null;
   }, []);
 
   // 更新剩余时间
@@ -124,44 +134,100 @@ export const useTimer = (options: UseTimerOptions): UseTimerReturn => {
     }
   }, [updateTimeLeft]);
 
+  // 正计时模式：更新已过时间
+  const updateElapsedTime = useCallback(() => {
+    if (!startTimeRef.current) return;
+    const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+    setElapsedTime(elapsed);
+  }, []);
+
   // 开始计时
   const start = useCallback(() => {
-    setState((prev) => {
-      if (prev.isRunning) return prev;
+    if (mode === 'stopwatch') {
+      // 正计时模式
+      setState((prev) => {
+        if (prev.isRunning) return prev;
 
-      // 设置结束时间
-      endTimeRef.current = Date.now() + prev.timeLeft * 1000;
+        if (prev.phase === 'idle') {
+          // 首次开始
+          startTimeRef.current = Date.now();
+          setElapsedTime(0);
+        } else if (isPausedRef.current) {
+          // 恢复暂停：调整开始时间以保持时间连续
+          startTimeRef.current = Date.now() - elapsedTime * 1000;
+        }
 
-      // 启动定时器
-      intervalRef.current = setInterval(updateTimeLeft, 200);
+        isPausedRef.current = false;
+        intervalRef.current = setInterval(updateElapsedTime, 200);
 
-      return {
-        ...prev,
-        phase: prev.phase === 'idle' ? 'work' : prev.phase,
-        isRunning: true,
-      };
-    });
-  }, [updateTimeLeft]);
+        return {
+          ...prev,
+          phase: prev.phase === 'idle' ? 'work' : prev.phase,
+          isRunning: true,
+        };
+      });
+    } else {
+      // 番茄模式
+      setState((prev) => {
+        if (prev.isRunning) return prev;
+
+        // 设置结束时间
+        endTimeRef.current = Date.now() + prev.timeLeft * 1000;
+
+        // 启动定时器
+        intervalRef.current = setInterval(updateTimeLeft, 200);
+
+        return {
+          ...prev,
+          phase: prev.phase === 'idle' ? 'work' : prev.phase,
+          isRunning: true,
+        };
+      });
+    }
+  }, [mode, elapsedTime, updateTimeLeft, updateElapsedTime]);
 
   // 暂停计时
   const pause = useCallback(() => {
-    clearTimer();
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (mode === 'stopwatch') {
+      isPausedRef.current = true;
+      // 保留 startTimeRef 用于恢复计算
+    } else {
+      endTimeRef.current = null;
+    }
     setState((prev) => ({ ...prev, isRunning: false }));
-  }, [clearTimer]);
+  }, [mode]);
 
   // 重置计时
   const reset = useCallback(() => {
     clearTimer();
-    setState({
-      phase: 'idle',
-      timeLeft: workDuration,
-      isRunning: false,
-    });
-    setPomodoroCount(0);
-  }, [clearTimer, workDuration]);
+    if (mode === 'stopwatch') {
+      setElapsedTime(0);
+      isPausedRef.current = false;
+      setState({
+        phase: 'idle',
+        timeLeft: 0,
+        isRunning: false,
+      });
+    } else {
+      setState({
+        phase: 'idle',
+        timeLeft: workDuration,
+        isRunning: false,
+      });
+      setPomodoroCount(0);
+    }
+  }, [clearTimer, mode, workDuration]);
 
-  // 跳过当前阶段
+  // 跳过当前阶段（仅番茄模式有效）
   const skip = useCallback(() => {
+    if (mode === 'stopwatch') {
+      // 正计时模式下 skip 不生效
+      return;
+    }
     clearTimer();
     setState((prev) => {
       const newPhase = prev.phase === 'work' ? 'break' : 'work';
@@ -173,7 +239,7 @@ export const useTimer = (options: UseTimerOptions): UseTimerReturn => {
         isRunning: false,
       };
     });
-  }, [clearTimer, workDuration, breakDuration]);
+  }, [mode, clearTimer, workDuration, breakDuration]);
 
   // 设置剩余时间
   const setTimeLeft = useCallback((seconds: number) => {
@@ -187,6 +253,9 @@ export const useTimer = (options: UseTimerOptions): UseTimerReturn => {
     };
   }, [clearTimer]);
 
+  // 判断是否处于暂停状态：不在 idle 且没有在运行
+  const isPaused = state.phase !== 'idle' && !state.isRunning;
+
   return {
     ...state,
     start,
@@ -194,7 +263,9 @@ export const useTimer = (options: UseTimerOptions): UseTimerReturn => {
     reset,
     skip,
     setTimeLeft,
-    pomodoroCount,
+    pomodoroCount: mode === 'stopwatch' ? 0 : pomodoroCount,
+    elapsedTime: mode === 'stopwatch' ? elapsedTime : 0,
+    isPaused,
   };
 };
 

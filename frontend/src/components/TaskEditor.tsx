@@ -77,7 +77,7 @@ const formatDateDisplay = (startTime?: string, dueDate?: string): string => {
   const formatDate = (m: Dayjs) => {
     const dateStr = m.format('M月D日');
     const timeStr = m.format('HH:mm');
-    // 如果是整点00:00或23:59，可能是全天模式
+    // 如果是整点00:00戶23:59，可能是全天模式
     if (timeStr === '00:00' || timeStr === '23:59') {
       return dateStr;
     }
@@ -92,6 +92,19 @@ const formatDateDisplay = (startTime?: string, dueDate?: string): string => {
     return `📅 截止: ${formatDate(end)}`;
   }
   return '';
+};
+
+// 格式化专注时长
+const formatFocusDuration = (seconds: number): string => {
+  if (seconds < 60) {
+    return `${seconds}s`;
+  } else if (seconds < 3600) {
+    return `${Math.floor(seconds / 60)}m`;
+  } else {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return minutes > 0 ? `${hours}h${minutes}m` : `${hours}h`;
+  }
 };
 
 const TaskEditor: React.FC = () => {
@@ -570,6 +583,29 @@ const TaskEditor: React.FC = () => {
               )}
             </span>
           </Popover>
+          {/* 已专注信息 */}
+          {((selectedTask.pomodoro_count && selectedTask.pomodoro_count > 0) || (selectedTask.focus_duration && selectedTask.focus_duration > 0)) && (
+            <span className="focus-info" style={{ 
+              marginLeft: 12,
+              fontSize: 12,
+              color: '#999',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6
+            }}>
+              <span>已专注</span>
+              {selectedTask.pomodoro_count && selectedTask.pomodoro_count > 0 && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                  🍅 {selectedTask.pomodoro_count}
+                </span>
+              )}
+              {selectedTask.focus_duration && selectedTask.focus_duration > 0 && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                  <ClockCircleOutlined style={{ fontSize: 11 }} /> {formatFocusDuration(selectedTask.focus_duration)}
+                </span>
+              )}
+            </span>
+          )}
         </div>
         <div className="topbar-right">
           <Button type="text" icon={<MinusOutlined />} size="small" />

@@ -649,6 +649,22 @@ const SettingsPage: React.FC = () => {
               />
             </div>
           </div>
+
+          <div className="setting-item">
+            <div className="setting-label">
+              <span className="label-text">最短专注时长</span>
+              <span className="label-desc">专注不足此时长将不会保存记录</span>
+            </div>
+            <div className="setting-control">
+              <InputNumber
+                value={settings.focus_min_duration}
+                onChange={(v) => handleUpdateSetting('focus_min_duration', v || 5)}
+                min={1}
+                max={60}
+                addonAfter="分钟"
+              />
+            </div>
+          </div>
         </div>
 
         {/* 通知设置 */}

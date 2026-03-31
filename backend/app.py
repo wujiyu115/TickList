@@ -15,8 +15,9 @@ from database.connection import db_connection
 # 加载环境变量
 load_dotenv()
 
-# 在应用启动时创建所有表
+# 在应用启动时创建所有表并迁移缺失的列
 db_connection.create_tables()
+db_connection.migrate_tables()
 
 # 添加项目根目录到 Python 路径
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -33,6 +34,7 @@ from routes.tag import router as tag_router
 from routes.data import router as data_router
 from routes.filter import router as filter_router
 from routes.settings import router as settings_router
+from routes.focus import router as focus_router
 
 # 导入中间件
 from middleware.logging_middleware import RequestLoggingMiddleware
@@ -97,6 +99,7 @@ def create_app():
     app.include_router(data_router)
     app.include_router(filter_router)
     app.include_router(settings_router)
+    app.include_router(focus_router)
     
     # 挂载静态文件
     if os.path.exists(static_folder):

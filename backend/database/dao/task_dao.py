@@ -37,6 +37,8 @@ class TaskDAO:
             'order': task_model.order,
             'push_due_notify': task_model.push_due_notify,
             'push_notified_date': task_model.push_notified_date,
+            'pomodoro_count': task_model.pomodoro_count or 0,
+            'focus_duration': task_model.focus_duration or 0,
             'created_at': task_model.created_at,
             'updated_at': task_model.updated_at,
             'completed_at': task_model.completed_at,
@@ -78,6 +80,8 @@ class TaskDAO:
                 is_pinned=task_dict.get('is_pinned', False),
                 order=task_dict.get('order', 0),
                 push_due_notify=task_dict.get('push_due_notify', False),
+                pomodoro_count=task_dict.get('pomodoro_count', 0),
+                focus_duration=task_dict.get('focus_duration', 0),
                 created_at=task_dict.get('created_at'),
                 updated_at=task_dict.get('updated_at'),
                 completed_at=task_dict.get('completed_at'),
@@ -546,6 +550,8 @@ class TaskDAO:
                 is_pinned=original_task.is_pinned,
                 order=original_task.order,
                 push_due_notify=original_task.push_due_notify,
+                pomodoro_count=0,  # 复制时不复制专注数据
+                focus_duration=0,  # 复制时不复制专注数据
                 created_at=now,
                 updated_at=now,
                 completed_at=None,
