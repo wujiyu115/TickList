@@ -128,7 +128,8 @@ class SchedulerService:
                 TaskModel.push_due_notify == True,
                 or_(TaskModel.push_notified_date == None, TaskModel.push_notified_date != today_str),
                 TaskModel.due_date != None,
-                TaskModel.status != 'completed'
+                TaskModel.status != 'completed',
+                TaskModel.deleted_at == None
             )
         ).all()
         

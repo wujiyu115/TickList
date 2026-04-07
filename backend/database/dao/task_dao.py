@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from database.connection import db_connection
 from database.models import TaskModel, TaskChildModel, TaskTagModel
 from models import Task
+from utils.logger import logger
 import uuid
 
 
@@ -42,6 +43,7 @@ class TaskDAO:
             'created_at': task_model.created_at,
             'updated_at': task_model.updated_at,
             'completed_at': task_model.completed_at,
+            'deleted_at': task_model.deleted_at,
         }
         # 从关系表查询 child_ids
         children = session.query(TaskChildModel.child_id).filter(
@@ -121,7 +123,8 @@ class TaskDAO:
         try:
             task = session.query(TaskModel).filter(
                 TaskModel.id == task_id,
-                TaskModel.user_id == user_id
+                TaskModel.user_id == user_id,
+                TaskModel.deleted_at == None
             ).first()
             if task:
                 return self._task_to_dict(task, session)
@@ -272,26 +275,30 @@ class TaskDAO:
             session.close()
     
     def delete_task(self, task_id: str, user_id: str) -> bool:
-        """删除任务（级联删除子任务）"""
+        """删除任务（软删除：设置 deleted_at）"""
         session = self._get_session()
         try:
             task = session.query(TaskModel).filter(
                 TaskModel.id == task_id,
-                TaskModel.user_id == user_id
+                TaskModel.user_id == user_id,
+                TaskModel.deleted_at == None
             ).first()
             if not task:
                 return False
             
-            # 递归删除所有子任务（通过 child_ids）
-            self._delete_children_by_child_ids(task_id, user_id, session)
+            now = datetime.now().isoformat()
+            
+            # 递归软删除所有子任务
+            self._soft_delete_children(task_id, user_id, now, session)
             
             # 从父任务的 child_ids 中移除自己
             session.query(TaskChildModel).filter(
                 TaskChildModel.child_id == task_id
             ).delete()
             
-            # 删除任务本身（CASCADE 会自动删除关联的 task_children 和 task_tags）
-            session.delete(task)
+            # 软删除任务本身
+            task.deleted_at = now
+            task.updated_at = now
             
             session.commit()
             return True
@@ -301,23 +308,24 @@ class TaskDAO:
         finally:
             session.close()
     
-    def _delete_children_by_child_ids(self, task_id: str, user_id: str, session: Session):
-        """递归删除 child_ids 中的所有子任务"""
-        # 获取所有子任务 ID
+    def _soft_delete_children(self, task_id: str, user_id: str, deleted_at: str, session: Session):
+        """递归软删除 child_ids 中的所有子任务"""
         children = session.query(TaskChildModel.child_id).filter(
             TaskChildModel.parent_id == task_id
         ).all()
         
         for (child_id,) in children:
-            # 递归删除子任务的子任务
-            self._delete_children_by_child_ids(child_id, user_id, session)
-            # 删除子任务
+            # 递归软删除子任务的子任务
+            self._soft_delete_children(child_id, user_id, deleted_at, session)
+            # 软删除子任务
             child_task = session.query(TaskModel).filter(
                 TaskModel.id == child_id,
-                TaskModel.user_id == user_id
+                TaskModel.user_id == user_id,
+                TaskModel.deleted_at == None
             ).first()
             if child_task:
-                session.delete(child_task)
+                child_task.deleted_at = deleted_at
+                child_task.updated_at = deleted_at
     
     def get_user_tasks(
         self,
@@ -334,7 +342,10 @@ class TaskDAO:
         """获取用户任务列表（筛选匹配的任务，并自动展开子任务树）"""
         session = self._get_session()
         try:
-            query = session.query(TaskModel).filter(TaskModel.user_id == user_id)
+            query = session.query(TaskModel).filter(
+                TaskModel.user_id == user_id,
+                TaskModel.deleted_at == None
+            )
             
             if status:
                 query = query.filter(TaskModel.status == status)
@@ -395,7 +406,8 @@ class TaskDAO:
             visited.add(child_id)
             task = session.query(TaskModel).filter(
                 TaskModel.id == child_id,
-                TaskModel.user_id == user_id
+                TaskModel.user_id == user_id,
+                TaskModel.deleted_at == None
             ).first()
             if task:
                 task_dict = self._task_to_dict(task, session)
@@ -421,7 +433,8 @@ class TaskDAO:
             for child_id in child_ids:
                 child = session.query(TaskModel).filter(
                     TaskModel.id == child_id,
-                    TaskModel.user_id == user_id
+                    TaskModel.user_id == user_id,
+                    TaskModel.deleted_at == None
                 ).first()
                 if child:
                     result.append(self._task_to_dict(child, session))
@@ -505,6 +518,7 @@ class TaskDAO:
             search_pattern = f'%{keyword}%'
             tasks = session.query(TaskModel).filter(
                 TaskModel.user_id == user_id,
+                TaskModel.deleted_at == None,
                 or_(
                     TaskModel.title.like(search_pattern),
                     TaskModel.description.like(search_pattern)
@@ -606,6 +620,7 @@ class TaskDAO:
         try:
             tasks = session.query(TaskModel).filter(
                 TaskModel.user_id == user_id,
+                TaskModel.deleted_at == None,
                 TaskModel.due_date >= start_date.isoformat(),
                 TaskModel.due_date <= end_date.isoformat()
             ).order_by(asc(TaskModel.due_date)).all()
@@ -620,6 +635,7 @@ class TaskDAO:
         try:
             tasks = session.query(TaskModel).filter(
                 TaskModel.user_id == user_id,
+                TaskModel.deleted_at == None,
                 TaskModel.reminder_time.isnot(None),
                 TaskModel.status != 'completed'
             ).order_by(asc(TaskModel.reminder_time)).all()
@@ -632,10 +648,120 @@ class TaskDAO:
         """统计用户任务数量"""
         session = self._get_session()
         try:
-            query = session.query(TaskModel).filter(TaskModel.user_id == user_id)
+            query = session.query(TaskModel).filter(
+                TaskModel.user_id == user_id,
+                TaskModel.deleted_at == None
+            )
             if status:
                 query = query.filter(TaskModel.status == status)
             return query.count()
+        finally:
+            session.close()
+
+    def get_deleted_tasks(self, user_id: str, page: int = 1, page_size: int = 50) -> dict:
+        """分页获取垃圾箱任务"""
+        session = self._get_session()
+        try:
+            query = session.query(TaskModel).filter(
+                TaskModel.user_id == user_id,
+                TaskModel.deleted_at != None
+            )
+            total = query.count()
+            tasks = query.order_by(desc(TaskModel.deleted_at)).offset((page - 1) * page_size).limit(page_size).all()
+            return {
+                'tasks': [self._task_to_dict(t, session) for t in tasks],
+                'total': total,
+                'page': page,
+                'page_size': page_size
+            }
+        except Exception as e:
+            logger.error(f"Failed to get deleted tasks: {e}")
+            return {'tasks': [], 'total': 0, 'page': page, 'page_size': page_size}
+        finally:
+            session.close()
+
+    def restore_task(self, task_id: str, user_id: str) -> bool:
+        """恢复已删除的任务"""
+        session = self._get_session()
+        try:
+            task = session.query(TaskModel).filter(
+                TaskModel.id == task_id,
+                TaskModel.user_id == user_id,
+                TaskModel.deleted_at != None
+            ).first()
+            if not task:
+                return False
+            task.deleted_at = None
+            task.updated_at = datetime.now().isoformat()
+            session.commit()
+            return True
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Failed to restore task: {e}")
+            return False
+        finally:
+            session.close()
+
+    def permanently_delete_task(self, task_id: str, user_id: str) -> bool:
+        """永久删除任务（硬删除）"""
+        session = self._get_session()
+        try:
+            task = session.query(TaskModel).filter(
+                TaskModel.id == task_id,
+                TaskModel.user_id == user_id,
+                TaskModel.deleted_at != None  # 只能永久删除已在垃圾箱中的
+            ).first()
+            if not task:
+                return False
+            # 删除子任务关系
+            session.query(TaskChildModel).filter(
+                TaskChildModel.parent_id == task_id
+            ).delete()
+            session.query(TaskChildModel).filter(
+                TaskChildModel.child_id == task_id
+            ).delete()
+            # 删除任务标签关系
+            session.query(TaskTagModel).filter(
+                TaskTagModel.task_id == task_id
+            ).delete()
+            # 删除任务本身
+            session.delete(task)
+            session.commit()
+            return True
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Failed to permanently delete task: {e}")
+            return False
+        finally:
+            session.close()
+
+    def empty_trash(self, user_id: str) -> int:
+        """清空垃圾箱，返回删除数量"""
+        session = self._get_session()
+        try:
+            tasks = session.query(TaskModel).filter(
+                TaskModel.user_id == user_id,
+                TaskModel.deleted_at != None
+            ).all()
+            count = len(tasks)
+            for task in tasks:
+                # 删除关联关系
+                session.query(TaskChildModel).filter(
+                    TaskChildModel.parent_id == task.id
+                ).delete()
+                session.query(TaskChildModel).filter(
+                    TaskChildModel.child_id == task.id
+                ).delete()
+                session.query(TaskTagModel).filter(
+                    TaskTagModel.task_id == task.id
+                ).delete()
+                session.delete(task)
+            session.commit()
+            return count
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Failed to empty trash: {e}")
+            return 0
         finally:
             session.close()
 

@@ -130,8 +130,22 @@ const CompletedTaskGroup: React.FC<CompletedTaskGroupProps> = ({
   );
 };
 
-const CompletedTaskList: React.FC = () => {
-  const { tasks, loading, updateTaskData, selectTask, selectedTask } = useTaskContext();
+interface CompletedTaskListProps {
+  tasks: Task[];
+  total: number;
+  loading: boolean;
+  loadingMore: boolean;
+  onLoadMore: () => void;
+}
+
+const CompletedTaskList: React.FC<CompletedTaskListProps> = ({
+  tasks,
+  total,
+  loading,
+  loadingMore,
+  onLoadMore,
+}) => {
+  const { updateTaskData, selectTask, selectedTask } = useTaskContext();
   const [lists, setLists] = useState<TaskListType[]>([]);
   const [dateFilter, setDateFilter] = useState('all');
   const [listFilter, setListFilter] = useState<string | null>(null);
@@ -161,9 +175,9 @@ const CompletedTaskList: React.FC = () => {
     return list ? list.name : '所有清单';
   }, [listFilter, lists]);
 
-  // 筛选任务
+  // 筛选任务（props 传入的已经是已完成任务，只做日期和清单筛选）
   const filteredTasks = useMemo(() => {
-    let result = tasks.filter(t => t.status === 'completed');
+    let result = tasks;
 
     // 日期筛选
     if (dateFilter !== 'all') {
@@ -322,6 +336,14 @@ const CompletedTaskList: React.FC = () => {
 
       {filteredTasks.length === 0 && !loading && (
         <Empty description="暂无已完成的任务" className="empty-state" />
+      )}
+
+      {tasks.length < total && (
+        <div className="load-more-container" style={{ textAlign: 'center', padding: '16px 0' }}>
+          <Button type="link" loading={loadingMore} onClick={onLoadMore}>
+            查看更多
+          </Button>
+        </div>
       )}
     </div>
   );

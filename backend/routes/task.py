@@ -49,6 +49,50 @@ class BatchUpdateStatus(BaseModel):
     task_ids: List[str]
     status: str
 
+@router.get('/api/tasks/trash')
+async def get_trash_tasks(
+    page: int = 1,
+    page_size: int = 50,
+    current_user_id: str = Depends(get_current_user)
+):
+    """获取垃圾箱任务"""
+    result = task_dao.get_deleted_tasks(current_user_id, page, page_size)
+    return result
+
+@router.delete('/api/tasks/trash/empty')
+async def empty_trash(current_user_id: str = Depends(get_current_user)):
+    """清空垃圾箱"""
+    count = task_dao.empty_trash(current_user_id)
+    return {'success': True, 'deleted_count': count}
+
+@router.get('/api/tasks/search')
+async def search_tasks(
+    keyword: str = Query(..., min_length=1),
+    current_user_id: str = Depends(get_current_user)
+):
+    """搜索任务"""
+    try:
+        tasks = task_dao.search_tasks(current_user_id, keyword)
+        return {'tasks': tasks, 'count': len(tasks)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'搜索任务失败: {str(e)}')
+
+@router.post('/api/tasks/batch-update')
+async def batch_update_tasks(
+    batch_data: BatchUpdateStatus,
+    current_user_id: str = Depends(get_current_user)
+):
+    """批量更新任务状态"""
+    try:
+        count = task_dao.batch_update_status(
+            batch_data.task_ids,
+            current_user_id,
+            batch_data.status
+        )
+        return {'message': f'已更新 {count} 个任务', 'updated_count': count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'批量更新失败: {str(e)}')
+
 @router.post('/api/tasks')
 async def create_task(
     task_data: TaskCreate,
@@ -265,21 +309,21 @@ async def duplicate_task(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'复制任务失败: {str(e)}')
 
-@router.post('/api/tasks/batch-update')
-async def batch_update_tasks(
-    batch_data: BatchUpdateStatus,
-    current_user_id: str = Depends(get_current_user)
-):
-    """批量更新任务状态"""
-    try:
-        count = task_dao.batch_update_status(
-            batch_data.task_ids,
-            current_user_id,
-            batch_data.status
-        )
-        return {'message': f'已更新 {count} 个任务', 'updated_count': count}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f'批量更新失败: {str(e)}')
+@router.post('/api/tasks/{task_id}/restore')
+async def restore_task(task_id: str, current_user_id: str = Depends(get_current_user)):
+    """恢复已删除的任务"""
+    success = task_dao.restore_task(task_id, current_user_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Task not found in trash")
+    return {'success': True}
+
+@router.delete('/api/tasks/{task_id}/permanent')
+async def permanent_delete_task(task_id: str, current_user_id: str = Depends(get_current_user)):
+    """永久删除任务"""
+    success = task_dao.permanently_delete_task(task_id, current_user_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Task not found in trash")
+    return {'success': True}
 
 @router.get('/api/tasks/{task_id}/children')
 async def get_child_tasks(
@@ -292,15 +336,3 @@ async def get_child_tasks(
         return {'children': children, 'count': len(children)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'获取子任务失败: {str(e)}')
-
-@router.get('/api/tasks/search')
-async def search_tasks(
-    keyword: str = Query(..., min_length=1),
-    current_user_id: str = Depends(get_current_user)
-):
-    """搜索任务"""
-    try:
-        tasks = task_dao.search_tasks(current_user_id, keyword)
-        return {'tasks': tasks, 'count': len(tasks)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f'搜索任务失败: {str(e)}')

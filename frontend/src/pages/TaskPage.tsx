@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Button, Popover, Checkbox, Divider, Tooltip } from 'antd';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { Button, Popover, Checkbox, Divider, Tooltip, Popconfirm, Spin, Empty, message, Dropdown } from 'antd';
 import { 
   UnorderedListOutlined, 
   SortAscendingOutlined, 
@@ -9,7 +9,9 @@ import {
   AppstoreOutlined,
   ProjectOutlined,
   SettingOutlined,
-  MenuOutlined
+  MenuOutlined,
+  DeleteOutlined,
+  RestOutlined
 } from '@ant-design/icons';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import moment from 'moment';
@@ -18,18 +20,22 @@ import TaskList from '../components/TaskList';
 import KanbanView from '../components/KanbanView';
 import CompletedTaskList from '../components/CompletedTaskList';
 import TaskEditor from '../components/TaskEditor';
+import TaskContextMenu from '../components/TaskContextMenu';
 import { getLists } from '../api/list';
 import { getTags } from '../api/tag';
 import { getFilters } from '../api/filter';
 import { getSettings } from '../api/settings';
-import { TaskList as TaskListType, Tag, Filter } from '../types';
+import { getTrashTasks, emptyTrash, getTasks } from '../api/task';
+import { Task, TaskList as TaskListType, Tag, Filter } from '../types';
 import './TaskPage.less';
 
 // 视图类型
 type ViewMode = 'list' | 'kanban';
 
+const PAGE_SIZE = 50;
+
 const TaskPage: React.FC = () => {
-  const { fetchTasks, selectedTask } = useTaskContext();
+  const { fetchTasks, selectedTask, selectTask } = useTaskContext();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const filter = searchParams.get('filter');
@@ -56,6 +62,23 @@ const TaskPage: React.FC = () => {
   const [hideDetails, setHideDetails] = useState(() => {
     return localStorage.getItem('hideDetails') === 'true';
   });
+
+  // 垃圾箱分页状态
+  const [trashTasks, setTrashTasks] = useState<Task[]>([]);
+  const [trashTotal, setTrashTotal] = useState(0);
+  const [trashPage, setTrashPage] = useState(1);
+  const [trashLoading, setTrashLoading] = useState(false);
+  const [trashLoadingMore, setTrashLoadingMore] = useState(false);
+
+  // 已完成分页状态
+  const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
+  const [completedTotal, setCompletedTotal] = useState(0);
+  const [completedPage, setCompletedPage] = useState(1);
+  const [completedLoading, setCompletedLoading] = useState(false);
+  const [completedLoadingMore, setCompletedLoadingMore] = useState(false);
+
+  // 垃圾箱右键菜单状态
+  const [trashContextTaskId, setTrashContextTaskId] = useState<string | null>(null);
   
   // 加载清单、标签、过滤器和用户设置
   useEffect(() => {
@@ -83,6 +106,56 @@ const TaskPage: React.FC = () => {
       }
     };
     loadData();
+  }, []);
+
+  // 加载垃圾箱任务
+  const loadTrashTasks = useCallback(async (page: number, append: boolean = false) => {
+    if (page === 1) {
+      setTrashLoading(true);
+    } else {
+      setTrashLoadingMore(true);
+    }
+    try {
+      const res = await getTrashTasks({ page, page_size: PAGE_SIZE });
+      const newTasks = res.tasks || [];
+      if (append) {
+        setTrashTasks(prev => [...prev, ...newTasks]);
+      } else {
+        setTrashTasks(newTasks);
+      }
+      setTrashTotal(res.total || 0);
+      setTrashPage(page);
+    } catch (error) {
+      console.error('Failed to load trash tasks:', error);
+    } finally {
+      setTrashLoading(false);
+      setTrashLoadingMore(false);
+    }
+  }, []);
+
+  // 加载已完成任务（分页）
+  const loadCompletedTasks = useCallback(async (page: number, append: boolean = false) => {
+    if (page === 1) {
+      setCompletedLoading(true);
+    } else {
+      setCompletedLoadingMore(true);
+    }
+    try {
+      const res = await getTasks({ status: 'completed', skip: (page - 1) * PAGE_SIZE, limit: PAGE_SIZE });
+      const newTasks = res.tasks || [];
+      if (append) {
+        setCompletedTasks(prev => [...prev, ...newTasks]);
+      } else {
+        setCompletedTasks(newTasks);
+      }
+      setCompletedTotal(res.total || 0);
+      setCompletedPage(page);
+    } catch (error) {
+      console.error('Failed to load completed tasks:', error);
+    } finally {
+      setCompletedLoading(false);
+      setCompletedLoadingMore(false);
+    }
   }, []);
 
   // 切换视图模式
@@ -156,8 +229,32 @@ const TaskPage: React.FC = () => {
       setActiveFilter(null);
     }
   }, [filterId, filters]);
-  
+
+  // 当视图切换时，重置分页状态并加载数据
   useEffect(() => {
+    const isTrashView = filter === 'trash';
+    const isCompletedView = filter === 'completed';
+
+    if (isTrashView) {
+      // 重置垃圾箱分页状态
+      setTrashTasks([]);
+      setTrashTotal(0);
+      setTrashPage(1);
+      selectTask(null); // 垃圾箱中不选中任务
+      loadTrashTasks(1);
+      return;
+    }
+
+    if (isCompletedView) {
+      // 重置已完成分页状态
+      setCompletedTasks([]);
+      setCompletedTotal(0);
+      setCompletedPage(1);
+      loadCompletedTasks(1);
+      return;
+    }
+
+    // 其他视图走原有的 fetchTasks 逻辑
     const params: any = {};
       
     // 如果有 filter_id，使用过滤器的条件
@@ -209,10 +306,6 @@ const TaskPage: React.FC = () => {
         const weekLater = moment().add(7, 'days').format('YYYY-MM-DD');
         params.start_date = today;
         params.end_date = weekLater;
-      } else if (filter === 'completed') {
-        params.status = 'completed';
-      } else if (filter === 'trash') {
-        params.status = 'cancelled';
       }
         
       // 按清单筛选
@@ -244,6 +337,36 @@ const TaskPage: React.FC = () => {
     fetchTasks(params);
   }, [filter, listId, tagFilter, activeFilter, tagsParam, priorityParam, keywordParam]);
 
+  // 垃圾箱 - 查看更多
+  const handleTrashLoadMore = () => {
+    loadTrashTasks(trashPage + 1, true);
+  };
+
+  // 已完成 - 查看更多
+  const handleCompletedLoadMore = () => {
+    loadCompletedTasks(completedPage + 1, true);
+  };
+
+  // 清空垃圾箱
+  const handleEmptyTrash = async () => {
+    try {
+      await emptyTrash();
+      message.success('垃圾箱已清空');
+      setTrashTasks([]);
+      setTrashTotal(0);
+      setTrashPage(1);
+    } catch (error) {
+      message.error('清空垃圾箱失败');
+      console.error('Failed to empty trash:', error);
+    }
+  };
+
+  // 从垃圾箱列表中移除任务（恢复或永久删除后调用）
+  const removeFromTrash = useCallback((taskId: string) => {
+    setTrashTasks(prev => prev.filter(t => t.id !== taskId));
+    setTrashTotal(prev => Math.max(0, prev - 1));
+  }, []);
+
   const getFilterTitle = () => {
     // 如果有激活的过滤器，显示过滤器名称
     if (activeFilter) {
@@ -270,7 +393,6 @@ const TaskPage: React.FC = () => {
         return '今天';
       case 'week':
         return '最近7天';
-
       case 'completed':
         return '已完成';
       case 'trash':
@@ -288,17 +410,87 @@ const TaskPage: React.FC = () => {
     if (filter === 'completed') {
       return <CheckCircleOutlined className="toolbar-icon" />;
     }
+    if (filter === 'trash') {
+      return <DeleteOutlined className="toolbar-icon" />;
+    }
     return <UnorderedListOutlined className="toolbar-icon" />;
   };
 
   // 是否是已完成视图
   const isCompletedView = filter === 'completed';
+  // 是否是垃圾箱视图
+  const isTrashView = filter === 'trash';
 
   // 渲染主内容区域
   const renderContent = () => {
-    if (isCompletedView) {
-      return <CompletedTaskList />;
+    // 垃圾箱视图
+    if (isTrashView) {
+      if (trashLoading && trashTasks.length === 0) {
+        return (
+          <div className="task-list-loading" style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
+            <Spin size="large" />
+          </div>
+        );
+      }
+
+      if (trashTasks.length === 0 && !trashLoading) {
+        return <Empty description="垃圾箱为空" style={{ marginTop: 48 }} />;
+      }
+
+      return (
+        <div className="trash-task-list" style={{ flex: 1, overflow: 'auto', padding: '0 20px' }}>
+          {trashTasks.map(task => (
+            <Dropdown
+              key={task.id}
+              open={trashContextTaskId === task.id}
+              onOpenChange={(open) => setTrashContextTaskId(open ? task.id : null)}
+              dropdownRender={() => (
+                <TaskContextMenu
+                  task={task}
+                  isTrashView={true}
+                  onClose={() => {
+                    setTrashContextTaskId(null);
+                    // 恢复或删除后刷新垃圾箱列表
+                    loadTrashTasks(1);
+                  }}
+                />
+              )}
+              trigger={['contextMenu']}
+            >
+              <div className="trash-task-item" onContextMenu={(e) => e.preventDefault()}>
+                <div className="trash-task-content">
+                  <div className="trash-task-title">{task.title}</div>
+                  {task.description && (
+                    <div className="trash-task-desc">{task.description.split('\n')[0]}</div>
+                  )}
+                </div>
+              </div>
+            </Dropdown>
+          ))}
+          {trashTasks.length < trashTotal && (
+            <div className="load-more-container" style={{ textAlign: 'center', padding: '16px 0' }}>
+              <Button type="link" loading={trashLoadingMore} onClick={handleTrashLoadMore}>
+                查看更多
+              </Button>
+            </div>
+          )}
+        </div>
+      );
     }
+
+    // 已完成视图 - 使用分页数据
+    if (isCompletedView) {
+      return (
+        <CompletedTaskList
+          tasks={completedTasks}
+          total={completedTotal}
+          loading={completedLoading}
+          loadingMore={completedLoadingMore}
+          onLoadMore={handleCompletedLoadMore}
+        />
+      );
+    }
+
     if (viewMode === 'kanban') {
       return <KanbanView hideDetails={hideDetails} />;
     }
@@ -316,24 +508,42 @@ const TaskPage: React.FC = () => {
             <h2 className="page-title">{getFilterTitle()}</h2>
           </div>
           <div className="toolbar-right">
-            <Button type="text" icon={<SortAscendingOutlined />} />
-            <Popover
-              content={viewMenuContent}
-              trigger="click"
-              placement="bottomRight"
-              open={viewMenuOpen}
-              onOpenChange={setViewMenuOpen}
-              overlayClassName="view-menu-popover"
-            >
-              <Button type="text" icon={<EllipsisOutlined />} />
-            </Popover>
+            {isTrashView ? (
+              trashTasks.length > 0 && (
+                <Popconfirm
+                  title="确定清空垃圾箱？"
+                  description="所有任务将被永久删除，无法恢复。"
+                  onConfirm={handleEmptyTrash}
+                  okText="确定"
+                  cancelText="取消"
+                >
+                  <Button type="text" icon={<DeleteOutlined />} danger>
+                    清空垃圾箱
+                  </Button>
+                </Popconfirm>
+              )
+            ) : (
+              <>
+                <Button type="text" icon={<SortAscendingOutlined />} />
+                <Popover
+                  content={viewMenuContent}
+                  trigger="click"
+                  placement="bottomRight"
+                  open={viewMenuOpen}
+                  onOpenChange={setViewMenuOpen}
+                  overlayClassName="view-menu-popover"
+                >
+                  <Button type="text" icon={<EllipsisOutlined />} />
+                </Popover>
+              </>
+            )}
           </div>
         </div>
         {renderContent()}
       </div>
       
-      {/* 右侧详情区域 - 选中任务时显示 */}
-      {selectedTask && (
+      {/* 右侧详情区域 - 选中任务时显示（垃圾箱中不显示编辑器） */}
+      {selectedTask && !isTrashView && (
         <div className="task-page-right">
           <TaskEditor />
         </div>

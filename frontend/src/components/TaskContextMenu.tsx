@@ -18,21 +18,23 @@ import {
   RightOutlined,
   UnorderedListOutlined,
   CheckOutlined,
+  UndoOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { Task, TaskList, Tag } from '../types';
 import { useTaskContext } from '../contexts/TaskContext';
-import { duplicateTask } from '../api/task';
+import { duplicateTask, restoreTask, permanentDeleteTask } from '../api/task';
 import { getLists } from '../api/list';
 import { getTags } from '../api/tag';
 
 interface TaskContextMenuProps {
   task: Task;
   onClose: () => void;
+  isTrashView?: boolean;
 }
 
-const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose }) => {
+const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTrashView }) => {
   const { updateTaskData, deleteTaskData, refreshTasks, addTask, selectTask } = useTaskContext();
   const navigate = useNavigate();
   
@@ -579,29 +581,82 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose }) => {
     setCustomDate(null);
   };
 
+  // 垃圾箱视图的右键菜单
+  const handleTrashMenuClick: MenuProps['onClick'] = async ({ key }) => {
+    try {
+      switch (key) {
+        case 'restore':
+          await restoreTask(task.id);
+          message.success('任务已恢复');
+          onClose();
+          break;
+        case 'permanent-delete':
+          Modal.confirm({
+            title: '永久删除',
+            content: '确定永久删除此任务？此操作无法撤销。',
+            okText: '确定',
+            cancelText: '取消',
+            okButtonProps: { danger: true },
+            onOk: async () => {
+              await permanentDeleteTask(task.id);
+              message.success('任务已永久删除');
+              onClose();
+            },
+          });
+          break;
+      }
+    } catch (error) {
+      console.error('操作失败:', error);
+    }
+  };
+
+  const trashMenuItems: MenuProps['items'] = [
+    {
+      key: 'restore',
+      icon: <UndoOutlined />,
+      label: '恢复',
+    },
+    {
+      key: 'permanent-delete',
+      icon: <DeleteOutlined />,
+      label: '永久删除',
+      danger: true,
+    },
+  ];
+
   return (
     <>
-      <Menu
-        onClick={handleMenuClick}
-        items={items}
-        style={{ minWidth: 200 }}
-      />
-      <Modal
-        title="设置截止日期"
-        open={customDateVisible}
-        onOk={handleCustomDateOk}
-        onCancel={handleCustomDateCancel}
-        okText="确定"
-        cancelText="取消"
-      >
-        <DatePicker
-          showTime
-          value={customDate}
-          onChange={setCustomDate}
-          style={{ width: '100%' }}
-          placeholder="选择截止日期和时间"
+      {isTrashView ? (
+        <Menu
+          onClick={handleTrashMenuClick}
+          items={trashMenuItems}
+          style={{ minWidth: 200 }}
         />
-      </Modal>
+      ) : (
+        <>
+          <Menu
+            onClick={handleMenuClick}
+            items={items}
+            style={{ minWidth: 200 }}
+          />
+          <Modal
+            title="设置截止日期"
+            open={customDateVisible}
+            onOk={handleCustomDateOk}
+            onCancel={handleCustomDateCancel}
+            okText="确定"
+            cancelText="取消"
+          >
+            <DatePicker
+              showTime
+              value={customDate}
+              onChange={setCustomDate}
+              style={{ width: '100%' }}
+              placeholder="选择截止日期和时间"
+            />
+          </Modal>
+        </>
+      )}
     </>
   );
 };

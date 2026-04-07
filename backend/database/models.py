@@ -46,6 +46,7 @@ class TaskModel(Base):
     created_at = Column(String(50))
     updated_at = Column(String(50))
     completed_at = Column(String(50))
+    deleted_at = Column(String(50), nullable=True, default=None)
     
     # 复合索引
     __table_args__ = (

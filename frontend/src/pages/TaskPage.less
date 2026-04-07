@@ -60,6 +60,43 @@
     overflow: auto;
     background: var(--ant-color-bg-layout);
   }
+
+  // 垃圾箱任务列表
+  .trash-task-list {
+    .trash-task-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--ant-color-bg-text-hover);
+      cursor: default;
+
+      .trash-task-content {
+        flex: 1;
+        min-width: 0;
+
+        .trash-task-title {
+          font-size: 14px;
+          color: var(--ant-color-text);
+          text-decoration: line-through;
+          opacity: 0.65;
+        }
+
+        .trash-task-desc {
+          font-size: 12px;
+          color: var(--ant-color-text-tertiary);
+          margin-top: 4px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
+    }
+
+    .load-more-container {
+      text-align: center;
+      padding: 16px 0;
+    }
+  }
 }
 
 // TaskEditor 新样式

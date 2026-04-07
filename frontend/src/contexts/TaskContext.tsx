@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { Task } from '../types';
-import { getTasks, createTask, updateTask, deleteTask as deleteTaskApi } from '../api/task';
+import { getTasks, createTask, updateTask, deleteTask as deleteTaskApi, restoreTask as restoreTaskApi, permanentDeleteTask as permanentDeleteTaskApi } from '../api/task';
 import { message } from 'antd';
 
 interface TaskContextType {
@@ -11,6 +11,8 @@ interface TaskContextType {
   addTask: (task: any) => Promise<Task | undefined>;
   updateTaskData: (taskId: string, data: any) => Promise<void>;
   deleteTaskData: (taskId: string) => Promise<void>;
+  restoreTaskData: (taskId: string) => Promise<void>;
+  permanentDeleteTaskData: (taskId: string) => Promise<void>;
   selectTask: (task: Task | null) => void;
   refreshTasks: () => Promise<void>;
 }
@@ -101,6 +103,36 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
     }
   }, [refreshTasks, selectedTask]);
 
+  const restoreTaskData = useCallback(async (taskId: string) => {
+    try {
+      await restoreTaskApi(taskId);
+      message.success('任务已恢复');
+      if (selectedTask?.id === taskId) {
+        setSelectedTask(null);
+      }
+      await refreshTasks();
+    } catch (error) {
+      message.error('恢复任务失败');
+      console.error('Failed to restore task:', error);
+      throw error;
+    }
+  }, [refreshTasks, selectedTask]);
+
+  const permanentDeleteTaskData = useCallback(async (taskId: string) => {
+    try {
+      await permanentDeleteTaskApi(taskId);
+      message.success('任务已永久删除');
+      if (selectedTask?.id === taskId) {
+        setSelectedTask(null);
+      }
+      await refreshTasks();
+    } catch (error) {
+      message.error('永久删除任务失败');
+      console.error('Failed to permanently delete task:', error);
+      throw error;
+    }
+  }, [refreshTasks, selectedTask]);
+
   const selectTask = useCallback((task: Task | null) => {
     setSelectedTask(task);
   }, []);
@@ -113,6 +145,8 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
     addTask,
     updateTaskData,
     deleteTaskData,
+    restoreTaskData,
+    permanentDeleteTaskData,
     selectTask,
     refreshTasks,
   };

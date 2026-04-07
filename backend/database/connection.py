@@ -83,6 +83,7 @@ class DatabaseConnection:
                 ('push_notified_date', 'VARCHAR(10)'),
                 ('pomodoro_count', 'INTEGER DEFAULT 0'),
                 ('focus_duration', 'INTEGER DEFAULT 0'),
+                ('deleted_at', 'VARCHAR(50)'),
             ],
             'countdowns': [
                 ('push_due_notify', 'BOOLEAN DEFAULT 0'),

@@ -60,3 +60,23 @@ export const getChildTasks = async (taskId: string): Promise<{ children: Task[];
 export const searchTasks = async (keyword: string): Promise<{ tasks: Task[]; count: number }> => {
   return api.get('/tasks/search', { params: { keyword } });
 };
+
+// 获取垃圾箱任务（分页）
+export const getTrashTasks = async (params?: { page?: number; page_size?: number }): Promise<any> => {
+  return api.get('/tasks/trash', { params });
+};
+
+// 恢复任务
+export const restoreTask = async (taskId: string): Promise<any> => {
+  return api.post(`/tasks/${taskId}/restore`);
+};
+
+// 永久删除任务
+export const permanentDeleteTask = async (taskId: string): Promise<any> => {
+  return api.delete(`/tasks/${taskId}/permanent`);
+};
+
+// 清空垃圾箱
+export const emptyTrash = async (): Promise<any> => {
+  return api.delete('/tasks/trash/empty');
+};
