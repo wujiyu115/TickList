@@ -1,103 +1,70 @@
 # TickList - 任务管理系统
 
-基于 FastAPI + SQLAlchemy + React + TypeScript + Ant Design 的任务管理系统，支持多级嵌套任务、任务统计等功能。
-
-## 技术栈
-
-### 后端
-- FastAPI - 现代化的 Python Web 框架
-- SQLAlchemy - ORM 框架（支持 SQLite/MySQL）
-- SQLite - 默认数据库（零配置，开箱即用）
-- MySQL - 可选生产数据库
-- JWT - 用户认证
-- bcrypt - 密码加密
-
-### 前端
-- React 18 - UI 框架
-- TypeScript - 类型安全
-- Ant Design 5 - UI 组件库
-- Webpack 5 - 打包工具
-- Axios - HTTP 客户端
+基于 FastAPI + React + TypeScript 的全功能任务管理系统，支持多级嵌套任务、番茄专注、日历视图、看板视图、数据统计等功能。
 
 ## 功能特性
 
-- ✅ 用户注册与登录（本地用户名密码）
+### 任务管理
 - ✅ 任务 CRUD 操作
-- ✅ 多级嵌套任务（支持无限层级）
-- ✅ 任务状态管理（待处理、进行中、已完成、已取消）
-- ✅ 优先级标记（红黄蓝灰旗）
+- ✅ 多级嵌套任务（支持无限层级父子关系）
+- ✅ 任务状态管理（待处理、已完成）
+- ✅ 优先级标记（高/中/低/无）
 - ✅ 任务置顶
 - ✅ 截止日期和提醒时间
-- ✅ 标签管理
-- ✅ 任务搜索
+- ✅ 标签管理（创建、编辑、颜色标记）
+- ✅ 任务搜索（标题和描述模糊匹配）
 - ✅ 任务复制
-- ✅ 右键菜单操作
-- ✅ 任务统计和图表
+- ✅ 右键菜单快捷操作（日期设置、优先级、删除等）
+- ✅ 批量操作
+
+### 视图模式
+- ✅ 列表视图（默认）
+- ✅ 看板视图
+- ✅ 已完成任务视图（按日期分组、分页加载）
+- ✅ 日历视图（按月展示、按日查看）
+
+### 筛选与过滤
+- ✅ 快速筛选（今天、最近7天、收集箱）
+- ✅ 自定义过滤器（按清单、标签、日期、优先级、关键词组合筛选）
+- ✅ 清单管理（文件夹/清单层级）
+- ✅ 任务视图默认展示今日任务
+
+### 番茄专注
+- ✅ 倒计时 / 正计时模式
+- ✅ 关联任务
+- ✅ 暂停 / 继续 / 结束控制
+- ✅ 最短有效时长配置
+- ✅ 专注记录（含关联任务标题）
+- ✅ 跨页面状态保持
+
+### 垃圾箱
+- ✅ 软删除（递归删除子任务）
+- ✅ 恢复 / 永久删除
+- ✅ 清空垃圾箱
+
+### 倒数日
+- ✅ 创建 / 编辑 / 删除倒数日事件
+
+### 统计分析
+- ✅ 任务统计概览
+- ✅ 每日统计
+- ✅ 趋势图表
+- ✅ 时间范围分析
+
+### 数据管理
+- ✅ JSON 导出 / 导入
+- ✅ 滴答清单 CSV 导入（自动构建文件夹/清单层级、标签去重、优先级映射）
+
+### 系统设置
+- ✅ 主题配色（8种方案）
+- ✅ 默认任务视图设置
+- ✅ 专注最短时长设置
+
+### 其他
+- ✅ 用户注册与登录（JWT 认证）
+- ✅ 侧边栏面板折叠（持久化）
 - ✅ 响应式布局
-
-## 项目结构
-
-```
-ticklist/
-├── backend/                 # 后端代码
-│   ├── routes/             # API 路由
-│   │   ├── auth.py        # 认证路由
-│   │   ├── task.py        # 任务路由
-│   │   └── statistics.py  # 统计路由
-│   ├── database/           # 数据库层
-│   │   ├── dao/           # 数据访问对象
-│   │   │   ├── task_dao.py
-│   │   │   ├── statistics_dao.py
-│   │   │   ├── user_dao.py
-│   │   │   └── token_dao.py
-│   │   └── connection.py  # 数据库连接
-│   ├── middleware/         # 中间件
-│   │   ├── jwt_middleware.py
-│   │   └── logging_middleware.py
-│   ├── utils/             # 工具函数
-│   │   ├── logger.py
-│   │   └── auth_utils.py
-│   ├── config/            # 配置
-│   │   ├── config_loader.py
-│   │   └── database.py
-│   ├── models.py          # 数据模型
-│   ├── app.py             # 应用入口
-│   ├── config.yaml        # 配置文件
-│   ├── requirements.txt   # Python 依赖
-│   ├── run_dev.py         # 开发环境启动
-│   └── run_prod.py        # 生产环境启动
-│
-└── frontend/               # 前端代码
-    ├── src/
-    │   ├── api/           # API 调用
-    │   │   ├── index.ts
-    │   │   ├── auth.ts
-    │   │   ├── task.ts
-    │   │   └── statistics.ts
-    │   ├── components/    # 组件
-    │   │   ├── AppHeader.tsx
-    │   │   ├── AppSider.tsx
-    │   │   ├── TaskList.tsx
-    │   │   ├── TaskItem.tsx
-    │   │   ├── TaskEditor.tsx
-    │   │   ├── TaskContextMenu.tsx
-    │   │   └── TaskCreateModal.tsx
-    │   ├── pages/         # 页面
-    │   │   ├── LoginPage.tsx
-    │   │   ├── TaskPage.tsx
-    │   │   └── StatisticsPage.tsx
-    │   ├── layouts/       # 布局
-    │   │   └── MainLayout.tsx
-    │   ├── contexts/      # Context
-    │   │   └── TaskContext.tsx
-    │   ├── types/         # TypeScript 类型
-    │   │   └── index.ts
-    │   ├── App.tsx        # 应用入口
-    │   └── index.tsx      # 渲染入口
-    ├── package.json       # 前端依赖
-    ├── webpack.config.js  # Webpack 配置
-    └── tsconfig.json      # TypeScript 配置
-```
+- ✅ 到期提醒推送
 
 ## 安装和运行
 
@@ -169,9 +136,12 @@ docker build -t ticklist:latest .
 docker run -d \
   -p 5000:5000 \
   -v $(pwd)/backend/config.yaml:/app/config.yaml \
+  -v $(pwd)/data:/app/data \
   --name ticklist \
   ticklist:latest
 ```
+
+> 通过 `-v $(pwd)/data:/app/data` 将数据库文件挂载到宿主机，防止容器删除后数据丢失。对应 `config.yaml` 中需配置 `connect_string: "sqlite:///data/ticklist.db"`。
 
 **使用 MySQL（通过环境变量）：**
 
@@ -284,64 +254,62 @@ npm run build
 
 构建产物将输出到 `frontend/dist` 目录。
 
-## API 文档
+## 注意事项
 
-后端启动后，访问以下地址查看 API 文档：
-- Swagger UI: `http://localhost:5000/docs`
-- ReDoc: `http://localhost:5000/redoc`
+1. 本项目使用本地用户名密码认证
+2. 默认使用 SQLite 数据库，无需额外安装，数据库文件自动创建
+3. 数据库连接通过 `database.connect_string` 配置，支持 SQLite 和 MySQL
+4. 可通过环境变量 `DB_CONNECT_STRING` 覆盖配置文件中的数据库设置（优先级更高）
+5. 生产环境需要修改 `config.yaml` 中的 `jwt.secret_key`
+6. 前后端集成部署时，后端会自动服务前端静态文件
 
-## 主要 API 端点
+---
 
-### 认证
-- `POST /api/auth/register` - 用户注册
-- `POST /api/auth/login` - 用户登录
-- `GET /api/auth/me` - 获取当前用户信息
-- `POST /api/auth/logout` - 退出登录
-- `POST /api/auth/logout-all` - 登出所有设备
-- `GET /api/auth/tokens` - 获取 token 列表
+## 开发者指南
 
-### 任务管理
-- `GET /api/tasks` - 获取任务列表
-- `POST /api/tasks` - 创建任务
-- `GET /api/tasks/{task_id}` - 获取任务详情
-- `PUT /api/tasks/{task_id}` - 更新任务
-- `DELETE /api/tasks/{task_id}` - 删除任务
-- `POST /api/tasks/{task_id}/move` - 移动任务
-- `POST /api/tasks/{task_id}/duplicate` - 复制任务
-- `POST /api/tasks/batch-update` - 批量更新任务
-- `GET /api/tasks/{task_id}/children` - 获取子任务
-- `GET /api/tasks/search` - 搜索任务
+### 技术栈
 
-### 统计
-- `GET /api/statistics/overview` - 获取统计概览
-- `GET /api/statistics/daily` - 获取每日统计
-- `GET /api/statistics/trend` - 获取趋势数据
-- `GET /api/statistics/range` - 获取时间范围统计
+**后端**：FastAPI + SQLAlchemy（SQLite/MySQL） + JWT + bcrypt
 
-## 数据模型
+**前端**：React 18 + TypeScript + Ant Design 5 + Webpack 5 + Axios
 
-### Task（任务）
-```python
-{
-  "id": "uuid",
-  "title": "任务标题",
-  "description": "任务描述",
-  "status": "pending|in_progress|completed|cancelled",
-  "priority": 0-4,  # 0=无, 1=红旗, 2=黄旗, 3=蓝旗, 4=灰旗
-  "child_ids": ["子任务ID列表"],
-  "user_id": "用户ID",
-  "due_date": "截止日期",
-  "reminder_time": "提醒时间",
-  "is_pinned": true/false,
-  "tags": ["标签1", "标签2"],
-  "order": 0,
-  "created_at": "创建时间",
-  "updated_at": "更新时间",
-  "completed_at": "完成时间"
-}
+### 项目结构
+
+```
+ticklist/
+├── backend/                 # 后端代码
+│   ├── config/             # 配置模块
+│   ├── database/           # 数据库层
+│   │   ├── dao/            # 数据访问对象（task/list/tag/filter/focus/countdown 等）
+│   │   ├── connection.py   # 数据库连接（含自动迁移）
+│   │   └── models.py       # SQLAlchemy 模型
+│   ├── middleware/          # 中间件（JWT、日志）
+│   ├── routes/             # API 路由（auth/task/calendar/focus/countdown/data 等）
+│   ├── services/           # 后台服务（到期提醒调度）
+│   ├── utils/              # 工具函数
+│   ├── app.py              # 应用入口
+│   ├── config.yaml         # 配置文件
+│   ├── run_dev.py          # 开发环境启动
+│   └── run_prod.py         # 生产环境启动
+│
+├── frontend/                # 前端代码
+│   └── src/
+│       ├── api/            # API 调用（auth/task/calendar/focus/countdown/data 等）
+│       ├── components/     # 组件（TaskList/KanbanView/CalendarView/PomodoroTimer 等）
+│       ├── contexts/       # 全局状态（TaskContext/FocusContext）
+│       ├── hooks/          # 自定义 Hook（useTimer）
+│       ├── layouts/        # 布局
+│       └── pages/          # 页面（Task/Calendar/Pomodoro/Countdown/Statistics/Settings）
+│
+├── Dockerfile              # Docker 构建（多阶段、跨架构优化）
+└── start_dev.sh            # 一键开发启动脚本
 ```
 
-## 开发说明
+### API 文档
+
+后端启动后，访问以下地址查看完整 API 文档：
+- Swagger UI: `http://localhost:5000/docs`
+- ReDoc: `http://localhost:5000/redoc`
 
 ### 添加新功能
 
@@ -356,17 +324,10 @@ npm run build
 - `status` - 状态过滤
 - `due_date` - 日期排序
 - `list_id` - 清单关联查询
+- `deleted_at` - 垃圾箱过滤
 - `(user_id, order)` - 任务排序
 - `(user_id, is_pinned)` - 置顶任务
-
-## 注意事项
-
-1. 本项目使用本地用户名密码认证
-2. 默认使用 SQLite 数据库，无需额外安装，数据库文件自动创建
-3. 数据库连接通过 `database.connect_string` 配置，支持 SQLite 和 MySQL
-4. 可通过环境变量 `DB_CONNECT_STRING` 覆盖配置文件中的数据库设置（优先级更高）
-5. 生产环境需要修改 `config.yaml` 中的 `jwt.secret_key`
-6. 前后端集成部署时，后端会自动服务前端静态文件
+- `(user_id, deleted_at)` - 用户任务软删除过滤
 
 ## 许可证
 

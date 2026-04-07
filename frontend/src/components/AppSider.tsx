@@ -18,7 +18,9 @@ import {
   MoreOutlined,
   SettingOutlined,
   FilterOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  DoubleLeftOutlined,
+  DoubleRightOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Dropdown, Modal, Input, Select, message, Button, Radio, Checkbox, Tabs } from 'antd';
@@ -76,6 +78,19 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [collapsedFolders, setCollapsedFolders] = useState<Record<string, boolean>>({});
   const [showArchived, setShowArchived] = useState(false);
+  
+  // 面板折叠状态
+  const [panelCollapsed, setPanelCollapsed] = useState(() => {
+    return localStorage.getItem('siderPanelCollapsed') === 'true';
+  });
+  
+  const togglePanel = () => {
+    setPanelCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('siderPanelCollapsed', String(next));
+      return next;
+    });
+  };
   
   // 新建清单 Modal 状态
   const [createModalVisible, setCreateModalVisible] = useState(false);
@@ -699,7 +714,18 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
               <div
                 key={item.key}
                 className={`icon-item ${isActive ? 'active' : ''}`}
-                onClick={() => navigate(item.path)}
+                onClick={() => {
+                  if (item.key === 'tasks' && isActive && isTaskView) {
+                    togglePanel();
+                  } else {
+                    navigate(item.path);
+                    // 切换到任务视图时自动展开面板
+                    if (item.key === 'tasks' && panelCollapsed) {
+                      setPanelCollapsed(false);
+                      localStorage.setItem('siderPanelCollapsed', 'false');
+                    }
+                  }
+                }}
                 title={item.tooltip}
               >
                 <Icon />
@@ -708,6 +734,15 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
           })}
         </div>
         <div className="icon-bar-bottom">
+          {isTaskView && (
+            <div
+              className="icon-item"
+              title={panelCollapsed ? '展开面板' : '收起面板'}
+              onClick={togglePanel}
+            >
+              {panelCollapsed ? <DoubleRightOutlined /> : <DoubleLeftOutlined />}
+            </div>
+          )}
           <div 
             className={`icon-item ${location.pathname === '/settings' ? 'active' : ''}`} 
             title="设置"
@@ -720,7 +755,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
 
       {/* 内容面板 - 仅在任务视图显示 */}
       {isTaskView && (
-        <div className="secondary-panel">
+        <div className={`secondary-panel ${panelCollapsed ? 'collapsed' : ''}`}>
           <div className="panel-title">任务</div>
           
           {/* 快速筛选 */}

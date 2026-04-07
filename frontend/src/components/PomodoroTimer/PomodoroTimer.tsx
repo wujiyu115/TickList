@@ -58,8 +58,7 @@ const PomodoroTimer: React.FC = () => {
     if (taskIdFromUrl && !timer.isRunning && timer.phase === 'idle') {
       // 短暂延迟确保组件完全初始化
       const autoStartTimer = setTimeout(() => {
-        startedAtRef.current = new Date().toISOString();
-        timer.start();
+        handleStart();
       }, 300);
       return () => clearTimeout(autoStartTimer);
     }

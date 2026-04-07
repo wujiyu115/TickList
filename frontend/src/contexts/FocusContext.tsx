@@ -3,7 +3,7 @@ import { message, Modal } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useTimer, TimerPhase, TimerMode } from '../hooks/useTimer';
 import { getSettings } from '../api/settings';
-import { getTaskById } from '../api/task';
+import { getTaskById, updateTask } from '../api/task';
 import { createFocusSession, getFocusOverview, getFocusSessions, FocusOverview, FocusSession } from '../api/focus';
 import { UserSettings, Task } from '../types';
 
@@ -69,6 +69,12 @@ export const FocusProvider: React.FC<FocusProviderProps> = ({ children }) => {
   // 关联任务状态
   const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
   const [linkedTask, setLinkedTask] = useState<Task | null>(null);
+  const linkedTaskIdRef = useRef<string | null>(null);
+
+  // 保持 ref 与 state 同步，确保 handleStart 闭包中能读到最新值
+  useEffect(() => {
+    linkedTaskIdRef.current = linkedTaskId;
+  }, [linkedTaskId]);
   
   // 专注数据状态
   const [overview, setOverview] = useState<FocusOverview | null>(null);
@@ -192,6 +198,18 @@ export const FocusProvider: React.FC<FocusProviderProps> = ({ children }) => {
       startedAtRef.current = new Date().toISOString();
     }
     timer.start();
+
+    // 当有关联任务时，更新状态为进行中（通过 ref 读取最新值，避免闭包陈旧问题）
+    const taskId = linkedTaskIdRef.current;
+    // console.log('Timer started task', taskId);
+    if (taskId) {
+      updateTask(taskId, { status: 'in_progress' })
+        .then(() => {
+          // 同步更新本地 linkedTask 状态
+          setLinkedTask(prev => prev ? { ...prev, status: 'in_progress' } : prev);
+        })
+        .catch(e => console.error('Failed to update task status:', e));
+    }
   }, [timer]);
 
   // 正计时模式停止并保存

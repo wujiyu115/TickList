@@ -46,6 +46,26 @@ const TaskPage: React.FC = () => {
   const priorityParam = searchParams.get('priority');
   const keywordParam = searchParams.get('keyword');
   
+  // 无任何筛选参数时，恢复上次的筛选状态或默认展示今天的任务
+  useEffect(() => {
+    if (!filter && !listId && !tagFilter && !filterId && !tagsParam && !priorityParam && !keywordParam) {
+      const lastTaskUrl = sessionStorage.getItem('lastTaskViewSearch');
+      if (lastTaskUrl) {
+        navigate(`/${lastTaskUrl}`, { replace: true });
+      } else {
+        navigate('/?filter=today', { replace: true });
+      }
+    }
+  }, [filter, listId, tagFilter, filterId, tagsParam, priorityParam, keywordParam, navigate]);
+
+  // 记住当前筛选状态
+  useEffect(() => {
+    const search = searchParams.toString();
+    if (search) {
+      sessionStorage.setItem('lastTaskViewSearch', `?${search}`);
+    }
+  }, [searchParams]);
+  
   // 清单、标签和过滤器数据用于显示标题
   const [lists, setLists] = useState<TaskListType[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
