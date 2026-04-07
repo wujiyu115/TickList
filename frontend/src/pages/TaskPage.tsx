@@ -143,10 +143,6 @@ const TaskPage: React.FC = () => {
           <MenuOutlined style={{ fontSize: 14, marginRight: 8 }} />
           <span>隐藏详细</span>
         </div>
-        <div className="menu-option" onClick={handleGoToSettings}>
-          <SettingOutlined style={{ fontSize: 14, marginRight: 8 }} />
-          <span>显示设置</span>
-        </div>
       </div>
     </div>
   );
