@@ -2,9 +2,12 @@
 
 from typing import Dict, List, Optional
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
 import uuid
+import csv
+import io
+import re
 
 from middleware.jwt_middleware import get_current_user
 from database.dao.task_dao import task_dao
@@ -218,3 +221,399 @@ async def import_data(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"导入数据失败: {str(e)}")
+
+
+def _parse_dida_date(date_str: str) -> Optional[str]:
+    """解析滴答清单的日期格式，返回 ISO 8601 字符串"""
+    if not date_str or date_str.strip() == '':
+        return None
+    try:
+        # 滴答格式: 2020-05-08T16:00:00+0000
+        # 转换为标准 ISO 8601 格式
+        return date_str.replace('+0000', '+00:00').replace('+0800', '+08:00')
+    except:
+        return None
+
+
+def _map_dida_priority(priority_str: str) -> int:
+    """映射滴答清单优先级到 TickList 优先级
+    滴答: 0=无, 1=低(蓝旗), 3=中(黄旗), 5=高(红旗)
+    TickList: 0=无, 1=高(红旗), 2=中(黄旗), 3=低(蓝旗)
+    """
+    try:
+        priority = int(priority_str)
+        if priority == 5:
+            return 1  # 红旗/高
+        elif priority == 3:
+            return 2  # 黄旗/中
+        elif priority == 1:
+            return 3  # 蓝旗/低
+        return 0
+    except:
+        return 0
+
+
+def _map_dida_status(status_str: str) -> str:
+    """映射滴答清单状态到 TickList 状态
+    滴答: 0=Normal, 1=Completed, 2=Archived
+    TickList: pending, completed
+    """
+    try:
+        status = int(status_str)
+        if status in [1, 2]:
+            return 'completed'
+        return 'pending'
+    except:
+        return 'pending'
+
+
+def _clean_content(content: str) -> str:
+    """清理滴答清单的内容格式，将 ▫/▪ 替换为 -"""
+    if not content:
+        return ''
+    return content.replace('▫', '- ').replace('▪', '- ')
+
+
+@router.post('/import-dida')
+async def import_dida_csv(
+    file: UploadFile = File(...),
+    current_user_id: str = Depends(get_current_user)
+):
+    """
+    导入滴答清单 CSV 备份文件
+    
+    CSV 格式说明：
+    - 前6行为元数据，跳过
+    - 第7行为表头
+    - 第8行起为数据
+    """
+    from database.connection import db_connection
+    from database.models import TagModel, TaskListModel, TaskModel, TaskChildModel, TaskTagModel
+    from models import Tag, TaskList, Task
+    
+    try:
+        # 读取文件内容
+        content = await file.read()
+        try:
+            text = content.decode('utf-8')
+        except UnicodeDecodeError:
+            # 尝试 GBK 编码
+            text = content.decode('gbk')
+        
+        # 分割行，跳过前6行元数据
+        lines = text.split('\n')
+        if len(lines) < 8:
+            raise HTTPException(status_code=400, detail="CSV 文件格式错误：行数不足")
+        
+        # 从第7行开始（索引6）作为 CSV 内容
+        csv_content = '\n'.join(lines[6:])
+        
+        # 解析 CSV
+        reader = csv.DictReader(io.StringIO(csv_content))
+        rows = list(reader)
+        
+        if not rows:
+            raise HTTPException(status_code=400, detail="CSV 文件中没有数据")
+        
+        # 统计信息
+        stats = {"tasks": 0, "lists": 0, "folders": 0, "tags": 0, "skipped": 0}
+        
+        # 映射表
+        folder_map = {}  # folder_name -> folder_id
+        list_map = {}    # (folder_name, list_name) -> list_id
+        tag_map = {}     # tag_name -> tag_id
+        dida_id_map = {} # dida_taskId -> ticklist_task_id
+        
+        session = db_connection.get_session()
+        
+        try:
+            # ========== 第一遍遍历：收集并创建文件夹、清单、标签 ==========
+            
+            # 收集所有文件夹和清单
+            folder_names = set()
+            list_keys = set()  # (folder_name, list_name)
+            tag_names = set()
+            
+            for row in rows:
+                folder_name = row.get('Folder Name', '').strip()
+                list_name = row.get('List Name', '').strip()
+                tags_str = row.get('Tags', '').strip()
+                
+                if folder_name:
+                    folder_names.add(folder_name)
+                if folder_name and list_name:
+                    list_keys.add((folder_name, list_name))
+                
+                # 解析标签（逗号分隔）
+                if tags_str:
+                    for tag in tags_str.split(','):
+                        tag = tag.strip()
+                        if tag:
+                            tag_names.add(tag)
+            
+            # 创建文件夹
+            order = 0
+            for folder_name in sorted(folder_names):
+                # 检查是否已存在同名文件夹
+                existing = session.query(TaskListModel).filter(
+                    TaskListModel.user_id == current_user_id,
+                    TaskListModel.name == folder_name,
+                    TaskListModel.type == 'folder'
+                ).first()
+                
+                if existing:
+                    folder_map[folder_name] = existing.id
+                else:
+                    folder_id = str(uuid.uuid4())
+                    now = datetime.now().isoformat()
+                    folder = TaskListModel(
+                        id=folder_id,
+                        user_id=current_user_id,
+                        name=folder_name,
+                        type='folder',
+                        parent_id=None,
+                        color='#1677ff',
+                        order=order,
+                        is_archived=False,
+                        created_at=now,
+                        updated_at=now
+                    )
+                    session.add(folder)
+                    folder_map[folder_name] = folder_id
+                    stats["folders"] += 1
+                    order += 1
+            
+            # 创建清单
+            order = 0
+            for folder_name, list_name in sorted(list_keys):
+                # 检查是否已存在同名清单（在同一文件夹下）
+                parent_id = folder_map.get(folder_name)
+                existing = session.query(TaskListModel).filter(
+                    TaskListModel.user_id == current_user_id,
+                    TaskListModel.name == list_name,
+                    TaskListModel.type == 'list',
+                    TaskListModel.parent_id == parent_id
+                ).first()
+                
+                if existing:
+                    list_map[(folder_name, list_name)] = existing.id
+                else:
+                    list_id = str(uuid.uuid4())
+                    now = datetime.now().isoformat()
+                    task_list = TaskListModel(
+                        id=list_id,
+                        user_id=current_user_id,
+                        name=list_name,
+                        type='list',
+                        parent_id=parent_id,
+                        color='#1677ff',
+                        order=order,
+                        is_archived=False,
+                        created_at=now,
+                        updated_at=now
+                    )
+                    session.add(task_list)
+                    list_map[(folder_name, list_name)] = list_id
+                    stats["lists"] += 1
+                    order += 1
+            
+            # 创建标签
+            for tag_name in sorted(tag_names):
+                # 检查是否已存在同名标签
+                existing = session.query(TagModel).filter(
+                    TagModel.user_id == current_user_id,
+                    TagModel.name == tag_name
+                ).first()
+                
+                if existing:
+                    tag_map[tag_name] = existing.id
+                else:
+                    tag_id = str(uuid.uuid4())
+                    now = datetime.now().isoformat()
+                    tag = TagModel(
+                        id=tag_id,
+                        user_id=current_user_id,
+                        name=tag_name,
+                        color='#1677ff',
+                        created_at=now
+                    )
+                    session.add(tag)
+                    tag_map[tag_name] = tag_id
+                    stats["tags"] += 1
+            
+            # 提交文件夹、清单、标签
+            session.flush()
+            
+            # ========== 第二遍遍历：创建任务 ==========
+            
+            # 分离顶级任务和子任务
+            top_level_rows = []
+            child_rows = []
+            
+            for row in rows:
+                parent_id = row.get('parentId', '').strip()
+                if parent_id:
+                    child_rows.append(row)
+                else:
+                    top_level_rows.append(row)
+            
+            # 先创建顶级任务
+            for row in top_level_rows:
+                dida_task_id = row.get('taskId', '').strip()
+                if not dida_task_id:
+                    stats["skipped"] += 1
+                    continue
+                
+                title = row.get('Title', '').strip()
+                if not title:
+                    stats["skipped"] += 1
+                    continue
+                
+                # 获取清单 ID
+                folder_name = row.get('Folder Name', '').strip()
+                list_name = row.get('List Name', '').strip()
+                list_id = list_map.get((folder_name, list_name))
+                
+                # 解析标签
+                tags_str = row.get('Tags', '').strip()
+                tag_ids = []
+                if tags_str:
+                    for tag in tags_str.split(','):
+                        tag = tag.strip()
+                        if tag and tag in tag_map:
+                            tag_ids.append(tag_map[tag])
+                
+                # 创建任务
+                task_id = str(uuid.uuid4())
+                now = datetime.now().isoformat()
+                
+                task = TaskModel(
+                    id=task_id,
+                    user_id=current_user_id,
+                    title=title,
+                    description=_clean_content(row.get('Content', '')),
+                    status=_map_dida_status(row.get('Status', '0')),
+                    priority=_map_dida_priority(row.get('Priority', '0')),
+                    list_id=list_id,
+                    start_time=_parse_dida_date(row.get('Start Date', '')),
+                    due_date=_parse_dida_date(row.get('Due Date', '')),
+                    reminder_time=_parse_dida_date(row.get('Reminder', '')),
+                    is_pinned=False,
+                    order=0,
+                    push_due_notify=False,
+                    pomodoro_count=0,
+                    focus_duration=0,
+                    created_at=_parse_dida_date(row.get('Created Time', '')) or now,
+                    updated_at=now,
+                    completed_at=_parse_dida_date(row.get('Completed Time', ''))
+                )
+                session.add(task)
+                
+                # 添加标签关系
+                for tag_id in tag_ids:
+                    tag_relation = TaskTagModel(
+                        task_id=task_id,
+                        tag_id=tag_id
+                    )
+                    session.add(tag_relation)
+                
+                dida_id_map[dida_task_id] = task_id
+                stats["tasks"] += 1
+            
+            # 提交顶级任务
+            session.flush()
+            
+            # 创建子任务
+            for row in child_rows:
+                dida_task_id = row.get('taskId', '').strip()
+                dida_parent_id = row.get('parentId', '').strip()
+                
+                if not dida_task_id:
+                    stats["skipped"] += 1
+                    continue
+                
+                title = row.get('Title', '').strip()
+                if not title:
+                    stats["skipped"] += 1
+                    continue
+                
+                # 检查父任务是否存在
+                parent_task_id = dida_id_map.get(dida_parent_id)
+                if not parent_task_id:
+                    # 父任务不存在，跳过此子任务
+                    stats["skipped"] += 1
+                    continue
+                
+                # 获取清单 ID
+                folder_name = row.get('Folder Name', '').strip()
+                list_name = row.get('List Name', '').strip()
+                list_id = list_map.get((folder_name, list_name))
+                
+                # 解析标签
+                tags_str = row.get('Tags', '').strip()
+                tag_ids = []
+                if tags_str:
+                    for tag in tags_str.split(','):
+                        tag = tag.strip()
+                        if tag and tag in tag_map:
+                            tag_ids.append(tag_map[tag])
+                
+                # 创建子任务
+                task_id = str(uuid.uuid4())
+                now = datetime.now().isoformat()
+                
+                task = TaskModel(
+                    id=task_id,
+                    user_id=current_user_id,
+                    title=title,
+                    description=_clean_content(row.get('Content', '')),
+                    status=_map_dida_status(row.get('Status', '0')),
+                    priority=_map_dida_priority(row.get('Priority', '0')),
+                    list_id=list_id,
+                    start_time=_parse_dida_date(row.get('Start Date', '')),
+                    due_date=_parse_dida_date(row.get('Due Date', '')),
+                    reminder_time=_parse_dida_date(row.get('Reminder', '')),
+                    is_pinned=False,
+                    order=0,
+                    push_due_notify=False,
+                    pomodoro_count=0,
+                    focus_duration=0,
+                    created_at=_parse_dida_date(row.get('Created Time', '')) or now,
+                    updated_at=now,
+                    completed_at=_parse_dida_date(row.get('Completed Time', ''))
+                )
+                session.add(task)
+                
+                # 添加标签关系
+                for tag_id in tag_ids:
+                    tag_relation = TaskTagModel(
+                        task_id=task_id,
+                        tag_id=tag_id
+                    )
+                    session.add(tag_relation)
+                
+                # 添加父子关系
+                child_relation = TaskChildModel(
+                    parent_id=parent_task_id,
+                    child_id=task_id,
+                    user_id=current_user_id
+                )
+                session.add(child_relation)
+                
+                dida_id_map[dida_task_id] = task_id
+                stats["tasks"] += 1
+            
+            session.commit()
+            
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+        
+        return {"message": "滴答清单数据导入成功", "stats": stats}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"导入滴答清单数据失败: {str(e)}")

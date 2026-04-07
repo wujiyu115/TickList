@@ -35,7 +35,7 @@ import {
 import { UserSettings, TaskList, PushChannelConfig, BarkConfig, CustomHttpConfig } from '../types';
 import { getSettings, updateSettings, testPushChannel } from '../api/settings';
 import { getLists } from '../api/list';
-import { exportData, importData } from '../api/data';
+import { exportData, importData, importDidaCsv } from '../api/data';
 import { ThemeContext } from '../App';
 import './SettingsPage.less';
 
@@ -122,6 +122,8 @@ const SettingsPage: React.FC = () => {
   const [lists, setLists] = useState<TaskList[]>([]);
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [importFileData, setImportFileData] = useState<any>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importFileType, setImportFileType] = useState<'json' | 'csv' | null>(null);
   const [importLoading, setImportLoading] = useState(false);
   
   // 推送渠道相关状态
@@ -210,20 +212,40 @@ const SettingsPage: React.FC = () => {
 
   // 导入数据
   const handleImport = async () => {
-    if (!importFileData) {
+    if (!importFileType) {
       message.warning('请先选择文件');
       return;
     }
+    
     setImportLoading(true);
     try {
-      const result: any = await importData(importFileData);
-      const stats = result.data?.stats || result.stats;
-      message.success(`导入成功：${stats.tasks} 个任务，${stats.lists} 个清单，${stats.tags} 个标签`);
+      let result: any;
+      
+      if (importFileType === 'csv' && importFile) {
+        // CSV 导入（滴答清单）
+        result = await importDidaCsv(importFile);
+        const stats = result.data?.stats || result.stats;
+        message.success(
+          `滴答清单导入成功：${stats.tasks} 个任务，${stats.lists} 个清单，${stats.folders} 个文件夹，${stats.tags} 个标签`
+        );
+      } else if (importFileType === 'json' && importFileData) {
+        // JSON 导入
+        result = await importData(importFileData);
+        const stats = result.data?.stats || result.stats;
+        message.success(`导入成功：${stats.tasks} 个任务，${stats.lists} 个清单，${stats.tags} 个标签`);
+      } else {
+        message.warning('请先选择文件');
+        return;
+      }
+      
       setImportModalVisible(false);
       setImportFileData(null);
+      setImportFile(null);
+      setImportFileType(null);
       window.location.reload();
-    } catch (error) {
-      message.error('导入失败');
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.detail || error?.message || '导入失败';
+      message.error(errorMsg);
     } finally {
       setImportLoading(false);
     }
@@ -827,7 +849,7 @@ const SettingsPage: React.FC = () => {
             <div className="data-action-card" onClick={() => setImportModalVisible(true)}>
               <ImportOutlined />
               <span className="action-title">导入数据</span>
-              <span className="action-desc">从 JSON 文件导入任务、清单、标签</span>
+              <span className="action-desc">支持 JSON 或滴答清单 CSV 备份文件</span>
             </div>
           </div>
         </div>
@@ -840,6 +862,8 @@ const SettingsPage: React.FC = () => {
         onCancel={() => {
           setImportModalVisible(false);
           setImportFileData(null);
+          setImportFile(null);
+          setImportFileType(null);
         }}
         onOk={handleImport}
         confirmLoading={importLoading}
@@ -848,29 +872,48 @@ const SettingsPage: React.FC = () => {
         className="import-modal"
       >
         <Upload
-          accept=".json"
+          accept=".json,.csv"
           beforeUpload={(file) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              try {
-                const data = JSON.parse(e.target?.result as string);
-                setImportFileData(data);
-                message.success(`已选择文件: ${file.name}`);
-              } catch {
-                message.error('文件格式错误');
-              }
-            };
-            reader.readAsText(file);
+            const ext = file.name.toLowerCase().split('.').pop();
+            
+            if (ext === 'csv') {
+              // CSV 文件（滴答清单备份）
+              setImportFile(file);
+              setImportFileType('csv');
+              setImportFileData(null);
+              message.success(`已选择滴答清单备份: ${file.name}`);
+            } else if (ext === 'json') {
+              // JSON 文件（TickList 导出）
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                try {
+                  const data = JSON.parse(e.target?.result as string);
+                  setImportFileData(data);
+                  setImportFileType('json');
+                  setImportFile(null);
+                  message.success(`已选择文件: ${file.name}`);
+                } catch {
+                  message.error('JSON 文件格式错误');
+                }
+              };
+              reader.readAsText(file);
+            } else {
+              message.error('不支持的文件格式');
+            }
             return false;
           }}
           maxCount={1}
           showUploadList={true}
         >
-          <Button icon={<UploadOutlined />}>选择 JSON 文件</Button>
+          <Button icon={<UploadOutlined />}>选择文件</Button>
         </Upload>
-        <p className="import-hint">
-          支持从本应用导出的 JSON 格式数据文件
-        </p>
+        <div className="import-hint">
+          <p style={{ marginBottom: 8 }}>支持的文件格式：</p>
+          <ul style={{ margin: 0, paddingLeft: 20, color: '#666' }}>
+            <li><strong>JSON</strong> - 本应用导出的数据文件</li>
+            <li><strong>CSV</strong> - 滴答清单（TickTick/Dida）备份文件</li>
+          </ul>
+        </div>
       </Modal>
 
       {/* 渠道编辑 Modal */}
