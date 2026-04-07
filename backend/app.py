@@ -35,6 +35,7 @@ from routes.data import router as data_router
 from routes.filter import router as filter_router
 from routes.settings import router as settings_router
 from routes.focus import router as focus_router
+from routes.admin import admin_router
 
 # 导入中间件
 from middleware.logging_middleware import RequestLoggingMiddleware
@@ -100,6 +101,7 @@ def create_app():
     app.include_router(filter_router)
     app.include_router(settings_router)
     app.include_router(focus_router)
+    app.include_router(admin_router)
     
     # 挂载静态文件
     if os.path.exists(static_folder):
@@ -164,6 +166,16 @@ app = create_app()
 @app.on_event("startup")
 async def startup_event():
     scheduler_service.start()
+    
+    # 同步 ADMIN_USERNAME 配置：如果指定的管理员用户已存在但不是 admin，自动升级
+    admin_username = config.get_admin_username()
+    if admin_username:
+        from database.dao.user_dao import user_dao
+        user = user_dao.find_by_username(admin_username)
+        if user and user.get('role_group') != 'admin':
+            user_dao.update_user(user['id'], {'role_group': 'admin'})
+            logger.info(f"Promoted user '{admin_username}' to admin (ADMIN_USERNAME config)")
+    
     logger.info("Application startup complete")
 
 # 关闭事件 - 关闭调度器

@@ -96,6 +96,9 @@ class DatabaseConnection:
                 ('push_batch_size', 'INTEGER DEFAULT 5'),
                 ('focus_min_duration', 'INTEGER DEFAULT 5'),
             ],
+            'users': [
+                ('is_frozen', 'BOOLEAN DEFAULT 0'),
+            ],
         }
         
         with self.engine.connect() as conn:

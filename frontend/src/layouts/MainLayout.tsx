@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout } from 'antd';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
 import AppSider from '../components/AppSider';
 import TaskPage from '../pages/TaskPage';
@@ -10,6 +10,7 @@ import PomodoroPage from '../pages/PomodoroPage';
 import CountdownPage from '../pages/CountdownPage';
 import SummaryPage from '../pages/SummaryPage';
 import SettingsPage from '../pages/SettingsPage';
+import AdminPage from '../pages/admin/AdminPage';
 import { TaskProvider } from '../contexts/TaskContext';
 import { User } from '../types';
 import './MainLayout.less';
@@ -37,6 +38,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
               <Route path="/statistics" element={<StatisticsPage />} />
               <Route path="/summary" element={<SummaryPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route
+                path="/admin"
+                element={
+                  user.role_group === 'admin'
+                    ? <AdminPage user={user} />
+                    : <Navigate to="/" replace />
+                }
+              />
             </Routes>
           </Content>
         </Layout>

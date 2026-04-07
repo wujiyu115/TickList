@@ -254,6 +254,48 @@ npm run build
 
 构建产物将输出到 `frontend/dist` 目录。
 
+## 管理员配置
+
+### 自动管理员
+
+第一个注册的用户会自动成为管理员，无需额外配置。
+
+### 通过环境变量指定管理员
+
+通过 `ADMIN_USERNAME` 环境变量指定管理员用户名，该用户注册时会自动获得管理员权限：
+
+```bash
+# 环境变量方式
+export ADMIN_USERNAME=your_admin_name
+
+# 或在 config.yaml 中配置
+auth:
+  admin_username: "your_admin_name"
+```
+
+Docker 运行时指定管理员：
+
+```bash
+docker run -d \
+  -p 5000:5000 \
+  -e ADMIN_USERNAME=your_admin_name \
+  -v $(pwd)/backend/config.yaml:/app/config.yaml \
+  -v $(pwd)/data:/app/data \
+  --name ticklist \
+  ticklist:latest
+```
+
+### 管理后台修改
+
+已有管理员后，可在管理后台的用户管理页面直接修改其他用户的角色。
+
+### 优先级规则
+
+管理员角色判定按以下优先级：
+1. 第一个注册的用户 → 自动成为管理员
+2. 用户名匹配 `ADMIN_USERNAME` → 自动成为管理员
+3. 其他情况 → 普通用户
+
 ## 注意事项
 
 1. 本项目使用本地用户名密码认证

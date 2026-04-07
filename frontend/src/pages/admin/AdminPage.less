@@ -1,0 +1,62 @@
+.admin-page {
+  display: flex;
+  height: calc(100vh - 112px);
+  background: var(--ant-color-bg-container);
+
+  // 左侧导航
+  .admin-nav {
+    width: 200px;
+    border-right: 1px solid var(--ant-color-border);
+    padding: 16px 0;
+    flex-shrink: 0;
+
+    .nav-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ant-color-text);
+      padding: 8px 20px 16px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      cursor: pointer;
+      color: var(--ant-color-text-secondary);
+      font-size: 14px;
+      transition: all 0.2s;
+
+      &:hover {
+        background: var(--ant-color-bg-text-hover);
+        color: var(--ant-color-text);
+      }
+
+      &.active {
+        background: var(--ant-color-primary-bg);
+        color: var(--ant-color-primary);
+        font-weight: 500;
+      }
+
+      .anticon {
+        font-size: 16px;
+      }
+    }
+  }
+
+  // 右侧内容区
+  .admin-content {
+    flex: 1;
+    padding: 24px 32px;
+    overflow-y: auto;
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--ant-color-text);
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--ant-color-border);
+    }
+  }
+}

@@ -4,6 +4,7 @@ import { message, ConfigProvider, theme as antdTheme } from 'antd';
 import MainLayout from './layouts/MainLayout';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ChangePasswordPage from './pages/ChangePasswordPage';
 import { FocusProvider } from './contexts/FocusContext';
 import { getCurrentUser } from './api/auth';
 import { getSettings } from './api/settings';
@@ -152,6 +153,16 @@ const App: React.FC = () => {
                 <Navigate to={defaultViewPath || '/'} replace />
               ) : (
                 <RegisterPage />
+              )
+            }
+          />
+          <Route
+            path="/change-password"
+            element={
+              user ? (
+                <ChangePasswordPage />
+              ) : (
+                <Navigate to="/login" replace />
               )
             }
           />

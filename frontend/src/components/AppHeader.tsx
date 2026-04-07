@@ -1,6 +1,7 @@
 import React from 'react';
 import { Layout, Avatar, Dropdown, Space } from 'antd';
-import { UserOutlined, LogoutOutlined } from '@ant-design/icons';
+import { UserOutlined, LogoutOutlined, LockOutlined, CrownOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import type { MenuProps } from 'antd';
 import { User } from '../types';
 
@@ -12,7 +13,28 @@ interface AppHeaderProps {
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout }) => {
+  const navigate = useNavigate();
+
   const items: MenuProps['items'] = [
+    {
+      key: 'change-password',
+      icon: <LockOutlined />,
+      label: '修改密码',
+      onClick: () => navigate('/change-password'),
+    },
+    ...(user.role_group === 'admin'
+      ? [
+          {
+            key: 'admin',
+            icon: <CrownOutlined />,
+            label: '管理后台',
+            onClick: () => navigate('/admin'),
+          },
+        ]
+      : []),
+    {
+      type: 'divider' as const,
+    },
     {
       key: 'logout',
       icon: <LogoutOutlined />,

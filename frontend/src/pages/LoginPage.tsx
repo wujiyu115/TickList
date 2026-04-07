@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Typography, Form, Input, Button, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import { User } from '../types';
-import { localLogin } from '../api/auth';
+import { localLogin, getAuthConfig } from '../api/auth';
 
 const { Title, Paragraph } = Typography;
 
@@ -13,6 +13,18 @@ interface LoginPageProps {
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
+  const [registerEnabled, setRegisterEnabled] = useState(true);
+
+  useEffect(() => {
+    getAuthConfig()
+      .then((res: any) => {
+        const enabled = res.register_enabled ?? res.data?.register_enabled ?? true;
+        setRegisterEnabled(enabled);
+      })
+      .catch(() => {
+        setRegisterEnabled(true);
+      });
+  }, []);
 
   const handleLocalLogin = async (values: { username: string; password: string }) => {
     setLoading(true);
@@ -82,9 +94,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           </Form.Item>
         </Form>
         
+        {registerEnabled && (
         <div style={{ marginTop: 16 }}>
           <Link to="/register">没有账号？注册</Link>
         </div>
+        )}
       </Card>
     </div>
   );

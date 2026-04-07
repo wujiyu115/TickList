@@ -22,3 +22,11 @@ export const register = (data: { username: string; password: string; email?: str
 export const localLogin = (data: { username: string; password: string }): Promise<LoginResponse> => {
   return api.post('/auth/login', data);
 };
+
+// 修改密码
+export const changePassword = (data: { old_password: string; new_password: string }) =>
+  api.post('/auth/change-password', data);
+
+// 获取认证配置（注册开关等）
+export const getAuthConfig = () =>
+  api.get<{ register_enabled: boolean }>('/auth/config');

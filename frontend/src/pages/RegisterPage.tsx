@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Card, Typography, Form, Input, Button, message } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Card, Typography, Form, Input, Button, message, Result, Spin } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
-import { register } from '../api/auth';
+import { register, getAuthConfig } from '../api/auth';
 
 const { Title, Paragraph } = Typography;
 
@@ -15,7 +15,19 @@ interface RegisterFormValues {
 
 const RegisterPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [registerEnabled, setRegisterEnabled] = useState<boolean | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    getAuthConfig()
+      .then((res: any) => {
+        const enabled = res.register_enabled ?? res.data?.register_enabled ?? true;
+        setRegisterEnabled(enabled);
+      })
+      .catch(() => {
+        setRegisterEnabled(true);
+      });
+  }, []);
 
   const handleRegister = async (values: RegisterFormValues) => {
     setLoading(true);
@@ -47,6 +59,18 @@ const RegisterPage: React.FC = () => {
       height: '100vh',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
     }}>
+      {registerEnabled === null ? (
+        <Spin size="large" />
+      ) : !registerEnabled ? (
+        <Card style={{ width: 400, textAlign: 'center' }}>
+          <Result
+            status="warning"
+            title="注册功能已关闭"
+            subTitle="管理员已关闭注册功能，请联系管理员获取账号"
+            extra={<Link to="/login"><Button type="primary">返回登录</Button></Link>}
+          />
+        </Card>
+      ) : (
       <Card style={{ width: 400, textAlign: 'center' }}>
         <Title level={2}>注册</Title>
         <Paragraph>创建您的 TickList 账号</Paragraph>
@@ -137,6 +161,7 @@ const RegisterPage: React.FC = () => {
           <Link to="/login">已有账号？登录</Link>
         </div>
       </Card>
+      )}
     </div>
   );
 };

@@ -30,7 +30,7 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  ExperimentOutlined
+  ExperimentOutlined,
 } from '@ant-design/icons';
 import { UserSettings, TaskList, PushChannelConfig, BarkConfig, CustomHttpConfig } from '../types';
 import { getSettings, updateSettings, testPushChannel } from '../api/settings';
@@ -132,6 +132,7 @@ const SettingsPage: React.FC = () => {
   const [editingChannel, setEditingChannel] = useState<PushChannelConfig | null>(null);
   const [channelForm] = Form.useForm();
   const [testingChannelId, setTestingChannelId] = useState<string | null>(null);
+  
   
   const themeContext = useContext(ThemeContext);
 
@@ -853,6 +854,7 @@ const SettingsPage: React.FC = () => {
             </div>
           </div>
         </div>
+
       </div>
 
       {/* 导入数据 Modal */}

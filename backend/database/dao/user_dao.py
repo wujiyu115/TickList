@@ -26,6 +26,7 @@ class UserDAO:
             'email': model.email,
             'name': model.name,
             'role_group': model.role_group,
+            'is_frozen': model.is_frozen,
             'created_at': model.created_at
         }
     

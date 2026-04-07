@@ -11,6 +11,10 @@ database:
   # SQLite: sqlite:///ticklist.db
   # MySQL: mysql+pymysql://username:password@host:port/database?charset=utf8mb4
 
+auth:
+  register_enabled: true  # 设为 false 关闭注册，可通过环境变量 REGISTER_ENABLED 覆盖
+  admin_username: ""  # 指定管理员用户名，该用户注册时自动成为管理员，可通过环境变量 ADMIN_USERNAME 覆盖
+
 cors:
   allowed_origins:
     - "http://localhost:3000"

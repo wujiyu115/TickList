@@ -20,6 +20,7 @@ class UserModel(Base):
     email = Column(String(200))
     name = Column(String(100))
     role_group = Column(String(50), default='user')
+    is_frozen = Column(Boolean, default=False)
     created_at = Column(String(50))
 
 

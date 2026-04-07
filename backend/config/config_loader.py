@@ -112,6 +112,18 @@ class ConfigLoader:
         # 从配置文件读取
         return self.get('database.connect_string', 'sqlite:///ticklist.db')
     
+    def get_admin_username(self) -> str:
+        """获取指定的管理员用户名"""
+        return self.get('auth.admin_username', '', 'ADMIN_USERNAME')
+    
+    def is_register_enabled(self) -> bool:
+        """是否开启注册功能"""
+        value = self.get('auth.register_enabled', True, 'REGISTER_ENABLED')
+        # 处理环境变量返回的字符串情况
+        if isinstance(value, str):
+            return value.lower() in ('true', '1', 'yes', 'on')
+        return bool(value)
+    
     def get_kun_config(self) -> Dict[str, Any]:
         """获取Kun SDK配置"""
         return {
