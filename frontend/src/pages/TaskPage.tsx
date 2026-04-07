@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { Button, Popover, Checkbox, Divider, Tooltip, Popconfirm, Spin, Empty, message, Dropdown } from 'antd';
 import { 
   UnorderedListOutlined, 
@@ -50,7 +50,13 @@ const TaskPage: React.FC = () => {
   const [lists, setLists] = useState<TaskListType[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [filters, setFilters] = useState<Filter[]>([]);
-  const [activeFilter, setActiveFilter] = useState<Filter | null>(null);
+  // 同步计算 activeFilter，避免与主 useEffect 的时序竞争
+  const activeFilter = useMemo(() => {
+    if (filterId && filters.length > 0) {
+      return filters.find(f => f.id === filterId) || null;
+    }
+    return null;
+  }, [filterId, filters]);
 
   // 视图模式状态 - 等待用户设置加载后更新
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -106,6 +112,20 @@ const TaskPage: React.FC = () => {
       }
     };
     loadData();
+  }, []);
+
+  // 监听过滤器更新事件，刷新 filters 数据以更新 activeFilter
+  useEffect(() => {
+    const handleFiltersUpdated = async () => {
+      try {
+        const filtersRes = await getFilters();
+        setFilters(filtersRes.filters || []);
+      } catch (e) {
+        console.error('Failed to reload filters:', e);
+      }
+    };
+    window.addEventListener('filters-updated', handleFiltersUpdated);
+    return () => window.removeEventListener('filters-updated', handleFiltersUpdated);
   }, []);
 
   // 加载垃圾箱任务
@@ -219,16 +239,6 @@ const TaskPage: React.FC = () => {
       </div>
     </div>
   );
-
-  // 当 filter_id 变化时，查找对应的过滤器
-  useEffect(() => {
-    if (filterId && filters.length > 0) {
-      const found = filters.find(f => f.id === filterId);
-      setActiveFilter(found || null);
-    } else {
-      setActiveFilter(null);
-    }
-  }, [filterId, filters]);
 
   // 当视图切换时，重置分页状态并加载数据
   useEffect(() => {

@@ -437,6 +437,8 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
       }
       setFilterModalVisible(false);
       loadFilters();
+      // 通知 TaskPage 刷新过滤器数据
+      window.dispatchEvent(new CustomEvent('filters-updated'));
     } catch (e) {
       message.error(filterModalMode === 'create' ? '创建失败' : '更新失败');
     } finally {
@@ -719,7 +721,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
       {/* 内容面板 - 仅在任务视图显示 */}
       {isTaskView && (
         <div className="secondary-panel">
-          <div className="panel-title">当周工作</div>
+          <div className="panel-title">任务</div>
           
           {/* 快速筛选 */}
           <div 

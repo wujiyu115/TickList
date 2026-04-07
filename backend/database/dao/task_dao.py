@@ -334,6 +334,8 @@ class TaskDAO:
         list_id: Optional[str] = None,
         tags: Optional[List[str]] = None,
         is_pinned: Optional[bool] = None,
+        priority: Optional[List[int]] = None,
+        keyword: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         skip: int = 0,
@@ -362,6 +364,18 @@ class TaskDAO:
             
             if is_pinned is not None:
                 query = query.filter(TaskModel.is_pinned == is_pinned)
+            
+            if priority is not None and len(priority) > 0:
+                query = query.filter(TaskModel.priority.in_(priority))
+            
+            if keyword:
+                search_pattern = f'%{keyword}%'
+                query = query.filter(
+                    or_(
+                        TaskModel.title.like(search_pattern),
+                        TaskModel.description.like(search_pattern)
+                    )
+                )
             
             if start_date and end_date:
                 query = query.filter(

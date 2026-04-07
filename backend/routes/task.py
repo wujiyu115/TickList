@@ -156,6 +156,8 @@ async def get_tasks(
     list_id: Optional[str] = Query(None),
     tags: Optional[str] = Query(None),
     is_pinned: Optional[bool] = Query(None),
+    priority: Optional[str] = Query(None),       # 优先级筛选，逗号分隔
+    keyword: Optional[str] = Query(None),         # 关键词筛选
     start_date: Optional[str] = Query(None),      # 开始时间范围 - 起始日期
     end_date: Optional[str] = Query(None),        # 开始时间范围 - 结束日期
     skip: int = Query(0, ge=0),
@@ -168,6 +170,14 @@ async def get_tasks(
         tag_list = None
         if tags:
             tag_list = [t.strip() for t in tags.split(',') if t.strip()]
+        
+        # 解析优先级
+        priority_list = None
+        if priority:
+            try:
+                priority_list = [int(p.strip()) for p in priority.split(',') if p.strip()]
+            except ValueError:
+                pass
         
         # 解析日期范围参数
         start_date_dt = None
@@ -189,6 +199,8 @@ async def get_tasks(
             list_id=list_id,
             tags=tag_list,
             is_pinned=is_pinned,
+            priority=priority_list,
+            keyword=keyword,
             start_date=start_date_dt,
             end_date=end_date_dt,
             skip=skip,
