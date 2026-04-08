@@ -4,14 +4,9 @@ import {
   UnorderedListOutlined, 
   SortAscendingOutlined, 
   EllipsisOutlined, 
-  FilterOutlined, 
-  CheckCircleOutlined,
   AppstoreOutlined,
-  ProjectOutlined,
-  SettingOutlined,
   MenuOutlined,
-  DeleteOutlined,
-  RestOutlined
+  DeleteOutlined
 } from '@ant-design/icons';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import moment from 'moment';
@@ -432,20 +427,6 @@ const TaskPage: React.FC = () => {
     }
   };
 
-  // 获取工具栏图标
-  const getToolbarIcon = () => {
-    if (activeFilter) {
-      return <FilterOutlined className="toolbar-icon" />;
-    }
-    if (filter === 'completed') {
-      return <CheckCircleOutlined className="toolbar-icon" />;
-    }
-    if (filter === 'trash') {
-      return <DeleteOutlined className="toolbar-icon" />;
-    }
-    return <UnorderedListOutlined className="toolbar-icon" />;
-  };
-
   // 是否是已完成视图
   const isCompletedView = filter === 'completed';
   // 是否是垃圾箱视图
@@ -534,7 +515,6 @@ const TaskPage: React.FC = () => {
         {/* 顶部工具栏 */}
         <div className="task-toolbar">
           <div className="toolbar-left">
-            {getToolbarIcon()}
             <h2 className="page-title">{getFilterTitle()}</h2>
           </div>
           <div className="toolbar-right">

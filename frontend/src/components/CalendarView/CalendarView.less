@@ -661,3 +661,118 @@
     }
   }
 }
+
+// 移动端适配
+@media (max-width: 768px) {
+  .calendar-toolbar {
+    padding: 10px 12px;
+
+    .toolbar-left {
+      gap: 6px;
+
+      .month-title {
+        font-size: 18px;
+      }
+    }
+
+    .toolbar-right {
+      gap: 4px;
+
+      .nav-btn-group .ant-btn {
+        padding: 4px 8px;
+      }
+    }
+  }
+
+  .calendar-weekdays .weekday-cell {
+    padding: 6px 0;
+    font-size: 12px;
+  }
+
+  .calendar-grid .calendar-cell {
+    padding: 2px;
+
+    .cell-date .date-number {
+      font-size: 12px;
+    }
+  }
+
+  .task-bar {
+    font-size: 13px;
+    line-height: 24px;
+    padding: 1px 4px;
+  }
+
+  .more-tasks {
+    font-size: 11px;
+    padding: 1px 4px;
+  }
+
+  .task-popover-content {
+    max-width: calc(100vw - 32px);
+  }
+
+  // 周视图头部适配
+  .week-view-header {
+    .time-axis-placeholder {
+      width: 40px;
+    }
+
+    .week-day-header {
+      padding: 6px 0;
+
+      .day-name {
+        font-size: 12px;
+      }
+
+      .day-number {
+        font-size: 18px;
+
+        &.today-highlight {
+          width: 30px;
+          height: 30px;
+        }
+      }
+    }
+  }
+
+  // 日视图头部适配
+  .day-view-header {
+    .time-axis-placeholder {
+      width: 40px;
+    }
+
+    .day-header-content .day-number {
+      font-size: 24px;
+
+      &.today-highlight {
+        width: 38px;
+        height: 38px;
+      }
+    }
+  }
+
+  // 时间轴适配
+  .time-grid-container .time-axis {
+    width: 40px;
+
+    .hour-label {
+      font-size: 11px;
+      padding-right: 4px;
+    }
+  }
+
+  // 年视图适配
+  .year-view {
+    padding: 12px 16px;
+
+    .year-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px 16px;
+    }
+
+    .mini-calendar .mini-month-title {
+      font-size: 14px;
+    }
+  }
+}

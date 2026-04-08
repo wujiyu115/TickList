@@ -228,3 +228,65 @@
     }
   }
 }
+
+// 小屏手机适配
+@media (max-width: 480px) {
+  .countdown-page {
+    .page-header {
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+
+      .header-left {
+        gap: 8px;
+
+        .page-icon {
+          font-size: 20px;
+        }
+      }
+    }
+
+    .countdown-card {
+      padding: 12px;
+      border-radius: 10px;
+
+      .card-header {
+        margin-bottom: 12px;
+
+        .card-title {
+          font-size: 14px;
+        }
+      }
+
+      .days-display {
+        padding: 12px 0;
+        margin-bottom: 12px;
+
+        .days-number {
+          font-size: 28px;
+          margin-bottom: 4px;
+        }
+
+        .days-text {
+          font-size: 12px;
+        }
+
+        &.days-today .days-text {
+          font-size: 14px;
+        }
+      }
+
+      .card-footer .target-date {
+        font-size: 11px;
+      }
+
+      .card-note .ant-typography {
+        font-size: 11px;
+      }
+    }
+
+    .color-picker .color-option {
+      width: 24px;
+      height: 24px;
+    }
+  }
+}

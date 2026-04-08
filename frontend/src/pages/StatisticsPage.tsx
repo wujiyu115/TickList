@@ -34,7 +34,7 @@ const StatisticsPage: React.FC = () => {
   return (
     <div>
       <Row gutter={16}>
-        <Col span={6}>
+        <Col xs={12} sm={12} md={6}>
           <Card>
             <Statistic
               title="总任务数"
@@ -43,7 +43,7 @@ const StatisticsPage: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={12} sm={12} md={6}>
           <Card>
             <Statistic
               title="已完成"
@@ -53,7 +53,7 @@ const StatisticsPage: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={12} sm={12} md={6}>
           <Card>
             <Statistic
               title="进行中"
@@ -63,7 +63,7 @@ const StatisticsPage: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={12} sm={12} md={6}>
           <Card>
             <Statistic
               title="待处理"

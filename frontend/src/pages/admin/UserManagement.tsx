@@ -203,6 +203,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) => {
         rowKey="id"
         loading={loading}
         pagination={{ pageSize: 20 }}
+        scroll={{ x: 768 }}
       />
 
       {/* 新建用户 Modal */}

@@ -1,6 +1,6 @@
 import React from 'react';
-import { Layout, Avatar, Dropdown, Space } from 'antd';
-import { UserOutlined, LogoutOutlined, LockOutlined, CrownOutlined } from '@ant-design/icons';
+import { Layout, Avatar, Dropdown, Space, Button } from 'antd';
+import { UserOutlined, LogoutOutlined, LockOutlined, CrownOutlined, MenuOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { MenuProps } from 'antd';
 import { User } from '../types';
@@ -10,9 +10,10 @@ const { Header } = Layout;
 interface AppHeaderProps {
   user: User;
   onLogout: () => void;
+  onMenuClick?: () => void;
 }
 
-const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout }) => {
+const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onMenuClick }) => {
   const navigate = useNavigate();
 
   const items: MenuProps['items'] = [
@@ -44,7 +45,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout }) => {
   ];
 
   return (
-    <Header style={{ 
+    <Header className="app-header" style={{ 
       background: 'var(--ant-color-bg-container)', 
       padding: '0 24px', 
       display: 'flex', 
@@ -52,6 +53,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout }) => {
       alignItems: 'center',
       borderBottom: '1px solid var(--ant-color-border)'
     }}>
+      <Button
+        type="text"
+        icon={<MenuOutlined />}
+        onClick={onMenuClick}
+        className="mobile-menu-btn"
+        style={{ fontSize: 18, width: 40, height: 40 }}
+      />
       <Dropdown menu={{ items }} placement="bottomRight">
         <Space style={{ cursor: 'pointer', marginLeft: 'auto' }}>
           <Avatar icon={<UserOutlined />} />

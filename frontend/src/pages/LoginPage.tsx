@@ -50,7 +50,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       height: '100vh',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
     }}>
-      <Card style={{ width: 400, textAlign: 'center' }}>
+      <Card style={{ width: '90vw', maxWidth: 400, textAlign: 'center' }}>
         <Title level={2}>TickList</Title>
         <Paragraph>任务管理系统</Paragraph>
         

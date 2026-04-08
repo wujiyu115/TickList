@@ -43,7 +43,7 @@ const ChangePasswordPage: React.FC = () => {
       height: '100vh',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
     }}>
-      <Card style={{ width: 420, position: 'relative' }}>
+      <Card style={{ width: '90vw', maxWidth: 420, position: 'relative' }}>
         <Button
           type="text"
           icon={<ArrowLeftOutlined />}

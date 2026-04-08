@@ -377,3 +377,99 @@
     }
   }
 }
+
+// ========== 移动端适配 ==========
+
+// 菜单按钮默认隐藏（桌面端不显示，由 isMobile 控制渲染）
+.mobile-menu-btn {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+// 仅图标模式：非任务页 Drawer 只显示图标栏
+.mobile-sider-drawer.icon-only {
+  .ant-drawer-content-wrapper {
+    width: auto !important;
+  }
+
+  .app-sider {
+    .icon-bar {
+      border-right: none;
+    }
+  }
+}
+
+// 移动端侧边栏 Drawer 样式
+.mobile-sider-drawer {
+  .ant-drawer-body {
+    padding: 0 !important;
+  }
+  
+  .app-sider {
+    height: 100%;
+    
+    .icon-bar {
+      display: flex !important;
+      width: 52px;
+      flex-shrink: 0;
+    }
+
+    .secondary-panel {
+      display: flex !important;
+      width: 0;
+      flex: 1;
+      border-right: none;
+    }
+  }
+
+  // 触摸友好：增大点击区域
+  .icon-item {
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 22px !important;
+  }
+
+  .filter-item {
+    min-height: 44px;
+    padding: 10px 12px !important;
+  }
+
+  .list-item {
+    min-height: 44px;
+    padding: 10px 12px !important;
+  }
+
+  .tag-item {
+    min-height: 44px;
+    padding: 10px 12px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .icon-bar {
+    display: none !important;
+  }
+
+  .secondary-panel {
+    display: none !important;
+  }
+
+  .main-layout .main-content {
+    padding: 12px !important;
+  }
+
+  .app-header {
+    padding: 0 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-layout .main-content {
+    padding: 8px !important;
+  }
+
+  .app-header {
+    padding: 0 8px !important;
+  }
+}

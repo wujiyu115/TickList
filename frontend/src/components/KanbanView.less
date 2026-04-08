@@ -87,6 +87,49 @@
   }
 }
 
+// 移动端适配
+@media (max-width: 768px) {
+  .kanban-view {
+    flex-direction: column;
+    height: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 12px;
+    gap: 12px;
+
+    .kanban-column {
+      min-width: 100%;
+      max-width: 100%;
+      height: auto;
+      max-height: 50vh;
+
+      .column-content {
+        padding: 8px;
+      }
+    }
+  }
+
+  .kanban-card-wrapper .kanban-card {
+    .card-content {
+      .card-description,
+      .card-meta {
+        padding-left: 24px;
+      }
+
+      .card-children {
+        padding-left: 12px;
+
+        .kanban-card-wrapper .kanban-card .card-content {
+          .card-description,
+          .card-meta {
+            padding-left: 24px;
+          }
+        }
+      }
+    }
+  }
+}
+
 .kanban-card-wrapper {
   .kanban-card {
     display: flex;

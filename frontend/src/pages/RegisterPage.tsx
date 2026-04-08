@@ -62,7 +62,7 @@ const RegisterPage: React.FC = () => {
       {registerEnabled === null ? (
         <Spin size="large" />
       ) : !registerEnabled ? (
-        <Card style={{ width: 400, textAlign: 'center' }}>
+        <Card style={{ width: '90vw', maxWidth: 400, textAlign: 'center' }}>
           <Result
             status="warning"
             title="注册功能已关闭"
@@ -71,7 +71,7 @@ const RegisterPage: React.FC = () => {
           />
         </Card>
       ) : (
-      <Card style={{ width: 400, textAlign: 'center' }}>
+      <Card style={{ width: '90vw', maxWidth: 400, textAlign: 'center' }}>
         <Title level={2}>注册</Title>
         <Paragraph>创建您的 TickList 账号</Paragraph>
         

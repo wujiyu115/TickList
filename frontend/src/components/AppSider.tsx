@@ -19,8 +19,6 @@ import {
   SettingOutlined,
   FilterOutlined,
   FileTextOutlined,
-  DoubleLeftOutlined,
-  DoubleRightOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Dropdown, Modal, Input, Select, message, Button, Radio, Checkbox, Tabs } from 'antd';
@@ -32,6 +30,9 @@ import { getFilters, createFilter, updateFilter, deleteFilter } from '../api/fil
 
 interface AppSiderProps {
   user: User;
+  onNavigate?: () => void;
+  panelCollapsed?: boolean;
+  onTogglePanel?: () => void;
 }
 
 // 预定义颜色选项（清单用）
@@ -68,7 +69,7 @@ const navItems = [
   { key: 'statistics', icon: BarChartOutlined, path: '/statistics', tooltip: '统计' },
 ];
 
-const AppSider: React.FC<AppSiderProps> = ({ user }) => {
+const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = false, onTogglePanel }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -78,19 +79,6 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [collapsedFolders, setCollapsedFolders] = useState<Record<string, boolean>>({});
   const [showArchived, setShowArchived] = useState(false);
-  
-  // 面板折叠状态
-  const [panelCollapsed, setPanelCollapsed] = useState(() => {
-    return localStorage.getItem('siderPanelCollapsed') === 'true';
-  });
-  
-  const togglePanel = () => {
-    setPanelCollapsed(prev => {
-      const next = !prev;
-      localStorage.setItem('siderPanelCollapsed', String(next));
-      return next;
-    });
-  };
   
   // 新建清单 Modal 状态
   const [createModalVisible, setCreateModalVisible] = useState(false);
@@ -484,6 +472,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
   // 应用过滤器
   const applyFilter = (filter: Filter) => {
     navigate(`/?filter_id=${filter.id}`);
+    onNavigate?.();
   };
 
   // 过滤器项更多菜单
@@ -561,6 +550,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
             toggleFolder(item.id);
           } else {
             navigate(`/?list_id=${item.id}`);
+            onNavigate?.();
           }
         }}
       >
@@ -716,14 +706,10 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
                 className={`icon-item ${isActive ? 'active' : ''}`}
                 onClick={() => {
                   if (item.key === 'tasks' && isActive && isTaskView) {
-                    togglePanel();
+                    onTogglePanel?.();
                   } else {
                     navigate(item.path);
-                    // 切换到任务视图时自动展开面板
-                    if (item.key === 'tasks' && panelCollapsed) {
-                      setPanelCollapsed(false);
-                      localStorage.setItem('siderPanelCollapsed', 'false');
-                    }
+                    onNavigate?.();
                   }
                 }}
                 title={item.tooltip}
@@ -734,19 +720,10 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
           })}
         </div>
         <div className="icon-bar-bottom">
-          {isTaskView && (
-            <div
-              className="icon-item"
-              title={panelCollapsed ? '展开面板' : '收起面板'}
-              onClick={togglePanel}
-            >
-              {panelCollapsed ? <DoubleRightOutlined /> : <DoubleLeftOutlined />}
-            </div>
-          )}
           <div 
             className={`icon-item ${location.pathname === '/settings' ? 'active' : ''}`} 
             title="设置"
-            onClick={() => navigate('/settings')}
+            onClick={() => { navigate('/settings'); onNavigate?.(); }}
           >
             <SettingOutlined />
           </div>
@@ -761,28 +738,28 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
           {/* 快速筛选 */}
           <div 
             className={`filter-item ${selectedKey === 'filter-today' ? 'active' : ''}`}
-            onClick={() => navigate('/?filter=today')}
+            onClick={() => { navigate('/?filter=today'); onNavigate?.(); }}
           >
             <CalendarOutlined style={{ color: 'var(--ant-color-primary)' }} />
             <span>今天</span>
           </div>
           <div 
             className={`filter-item ${selectedKey === 'filter-week' ? 'active' : ''}`}
-            onClick={() => navigate('/?filter=week')}
+            onClick={() => { navigate('/?filter=week'); onNavigate?.(); }}
           >
             <CalendarOutlined style={{ color: '#52c41a' }} />
             <span>最近7天</span>
           </div>
           <div 
             className={`filter-item ${selectedKey === 'list-inbox' ? 'active' : ''}`}
-            onClick={() => navigate('/?list_id=inbox')}
+            onClick={() => { navigate('/?list_id=inbox'); onNavigate?.(); }}
           >
             <InboxOutlined />
             <span>收集箱</span>
           </div>
           <div 
             className={`filter-item ${location.pathname === '/summary' ? 'active' : ''}`}
-            onClick={() => navigate('/summary')}
+            onClick={() => { navigate('/summary'); onNavigate?.(); }}
           >
             <FileTextOutlined />
             <span>摘要</span>
@@ -864,7 +841,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
                     <div 
                       key={tag.id}
                       className={`tag-item ${selectedKey === `tag-${tag.name}` ? 'active' : ''}`}
-                      onClick={() => navigate(`/?tag=${tag.name}`)}
+                      onClick={() => { navigate(`/?tag=${tag.name}`); onNavigate?.(); }}
                       onMouseEnter={() => setHoveredTagId(tag.id)}
                       onMouseLeave={() => setHoveredTagId(null)}
                     >
@@ -946,14 +923,14 @@ const AppSider: React.FC<AppSiderProps> = ({ user }) => {
           <div className="bottom-items">
             <div 
               className={`filter-item ${selectedKey === 'filter-completed' ? 'active' : ''}`}
-              onClick={() => navigate('/?filter=completed')}
+              onClick={() => { navigate('/?filter=completed'); onNavigate?.(); }}
             >
               <CheckCircleOutlined />
               <span>已完成</span>
             </div>
             <div 
               className={`filter-item ${selectedKey === 'filter-trash' ? 'active' : ''}`}
-              onClick={() => navigate('/?filter=trash')}
+              onClick={() => { navigate('/?filter=trash'); onNavigate?.(); }}
             >
               <DeleteOutlined />
               <span>垃圾桶</span>
