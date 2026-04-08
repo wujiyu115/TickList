@@ -2,7 +2,7 @@
 
 from typing import List, Optional, Dict
 from datetime import datetime
-from sqlalchemy import or_, desc, asc
+from sqlalchemy import and_, or_, desc, asc
 from sqlalchemy.orm import Session
 from database.connection import db_connection
 from database.models import TaskModel, TaskChildModel, TaskTagModel
@@ -381,9 +381,22 @@ class TaskDAO:
                 )
             
             if start_date and end_date:
+                start_date_iso = start_date.isoformat()
+                end_date_iso = end_date.isoformat()
                 query = query.filter(
-                    TaskModel.start_time >= start_date.isoformat(),
-                    TaskModel.start_time < end_date.isoformat()
+                    or_(
+                        and_(
+                            TaskModel.due_date.isnot(None),
+                            TaskModel.due_date >= start_date_iso,
+                            TaskModel.due_date < end_date_iso,
+                        ),
+                        and_(
+                            TaskModel.due_date.is_(None),
+                            TaskModel.start_time.isnot(None),
+                            TaskModel.start_time >= start_date_iso,
+                            TaskModel.start_time < end_date_iso,
+                        ),
+                    )
                 )
             
             # 排序
@@ -703,9 +716,22 @@ class TaskDAO:
                 )
 
             if start_date and end_date:
+                start_date_iso = start_date.isoformat()
+                end_date_iso = end_date.isoformat()
                 query = query.filter(
-                    TaskModel.start_time >= start_date.isoformat(),
-                    TaskModel.start_time < end_date.isoformat()
+                    or_(
+                        and_(
+                            TaskModel.due_date.isnot(None),
+                            TaskModel.due_date >= start_date_iso,
+                            TaskModel.due_date < end_date_iso,
+                        ),
+                        and_(
+                            TaskModel.due_date.is_(None),
+                            TaskModel.start_time.isnot(None),
+                            TaskModel.start_time >= start_date_iso,
+                            TaskModel.start_time < end_date_iso,
+                        ),
+                    )
                 )
 
             return query.count()
