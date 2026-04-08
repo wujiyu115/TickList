@@ -331,6 +331,7 @@ class TaskDAO:
         self,
         user_id: str,
         status: Optional[str] = None,
+        exclude_status: Optional[str] = None,
         list_id: Optional[str] = None,
         tags: Optional[List[str]] = None,
         is_pinned: Optional[bool] = None,
@@ -351,6 +352,8 @@ class TaskDAO:
             
             if status:
                 query = query.filter(TaskModel.status == status)
+            elif exclude_status:
+                query = query.filter(TaskModel.status != exclude_status)
             
             if list_id is not None:
                 query = query.filter(TaskModel.list_id == list_id)
@@ -658,8 +661,12 @@ class TaskDAO:
         finally:
             session.close()
     
-    def count_user_tasks(self, user_id: str, status: Optional[str] = None) -> int:
-        """统计用户任务数量"""
+    def count_user_tasks(self, user_id: str, status: Optional[str] = None, exclude_status: Optional[str] = None,
+                         list_id: Optional[str] = None, tags: Optional[List[str]] = None,
+                         is_pinned: Optional[bool] = None, priority: Optional[List[int]] = None,
+                         keyword: Optional[str] = None, start_date: Optional[datetime] = None,
+                         end_date: Optional[datetime] = None) -> int:
+        """统计用户任务数量（支持与 get_user_tasks 相同的过滤条件）"""
         session = self._get_session()
         try:
             query = session.query(TaskModel).filter(
@@ -668,6 +675,39 @@ class TaskDAO:
             )
             if status:
                 query = query.filter(TaskModel.status == status)
+            elif exclude_status:
+                query = query.filter(TaskModel.status != exclude_status)
+
+            if list_id is not None:
+                query = query.filter(TaskModel.list_id == list_id)
+
+            if tags:
+                task_ids_with_tags = session.query(TaskTagModel.task_id).filter(
+                    TaskTagModel.tag_id.in_(tags)
+                ).distinct().subquery()
+                query = query.filter(TaskModel.id.in_(task_ids_with_tags))
+
+            if is_pinned is not None:
+                query = query.filter(TaskModel.is_pinned == is_pinned)
+
+            if priority is not None and len(priority) > 0:
+                query = query.filter(TaskModel.priority.in_(priority))
+
+            if keyword:
+                search_pattern = f'%{keyword}%'
+                query = query.filter(
+                    or_(
+                        TaskModel.title.like(search_pattern),
+                        TaskModel.description.like(search_pattern)
+                    )
+                )
+
+            if start_date and end_date:
+                query = query.filter(
+                    TaskModel.start_time >= start_date.isoformat(),
+                    TaskModel.start_time <= end_date.isoformat()
+                )
+
             return query.count()
         finally:
             session.close()

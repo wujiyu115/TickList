@@ -38,8 +38,6 @@ const TaskPopover: React.FC<TaskPopoverProps> = ({
         return 'processing';
       case 'pending':
         return 'warning';
-      case 'cancelled':
-        return 'default';
       default:
         return 'default';
     }
@@ -54,8 +52,6 @@ const TaskPopover: React.FC<TaskPopoverProps> = ({
         return '进行中';
       case 'pending':
         return '待处理';
-      case 'cancelled':
-        return '已取消';
       default:
         return status;
     }

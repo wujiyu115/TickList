@@ -31,7 +31,7 @@ class TaskModel(Base):
     id = Column(String(36), primary_key=True)
     title = Column(String(500), nullable=False)
     description = Column(Text)
-    status = Column(String(50), default='pending', index=True)  # pending/in_progress/completed/cancelled
+    status = Column(String(50), default='pending', index=True)  # pending/in_progress/completed
     priority = Column(Integer, default=0)  # 0-4 (0=无, 1=红旗, 2=黄旗, 3=蓝旗, 4=灰旗)
     user_id = Column(String(36), nullable=False, index=True)
     list_id = Column(String(36), index=True)
@@ -197,7 +197,7 @@ class TaskStatisticsModel(Base):
     completed_tasks = Column(Integer, default=0)
     pending_tasks = Column(Integer, default=0)
     in_progress_tasks = Column(Integer, default=0)
-    cancelled_tasks = Column(Integer, default=0)
+    cancelled_tasks = Column(Integer, default=0)  # [废弃] 不再使用，保留以避免数据库迁移问题
     completion_rate = Column(Integer, default=0)  # 百分比，如 75 表示 75%
     created_at = Column(String(50))
     updated_at = Column(String(50))

@@ -168,15 +168,20 @@ const TaskPage: React.FC = () => {
     }
   }, []);
 
-  // 加载已完成任务（分页）
-  const loadCompletedTasks = useCallback(async (page: number, append: boolean = false) => {
+  // 加载已完成任务（分页），支持传入视图过滤参数
+  const loadCompletedTasks = useCallback(async (page: number, append: boolean = false, filterParams: any = {}) => {
     if (page === 1) {
       setCompletedLoading(true);
     } else {
       setCompletedLoadingMore(true);
     }
     try {
-      const res = await getTasks({ status: 'completed', skip: (page - 1) * PAGE_SIZE, limit: PAGE_SIZE });
+      const res = await getTasks({
+        ...filterParams,
+        status: 'completed',
+        skip: (page - 1) * PAGE_SIZE,
+        limit: PAGE_SIZE,
+      });
       const newTasks = res.tasks || [];
       if (append) {
         setCompletedTasks(prev => [...prev, ...newTasks]);
@@ -192,6 +197,9 @@ const TaskPage: React.FC = () => {
       setCompletedLoadingMore(false);
     }
   }, []);
+
+  // 保存当前视图的过滤参数，供"查看更多"和刷新时使用
+  const currentViewParamsRef = useRef<any>({});
 
   // 切换视图模式
   const handleViewModeChange = (mode: ViewMode) => {
@@ -279,7 +287,7 @@ const TaskPage: React.FC = () => {
       return;
     }
 
-    // 其他视图走原有的 fetchTasks 逻辑
+    // 其他视图走分离加载逻辑
     const params: any = {};
       
     // 如果有 filter_id，使用过滤器的条件
@@ -358,8 +366,18 @@ const TaskPage: React.FC = () => {
         params.keyword = keywordParam;
       }
     }
-      
-    fetchTasks(params);
+
+    // 保存当前视图参数，供"查看更多"和刷新时使用
+    currentViewParamsRef.current = params;
+
+    // 1. 加载进行中+未完成任务（全量，排除已完成）
+    fetchTasks({ ...params, exclude_status: 'completed' });
+
+    // 2. 独立加载已完成任务（分页，第一页）
+    setCompletedTasks([]);
+    setCompletedTotal(0);
+    setCompletedPage(1);
+    loadCompletedTasks(1, false, params);
   }, [filter, listId, tagFilter, activeFilter, tagsParam, priorityParam, keywordParam]);
 
   // 垃圾箱 - 查看更多
@@ -369,8 +387,22 @@ const TaskPage: React.FC = () => {
 
   // 已完成 - 查看更多
   const handleCompletedLoadMore = () => {
-    loadCompletedTasks(completedPage + 1, true);
+    loadCompletedTasks(completedPage + 1, true, currentViewParamsRef.current);
   };
+
+  // 监听 tasks-refreshed 事件，同步刷新当前视图的已完成任务
+  useEffect(() => {
+    const isTrashView = filter === 'trash';
+    const isCompletedView = filter === 'completed';
+    if (isTrashView || isCompletedView) return;
+
+    const handleTasksRefreshed = () => {
+      // 刷新时重新加载已完成任务第一页
+      loadCompletedTasks(1, false, currentViewParamsRef.current);
+    };
+    window.addEventListener('tasks-refreshed', handleTasksRefreshed);
+    return () => window.removeEventListener('tasks-refreshed', handleTasksRefreshed);
+  }, [filter, loadCompletedTasks]);
 
   // 清空垃圾箱
   const handleEmptyTrash = async () => {
@@ -503,9 +535,27 @@ const TaskPage: React.FC = () => {
     }
 
     if (viewMode === 'kanban') {
-      return <KanbanView hideDetails={hideDetails} />;
+      return (
+        <KanbanView
+          hideDetails={hideDetails}
+          completedTasks={completedTasks}
+          completedTotal={completedTotal}
+          completedLoadingMore={completedLoadingMore}
+          onLoadMoreCompleted={handleCompletedLoadMore}
+        />
+      );
     }
-    return <TaskList hideCompleted={hideCompleted} hideDetails={hideDetails} />;
+    return (
+      <TaskList
+        hideCompleted={hideCompleted}
+        hideDetails={hideDetails}
+        completedTasks={completedTasks}
+        completedTotal={completedTotal}
+        completedLoading={completedLoading}
+        completedLoadingMore={completedLoadingMore}
+        onLoadMoreCompleted={handleCompletedLoadMore}
+      />
+    );
   };
 
   return (

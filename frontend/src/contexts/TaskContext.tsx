@@ -61,6 +61,8 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
 
   const refreshTasks = useCallback(async () => {
     await fetchTasks(lastParams);
+    // 通知 TaskPage 等组件同步刷新已完成任务
+    window.dispatchEvent(new CustomEvent('tasks-refreshed'));
   }, [fetchTasks, lastParams]);
 
   const addTask = useCallback(async (taskData: any): Promise<Task | undefined> => {

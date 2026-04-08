@@ -153,6 +153,7 @@ async def create_task(
 @router.get('/api/tasks')
 async def get_tasks(
     status: Optional[str] = Query(None),
+    exclude_status: Optional[str] = Query(None, description="排除的任务状态，如 completed"),
     list_id: Optional[str] = Query(None),
     tags: Optional[str] = Query(None),
     is_pinned: Optional[bool] = Query(None),
@@ -196,6 +197,7 @@ async def get_tasks(
         tasks = task_dao.get_user_tasks(
             user_id=current_user_id,
             status=status,
+            exclude_status=exclude_status,
             list_id=list_id,
             tags=tag_list,
             is_pinned=is_pinned,
@@ -209,7 +211,18 @@ async def get_tasks(
         
         return {
             'tasks': tasks,
-            'total': task_dao.count_user_tasks(current_user_id, status)
+            'total': task_dao.count_user_tasks(
+                user_id=current_user_id,
+                status=status,
+                exclude_status=exclude_status,
+                list_id=list_id,
+                tags=tag_list,
+                is_pinned=is_pinned,
+                priority=priority_list,
+                keyword=keyword,
+                start_date=start_date_dt,
+                end_date=end_date_dt,
+            )
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'获取任务列表失败: {str(e)}')

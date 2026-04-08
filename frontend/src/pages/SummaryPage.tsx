@@ -32,7 +32,7 @@ import './SummaryPage.less';
 type TimeOption = 'today' | 'tomorrow' | 'yesterday' | 'thisWeek' | 'nextWeek' | 'lastWeek' | 'thisMonth' | 'lastMonth' | 'custom';
 
 // 状态选项类型
-type StatusOption = 'all' | 'completed' | 'in_progress' | 'pending' | 'cancelled';
+type StatusOption = 'all' | 'completed' | 'in_progress' | 'pending';
 
 // 计算时间范围
 const getDateRange = (option: TimeOption): { start: string; end: string } | null => {
@@ -87,8 +87,7 @@ const statusLabels: Record<StatusOption, string> = {
   all: '所有状态',
   completed: '已完成',
   in_progress: '进行中',
-  pending: '未完成',
-  cancelled: '已放弃'
+  pending: '未完成'
 };
 
 const SummaryPage: React.FC = () => {
@@ -354,7 +353,7 @@ const SummaryPage: React.FC = () => {
 
   // 状态 Popover 内容
   const renderStatusPopoverContent = () => {
-    const statusOptions: StatusOption[] = ['all', 'completed', 'in_progress', 'pending', 'cancelled'];
+    const statusOptions: StatusOption[] = ['all', 'completed', 'in_progress', 'pending'];
     
     return (
       <div className="filter-popover-content">
@@ -478,8 +477,7 @@ const SummaryPage: React.FC = () => {
   const statusDisplayLabels: Record<string, string> = {
     completed: '已完成',
     in_progress: '进行中',
-    pending: '未完成',
-    cancelled: '已放弃'
+    pending: '未完成'
   };
 
   // 渲染任务项
@@ -631,8 +629,8 @@ const SummaryPage: React.FC = () => {
             <div key={dateStr} className="date-group">
               <h2 className="date-title">{dateStr}</h2>
               
-              {/* 按状态顺序显示：已完成、进行中、未完成、已放弃 */}
-              {['completed', 'in_progress', 'pending', 'cancelled'].map(status => {
+              {/* 按状态顺序显示：已完成、进行中、未完成 */}
+              {['completed', 'in_progress', 'pending'].map(status => {
                 const tasksInStatus = statusGroups[status];
                 if (!tasksInStatus || tasksInStatus.length === 0) return null;
                 

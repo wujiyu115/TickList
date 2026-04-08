@@ -60,10 +60,16 @@
 - ✅ 默认任务视图设置
 - ✅ 专注最短时长设置
 
-### 其他
+### 账户与安全
 - ✅ 用户注册与登录（JWT 认证）
+- ✅ WebAuthn Passkeys 免密登录（指纹、面容、安全密钥）
+- ✅ 修改密码（独立页面，入口在用户下拉菜单）
+- ✅ 管理员用户管理（查看用户列表、冻结/解冻、角色管理、重置密码、创建用户）
+- ✅ 注册开关控制（`REGISTER_ENABLED` 环境变量）
+
+### 其他
+- ✅ 全站移动端适配（响应式布局，小屏幕侧边栏 Drawer 弹出）
 - ✅ 侧边栏面板折叠（持久化）
-- ✅ 响应式布局
 - ✅ 到期提醒推送
 
 ## 安装和运行
@@ -113,6 +119,15 @@ logging:
   file_level: INFO
   error_level: ERROR
   log_dir: "logs"
+
+webauthn:
+  rp_id: "your-domain.com"              # 部署域名
+  rp_name: "TickList"                    # 应用显示名
+  origin: "https://your-domain.com"      # 完整源地址（需 HTTPS）
+
+auth:
+  admin_username: "your_admin_name"      # 指定管理员用户名（可选）
+  register_enabled: true                 # 是否允许注册（默认 true）
 ```
 
 > **数据库配置说明**：
@@ -121,6 +136,9 @@ logging:
 > - **环境变量优先**：可通过 `DB_CONNECT_STRING` 环境变量覆盖配置文件的设置
 > - Docker 中使用 MySQL 时，主机可设为 `host.docker.internal`（Docker Desktop）或宿主机 IP
 > - `jwt.secret_key` 生产环境务必修改为安全的随机字符串
+> - **WebAuthn 配置**：生产环境需要 HTTPS，`rp_id` 需与实际部署域名一致
+> - 可通过环境变量覆盖 WebAuthn 配置：`WEBAUTHN_RP_ID`、`WEBAUTHN_RP_NAME`、`WEBAUTHN_ORIGIN`
+> - 可通过 `REGISTER_ENABLED=false` 关闭用户注册
 
 #### 2. 构建镜像
 
@@ -137,11 +155,15 @@ docker run -d \
   -p 5000:5000 \
   -v $(pwd)/backend/config.yaml:/app/config.yaml \
   -v $(pwd)/data:/app/data \
+  -e WEBAUTHN_RP_ID="your-domain.com" \
+  -e WEBAUTHN_RP_NAME="TickList" \
+  -e WEBAUTHN_ORIGIN="https://your-domain.com" \
   --name ticklist \
   ticklist:latest
 ```
 
 > 通过 `-v $(pwd)/data:/app/data` 将数据库文件挂载到宿主机，防止容器删除后数据丢失。对应 `config.yaml` 中需配置 `connect_string: "sqlite:///data/ticklist.db"`。
+> WebAuthn 环境变量为可选项，仅在需要 Passkey 登录时配置。
 
 **使用 MySQL（通过环境变量）：**
 
@@ -298,12 +320,13 @@ docker run -d \
 
 ## 注意事项
 
-1. 本项目使用本地用户名密码认证
+1. 本项目支持用户名密码认证和 WebAuthn Passkeys 免密登录
 2. 默认使用 SQLite 数据库，无需额外安装，数据库文件自动创建
 3. 数据库连接通过 `database.connect_string` 配置，支持 SQLite 和 MySQL
 4. 可通过环境变量 `DB_CONNECT_STRING` 覆盖配置文件中的数据库设置（优先级更高）
 5. 生产环境需要修改 `config.yaml` 中的 `jwt.secret_key`
 6. 前后端集成部署时，后端会自动服务前端静态文件
+7. WebAuthn Passkeys 功能需要 HTTPS 环境（localhost 开发除外）
 
 ---
 
@@ -311,9 +334,9 @@ docker run -d \
 
 ### 技术栈
 
-**后端**：FastAPI + SQLAlchemy（SQLite/MySQL） + JWT + bcrypt
+**后端**：FastAPI + SQLAlchemy（SQLite/MySQL） + JWT + bcrypt + py_webauthn
 
-**前端**：React 18 + TypeScript + Ant Design 5 + Webpack 5 + Axios
+**前端**：React 18 + TypeScript + Ant Design 5 + Webpack 5 + Axios + @simplewebauthn/browser
 
 ### 项目结构
 

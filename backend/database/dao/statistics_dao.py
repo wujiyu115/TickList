@@ -26,7 +26,6 @@ class StatisticsDAO:
             'completed_tasks': model.completed_tasks,
             'pending_tasks': model.pending_tasks,
             'in_progress_tasks': model.in_progress_tasks,
-            'cancelled_tasks': model.cancelled_tasks,
             'completion_rate': model.completion_rate,
             'created_at': model.created_at,
             'updated_at': model.updated_at
@@ -59,11 +58,6 @@ class StatisticsDAO:
                 TaskModel.status == 'in_progress'
             ).scalar() or 0
             
-            cancelled_tasks = session.query(func.count(TaskModel.id)).filter(
-                TaskModel.user_id == user_id,
-                TaskModel.status == 'cancelled'
-            ).scalar() or 0
-            
             completion_rate = int(completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
             
             # 查找现有统计记录
@@ -78,7 +72,6 @@ class StatisticsDAO:
                 existing.completed_tasks = completed_tasks
                 existing.pending_tasks = pending_tasks
                 existing.in_progress_tasks = in_progress_tasks
-                existing.cancelled_tasks = cancelled_tasks
                 existing.completion_rate = completion_rate
                 existing.updated_at = now
                 session.commit()
@@ -92,7 +85,6 @@ class StatisticsDAO:
                     completed_tasks=completed_tasks,
                     pending_tasks=pending_tasks,
                     in_progress_tasks=in_progress_tasks,
-                    cancelled_tasks=cancelled_tasks,
                     completion_rate=completion_rate,
                     created_at=now,
                     updated_at=now
@@ -169,11 +161,6 @@ class StatisticsDAO:
                 TaskModel.status == 'in_progress'
             ).scalar() or 0
             
-            cancelled_tasks = session.query(func.count(TaskModel.id)).filter(
-                TaskModel.user_id == user_id,
-                TaskModel.status == 'cancelled'
-            ).scalar() or 0
-            
             completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
             
             # 获取最近7天的统计
@@ -215,7 +202,6 @@ class StatisticsDAO:
                 'completed_tasks': completed_tasks,
                 'pending_tasks': pending_tasks,
                 'in_progress_tasks': in_progress_tasks,
-                'cancelled_tasks': cancelled_tasks,
                 'completion_rate': round(completion_rate, 2),
                 'daily_stats': daily_stats,
                 'tag_distribution': tag_distribution,
@@ -228,7 +214,6 @@ class StatisticsDAO:
                 'completed_tasks': 0,
                 'pending_tasks': 0,
                 'in_progress_tasks': 0,
-                'cancelled_tasks': 0,
                 'completion_rate': 0,
                 'daily_stats': [],
                 'tag_distribution': {},

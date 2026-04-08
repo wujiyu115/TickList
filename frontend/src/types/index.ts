@@ -12,7 +12,7 @@ export interface Task {
   id: string;
   title: string;
   description: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'pending' | 'in_progress' | 'completed';
   priority: 0 | 1 | 2 | 3 | 4;  // 0=无, 1=红旗, 2=黄旗, 3=蓝旗, 4=灰旗
   child_ids: string[];
   list_id?: string;
@@ -70,7 +70,6 @@ export interface TaskStatistics {
   completed_tasks: number;
   pending_tasks: number;
   in_progress_tasks: number;
-  cancelled_tasks: number;
   completion_rate: number;
   daily_stats: DailyStats[];
   tag_distribution: Record<string, number>;
@@ -84,7 +83,6 @@ export interface DailyStats {
   completed_tasks: number;
   pending_tasks: number;
   in_progress_tasks: number;
-  cancelled_tasks: number;
   completion_rate: number;
 }
 

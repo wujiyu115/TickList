@@ -4,6 +4,7 @@ import { Task, TaskCreateRequest, TaskUpdateRequest } from '../types';
 // 获取任务列表
 export const getTasks = async (params?: {
   status?: string;
+  exclude_status?: string;
   list_id?: string;
   tags?: string;
   is_pinned?: boolean;

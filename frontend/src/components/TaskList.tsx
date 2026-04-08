@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Input, Spin, Empty } from 'antd';
+import { Input, Button, Spin, Empty } from 'antd';
 import { PlusOutlined, CaretDownOutlined, CaretRightOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
 import { useTaskContext } from '../contexts/TaskContext';
@@ -55,7 +55,25 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
   );
 };
 
-const TaskList: React.FC<{ hideCompleted?: boolean; hideDetails?: boolean }> = ({ hideCompleted, hideDetails }) => {
+interface TaskListProps {
+  hideCompleted?: boolean;
+  hideDetails?: boolean;
+  completedTasks?: Task[];
+  completedTotal?: number;
+  completedLoading?: boolean;
+  completedLoadingMore?: boolean;
+  onLoadMoreCompleted?: () => void;
+}
+
+const TaskList: React.FC<TaskListProps> = ({
+  hideCompleted,
+  hideDetails,
+  completedTasks: externalCompletedTasks,
+  completedTotal = 0,
+  completedLoading = false,
+  completedLoadingMore = false,
+  onLoadMoreCompleted,
+}) => {
   const { tasks, loading, addTask } = useTaskContext();
   const [searchParams] = useSearchParams();
   const currentListId = searchParams.get('list_id');
@@ -74,7 +92,19 @@ const TaskList: React.FC<{ hideCompleted?: boolean; hideDetails?: boolean }> = (
   // 按状态分组
   const pendingTasks = topLevelTasks.filter(t => t.status === 'pending');
   const inProgressTasks = topLevelTasks.filter(t => t.status === 'in_progress');
-  const completedTasks = hideCompleted ? [] : topLevelTasks.filter(t => t.status === 'completed');
+
+  // 已完成任务：优先使用外部独立加载的分页数据，否则从 tasks 中过滤
+  const hasExternalCompleted = externalCompletedTasks !== undefined;
+  const completedTasks = hideCompleted
+    ? []
+    : hasExternalCompleted
+      ? externalCompletedTasks
+      : topLevelTasks.filter(t => t.status === 'completed');
+
+  // 合并 allTasks 供子任务查找（包括外部已完成任务）
+  const allTasksForLookup = hasExternalCompleted
+    ? [...tasks, ...externalCompletedTasks]
+    : tasks;
 
   // 内联添加任务
   const handleAddTask = async () => {
@@ -132,7 +162,7 @@ const TaskList: React.FC<{ hideCompleted?: boolean; hideDetails?: boolean }> = (
           collapsed={!!collapsedGroups['pending']}
           onToggle={() => toggleGroup('pending')}
           tasks={pendingTasks}
-          allTasks={tasks}
+          allTasks={allTasksForLookup}
           hideDetails={hideDetails}
         />
 
@@ -143,20 +173,35 @@ const TaskList: React.FC<{ hideCompleted?: boolean; hideDetails?: boolean }> = (
           collapsed={!!collapsedGroups['in_progress']}
           onToggle={() => toggleGroup('in_progress')}
           tasks={inProgressTasks}
-          allTasks={tasks}
+          allTasks={allTasksForLookup}
           hideDetails={hideDetails}
         />
 
         {/* 已完成 */}
-        <TaskGroup
-          title="已完成"
-          count={completedTasks.length}
-          collapsed={!!collapsedGroups['completed']}
-          onToggle={() => toggleGroup('completed')}
-          tasks={completedTasks}
-          allTasks={tasks}
-          hideDetails={hideDetails}
-        />
+        {!hideCompleted && (
+          <>
+            <TaskGroup
+              title="已完成"
+              count={hasExternalCompleted ? completedTotal : completedTasks.length}
+              collapsed={!!collapsedGroups['completed']}
+              onToggle={() => toggleGroup('completed')}
+              tasks={completedTasks}
+              allTasks={allTasksForLookup}
+              hideDetails={hideDetails}
+            />
+            {hasExternalCompleted && !collapsedGroups['completed'] && completedTasks.length < completedTotal && (
+              <div style={{ textAlign: 'center', padding: '12px 0' }}>
+                <Button
+                  type="link"
+                  loading={completedLoadingMore}
+                  onClick={onLoadMoreCompleted}
+                >
+                  查看更多已完成任务 ({completedTasks.length}/{completedTotal})
+                </Button>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {tasks.length === 0 && !loading && (

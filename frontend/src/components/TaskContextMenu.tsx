@@ -6,7 +6,6 @@ import {
   FlagOutlined,
   LinkOutlined,
   PushpinOutlined,
-  CloseOutlined,
   FolderOutlined,
   TagOutlined,
   CopyOutlined,
@@ -426,11 +425,6 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
           setCustomDateVisible(true);
           break;
 
-        case 'cancel':
-          await updateTaskData(task.id, { status: 'cancelled' });
-          message.success('任务已取消');
-          break;
-
         case 'duplicate':
           await duplicateTask(task.id);
           await refreshTasks();
@@ -528,11 +522,6 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
       key: 'pin',
       icon: <PushpinOutlined />,
       label: task.is_pinned ? '取消置顶' : '置顶',
-    },
-    {
-      key: 'cancel',
-      icon: <CloseOutlined />,
-      label: '放弃',
     },
     { type: 'divider' },
     {

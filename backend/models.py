@@ -50,7 +50,7 @@ class Task:
         self.id = id
         self.title = title
         self.description = description
-        self.status = status  # pending, in_progress, completed, cancelled
+        self.status = status  # pending, in_progress, completed
         self.priority = priority  # 0-4 (0=无, 1=红旗, 2=黄旗, 3=蓝旗, 4=灰旗)
         self.child_ids = child_ids or []
         self.list_id = list_id
@@ -153,8 +153,7 @@ class TaskStatistics:
         total_tasks: int = 0,
         completed_tasks: int = 0,
         pending_tasks: int = 0,
-        in_progress_tasks: int = 0,
-        cancelled_tasks: int = 0
+        in_progress_tasks: int = 0
     ):
         self.user_id = user_id
         self.date = date
@@ -162,7 +161,6 @@ class TaskStatistics:
         self.completed_tasks = completed_tasks
         self.pending_tasks = pending_tasks
         self.in_progress_tasks = in_progress_tasks
-        self.cancelled_tasks = cancelled_tasks
         self.completion_rate = (
             (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
         )
@@ -177,7 +175,6 @@ class TaskStatistics:
             'completed_tasks': self.completed_tasks,
             'pending_tasks': self.pending_tasks,
             'in_progress_tasks': self.in_progress_tasks,
-            'cancelled_tasks': self.cancelled_tasks,
             'completion_rate': round(self.completion_rate, 2),
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()

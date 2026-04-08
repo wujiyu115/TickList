@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Checkbox, Dropdown, Button } from 'antd';
 import { PlusOutlined, EllipsisOutlined, CaretDownOutlined, CaretRightOutlined, BellOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
@@ -188,6 +188,10 @@ interface KanbanColumnProps {
   allTasks: Task[];
   hideDetails?: boolean;
   onAddTask?: () => void;
+  // 已完成列的分页加载支持
+  totalCount?: number;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
 }
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({ 
@@ -196,12 +200,17 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
   tasks, 
   allTasks,
   hideDetails,
-  onAddTask 
+  onAddTask,
+  totalCount,
+  loadingMore,
+  onLoadMore,
 }) => {
   const [showAll, setShowAll] = useState(false);
   
   const visibleTasks = showAll ? tasks : tasks.slice(0, DEFAULT_VISIBLE_COUNT);
   const hasMore = tasks.length > DEFAULT_VISIBLE_COUNT;
+  // 是否还有更多远程数据可加载（已完成列分页）
+  const hasRemoteMore = totalCount !== undefined && tasks.length < totalCount;
 
   return (
     <div className="kanban-column">
@@ -209,7 +218,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
       <div className="column-header">
         <div className="column-title">
           <span className="title-text">{title}</span>
-          <span className="task-count">{tasks.length}</span>
+          <span className="task-count">{totalCount !== undefined ? totalCount : tasks.length}</span>
         </div>
         <div className="column-actions">
           <Button
@@ -237,15 +246,28 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
           />
         ))}
         
-        {/* 查看更多 */}
+        {/* 本地查看更多/收起 */}
         {hasMore && !showAll && (
           <div className="show-more" onClick={() => setShowAll(true)}>
             查看更多
           </div>
         )}
-        {hasMore && showAll && (
+        {hasMore && showAll && !hasRemoteMore && (
           <div className="show-more" onClick={() => setShowAll(false)}>
             收起
+          </div>
+        )}
+
+        {/* 远程分页加载更多（已完成列） */}
+        {showAll && hasRemoteMore && onLoadMore && (
+          <div style={{ textAlign: 'center', padding: '12px 0' }}>
+            <Button
+              type="link"
+              loading={loadingMore}
+              onClick={onLoadMore}
+            >
+              查看更多 ({tasks.length}/{totalCount})
+            </Button>
           </div>
         )}
         
@@ -260,19 +282,36 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
 // 主组件
 interface KanbanViewProps {
   hideDetails?: boolean;
+  completedTasks?: Task[];
+  completedTotal?: number;
+  completedLoadingMore?: boolean;
+  onLoadMoreCompleted?: () => void;
 }
 
-const KanbanView: React.FC<KanbanViewProps> = ({ hideDetails }) => {
+const KanbanView: React.FC<KanbanViewProps> = ({
+  hideDetails,
+  completedTasks = [],
+  completedTotal = 0,
+  completedLoadingMore = false,
+  onLoadMoreCompleted,
+}) => {
   const { tasks, addTask } = useTaskContext();
   const [searchParams] = useSearchParams();
   const currentListId = searchParams.get('list_id');
   const currentTag = searchParams.get('tag');
 
+  // 合并未完成任务和已完成任务
+  const allTasks = useMemo(() => {
+    const taskIds = new Set(tasks.map(t => t.id));
+    const uniqueCompleted = completedTasks.filter(t => !taskIds.has(t.id));
+    return [...tasks, ...uniqueCompleted];
+  }, [tasks, completedTasks]);
+
   // 构建任务树（只取顶级任务）
   const childIdSet = new Set<string>(
-    tasks.reduce<string[]>((acc, t) => acc.concat(t.child_ids || []), [])
+    allTasks.reduce<string[]>((acc, t) => acc.concat(t.child_ids || []), [])
   );
-  const topLevelTasks = tasks.filter(t => !childIdSet.has(t.id));
+  const topLevelTasks = allTasks.filter(t => !childIdSet.has(t.id));
 
   // 按状态分组
   const tasksByStatus = {
@@ -299,9 +338,14 @@ const KanbanView: React.FC<KanbanViewProps> = ({ hideDetails }) => {
           title={column.title}
           status={column.status}
           tasks={tasksByStatus[column.key as keyof typeof tasksByStatus] || []}
-          allTasks={tasks}
+          allTasks={allTasks}
           hideDetails={hideDetails}
           onAddTask={() => handleAddTask(column.status)}
+          {...(column.key === 'completed' ? {
+            totalCount: completedTotal,
+            loadingMore: completedLoadingMore,
+            onLoadMore: onLoadMoreCompleted,
+          } : {})}
         />
       ))}
     </div>
