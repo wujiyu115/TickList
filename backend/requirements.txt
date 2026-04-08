@@ -11,3 +11,4 @@ colorama==0.4.6
 pyyaml==6.0.2
 requests==2.32.3
 apscheduler>=3.10
+webauthn>=2.0.0

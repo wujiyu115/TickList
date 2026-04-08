@@ -10,6 +10,7 @@ from .tag_dao import tag_dao
 from .filter_dao import filter_dao
 from .countdown_dao import countdown_dao
 from .focus_dao import focus_dao
+from .webauthn_dao import webauthn_dao
 
 __all__ = [
     'task_dao',
@@ -22,4 +23,5 @@ __all__ = [
     'filter_dao',
     'countdown_dao',
     'focus_dao',
+    'webauthn_dao',
 ]

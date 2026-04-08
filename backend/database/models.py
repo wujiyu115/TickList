@@ -266,3 +266,22 @@ class FilterModel(Base):
     __table_args__ = (
         Index('idx_filters_user', 'user_id'),
     )
+
+
+class WebAuthnCredentialModel(Base):
+    """WebAuthn Passkey 凭证表"""
+    __tablename__ = 'webauthn_credentials'
+    
+    id = Column(String(36), primary_key=True)
+    user_id = Column(String(36), nullable=False, index=True)
+    credential_id = Column(Text, nullable=False, unique=True)  # Base64URL 编码
+    public_key = Column(Text, nullable=False)                   # Base64URL 编码
+    sign_count = Column(Integer, default=0)
+    transports = Column(String(200))        # JSON 序列化 ["internal","hybrid"]
+    device_name = Column(String(200))       # 用户自定义设备名
+    created_at = Column(String(50))
+    last_used_at = Column(String(50))
+    
+    __table_args__ = (
+        Index('idx_webauthn_credentials_user', 'user_id'),
+    )

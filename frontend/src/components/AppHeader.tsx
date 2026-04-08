@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout, Avatar, Dropdown, Space, Button } from 'antd';
-import { UserOutlined, LogoutOutlined, LockOutlined, CrownOutlined, MenuOutlined } from '@ant-design/icons';
+import { UserOutlined, LogoutOutlined, LockOutlined, KeyOutlined, CrownOutlined, MenuOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { MenuProps } from 'antd';
 import { User } from '../types';
@@ -22,6 +22,12 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onMenuClick }) =>
       icon: <LockOutlined />,
       label: '修改密码',
       onClick: () => navigate('/change-password'),
+    },
+    {
+      key: 'passkey',
+      icon: <KeyOutlined />,
+      label: 'Passkey 管理',
+      onClick: () => navigate('/passkey'),
     },
     ...(user.role_group === 'admin'
       ? [

@@ -208,6 +208,26 @@
         }
       }
     }
+
+    // Passkey 管理区
+    .passkey-section {
+      .passkey-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+
+        .passkey-desc {
+          font-size: 14px;
+          color: var(--ant-color-text-secondary);
+        }
+      }
+
+      .ant-list-item-meta-avatar {
+        display: flex;
+        align-items: center;
+      }
+    }
   }
 }
 
@@ -246,6 +266,12 @@
 
   .settings-page .settings-content .theme-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .settings-page .settings-content .passkey-section .passkey-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 }
 

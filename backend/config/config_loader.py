@@ -147,6 +147,18 @@ class ConfigLoader:
             'log_dir': self.get('logging.log_dir', 'logs', 'LOG_DIR'),
         }
 
+    def get_webauthn_rp_id(self) -> str:
+        """获取 WebAuthn Relying Party ID"""
+        return self.get('webauthn.rp_id', 'localhost', 'WEBAUTHN_RP_ID')
+
+    def get_webauthn_rp_name(self) -> str:
+        """获取 WebAuthn Relying Party 名称"""
+        return self.get('webauthn.rp_name', 'TickList', 'WEBAUTHN_RP_NAME')
+
+    def get_webauthn_origin(self) -> str:
+        """获取 WebAuthn Origin"""
+        return self.get('webauthn.origin', 'http://localhost:3000', 'WEBAUTHN_ORIGIN')
+
     def get_sharedb_config(self) -> Dict[str, Any]:
         return {
             "cn": {

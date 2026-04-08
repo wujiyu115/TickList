@@ -14,7 +14,7 @@ import {
   Form,
   Tag,
   Space,
-  Popconfirm
+  Popconfirm,
 } from 'antd';
 import {
   BgColorsOutlined,

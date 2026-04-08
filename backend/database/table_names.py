@@ -22,6 +22,7 @@ TASK_STATISTICS = "task_statistics"
 COUNTDOWNS = "countdowns"
 FILTERS = "filters"
 FOCUS_SESSIONS = "focus_sessions"
+WEBAUTHN_CREDENTIALS = "webauthn_credentials"
 
 # 兼容旧代码（别名）
 SETTINGS = USER_SETTINGS

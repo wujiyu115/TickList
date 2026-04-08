@@ -17,10 +17,13 @@ auth:
 
 cors:
   allowed_origins:
-    - "http://localhost:3000"
-    - "http://127.0.0.1:3000"
     - "http://localhost:5000"
     - "http://127.0.0.1:5000"
+
+webauthn:
+  rp_id: "localhost"
+  rp_name: "TickList"
+  origin: "http://localhost:5000"
 
 logging:
   level: INFO

@@ -5,6 +5,7 @@ import MainLayout from './layouts/MainLayout';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
+import PasskeyManagePage from './pages/PasskeyManagePage';
 import { FocusProvider } from './contexts/FocusContext';
 import { getCurrentUser } from './api/auth';
 import { getSettings } from './api/settings';
@@ -161,6 +162,16 @@ const App: React.FC = () => {
             element={
               user ? (
                 <ChangePasswordPage />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/passkey"
+            element={
+              user ? (
+                <PasskeyManagePage />
               ) : (
                 <Navigate to="/login" replace />
               )

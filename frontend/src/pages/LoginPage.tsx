@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Form, Input, Button, message } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { Card, Typography, Form, Input, Button, Divider, message } from 'antd';
+import { UserOutlined, LockOutlined, KeyOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
+import { startAuthentication, browserSupportsWebAuthn } from '@simplewebauthn/browser';
 import { User } from '../types';
-import { localLogin, getAuthConfig } from '../api/auth';
+import { localLogin, getAuthConfig, getPasskeyLoginOptions, verifyPasskeyLogin } from '../api/auth';
 
 const { Title, Paragraph } = Typography;
 
@@ -13,7 +14,9 @@ interface LoginPageProps {
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [registerEnabled, setRegisterEnabled] = useState(true);
+  const [webauthnSupported] = useState(() => browserSupportsWebAuthn());
 
   useEffect(() => {
     getAuthConfig()
@@ -39,6 +42,30 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       message.error(error.response?.data?.detail || '登录失败，请稍后重试');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePasskeyLogin = async () => {
+    setPasskeyLoading(true);
+    try {
+      const optionsRes = await getPasskeyLoginOptions();
+      const options = (optionsRes as any).data ?? optionsRes;
+      const credential = await startAuthentication({ optionsJSON: options });
+      const verifyRes = await verifyPasskeyLogin(credential);
+      const result = (verifyRes as any).data ?? verifyRes;
+      if (result.token && result.user) {
+        onLogin(result.user as User, result.token);
+      } else {
+        message.error('Passkey 登录失败');
+      }
+    } catch (error: any) {
+      if (error.name === 'NotAllowedError') {
+        message.info('已取消 Passkey 验证');
+      } else {
+        message.error(error.response?.data?.detail || 'Passkey 登录失败');
+      }
+    } finally {
+      setPasskeyLoading(false);
     }
   };
 
@@ -93,6 +120,21 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             </Button>
           </Form.Item>
         </Form>
+
+        {webauthnSupported && (
+          <>
+            <Divider style={{ margin: '16px 0', color: '#999', fontSize: 12 }}>或</Divider>
+            <Button
+              block
+              icon={<KeyOutlined />}
+              onClick={handlePasskeyLogin}
+              loading={passkeyLoading}
+              style={{ marginBottom: 16 }}
+            >
+              使用 Passkey 登录
+            </Button>
+          </>
+        )}
         
         {registerEnabled && (
         <div style={{ marginTop: 16 }}>
