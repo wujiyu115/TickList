@@ -71,6 +71,8 @@ const navItems = [
 
 const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = false, onTogglePanel }) => {
   const navigate = useNavigate();
+  // 缓存 hover 能力检测，避免移动端触摸触发 mouseenter 导致重渲染吞掉 click
+  const supportsHover = window.matchMedia('(hover: hover)').matches;
   const location = useLocation();
   const [searchParams] = useSearchParams();
   
@@ -532,17 +534,21 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         className={`list-item ${isSelected ? 'active' : ''}`}
         style={{ paddingLeft: level > 0 ? 12 + level * 16 : 12 }}
         onMouseEnter={() => {
-          if (isFolder) {
-            setHoveredFolderId(item.id);
-          } else {
-            setHoveredListId(item.id);
+          if (supportsHover) {
+            if (isFolder) {
+              setHoveredFolderId(item.id);
+            } else {
+              setHoveredListId(item.id);
+            }
           }
         }}
         onMouseLeave={() => {
-          if (isFolder) {
-            setHoveredFolderId(null);
-          } else {
-            setHoveredListId(null);
+          if (supportsHover) {
+            if (isFolder) {
+              setHoveredFolderId(null);
+            } else {
+              setHoveredListId(null);
+            }
           }
         }}
         onClick={(e) => {
@@ -844,8 +850,8 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
                       key={tag.id}
                       className={`tag-item ${selectedKey === `tag-${tag.name}` ? 'active' : ''}`}
                       onClick={(e) => { e.stopPropagation(); navigate(`/?tag=${tag.name}`); onNavigate?.(); }}
-                      onMouseEnter={() => setHoveredTagId(tag.id)}
-                      onMouseLeave={() => setHoveredTagId(null)}
+                      onMouseEnter={() => { if (supportsHover) setHoveredTagId(tag.id); }}
+                      onMouseLeave={() => { if (supportsHover) setHoveredTagId(null); }}
                     >
                       <TagOutlined />
                       <span>{tag.name}</span>
@@ -894,8 +900,8 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
                     key={filter.id}
                     className={`filter-item ${isActive ? 'active' : ''}`}
                     onClick={(e) => { e.stopPropagation(); applyFilter(filter); }}
-                    onMouseEnter={() => setHoveredFilterId(filter.id)}
-                    onMouseLeave={() => setHoveredFilterId(null)}
+                    onMouseEnter={() => { if (supportsHover) setHoveredFilterId(filter.id); }}
+                    onMouseLeave={() => { if (supportsHover) setHoveredFilterId(null); }}
                   >
                     <FilterOutlined />
                     <span>{filter.name}</span>
