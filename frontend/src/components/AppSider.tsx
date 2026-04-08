@@ -545,7 +545,8 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
             setHoveredListId(null);
           }
         }}
-        onClick={() => {
+        onClick={(e) => {
+          e.stopPropagation();
           if (isFolder) {
             toggleFolder(item.id);
           } else {
@@ -704,7 +705,8 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
               <div
                 key={item.key}
                 className={`icon-item ${isActive ? 'active' : ''}`}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   if (item.key === 'tasks' && isActive && isTaskView) {
                     onTogglePanel?.();
                   } else {
@@ -723,7 +725,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           <div 
             className={`icon-item ${location.pathname === '/settings' ? 'active' : ''}`} 
             title="设置"
-            onClick={() => { navigate('/settings'); onNavigate?.(); }}
+            onClick={(e) => { e.stopPropagation(); navigate('/settings'); onNavigate?.(); }}
           >
             <SettingOutlined />
           </div>
@@ -738,28 +740,28 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           {/* 快速筛选 */}
           <div 
             className={`filter-item ${selectedKey === 'filter-today' ? 'active' : ''}`}
-            onClick={() => { navigate('/?filter=today'); onNavigate?.(); }}
+            onClick={(e) => { e.stopPropagation(); navigate('/?filter=today'); onNavigate?.(); }}
           >
             <CalendarOutlined style={{ color: 'var(--ant-color-primary)' }} />
             <span>今天</span>
           </div>
           <div 
             className={`filter-item ${selectedKey === 'filter-week' ? 'active' : ''}`}
-            onClick={() => { navigate('/?filter=week'); onNavigate?.(); }}
+            onClick={(e) => { e.stopPropagation(); navigate('/?filter=week'); onNavigate?.(); }}
           >
             <CalendarOutlined style={{ color: '#52c41a' }} />
             <span>最近7天</span>
           </div>
           <div 
             className={`filter-item ${selectedKey === 'list-inbox' ? 'active' : ''}`}
-            onClick={() => { navigate('/?list_id=inbox'); onNavigate?.(); }}
+            onClick={(e) => { e.stopPropagation(); navigate('/?list_id=inbox'); onNavigate?.(); }}
           >
             <InboxOutlined />
             <span>收集箱</span>
           </div>
           <div 
             className={`filter-item ${location.pathname === '/summary' ? 'active' : ''}`}
-            onClick={() => { navigate('/summary'); onNavigate?.(); }}
+            onClick={(e) => { e.stopPropagation(); navigate('/summary'); onNavigate?.(); }}
           >
             <FileTextOutlined />
             <span>摘要</span>
@@ -841,7 +843,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
                     <div 
                       key={tag.id}
                       className={`tag-item ${selectedKey === `tag-${tag.name}` ? 'active' : ''}`}
-                      onClick={() => { navigate(`/?tag=${tag.name}`); onNavigate?.(); }}
+                      onClick={(e) => { e.stopPropagation(); navigate(`/?tag=${tag.name}`); onNavigate?.(); }}
                       onMouseEnter={() => setHoveredTagId(tag.id)}
                       onMouseLeave={() => setHoveredTagId(null)}
                     >
@@ -891,7 +893,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
                   <div 
                     key={filter.id}
                     className={`filter-item ${isActive ? 'active' : ''}`}
-                    onClick={() => applyFilter(filter)}
+                    onClick={(e) => { e.stopPropagation(); applyFilter(filter); }}
                     onMouseEnter={() => setHoveredFilterId(filter.id)}
                     onMouseLeave={() => setHoveredFilterId(null)}
                   >
@@ -923,14 +925,14 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           <div className="bottom-items">
             <div 
               className={`filter-item ${selectedKey === 'filter-completed' ? 'active' : ''}`}
-              onClick={() => { navigate('/?filter=completed'); onNavigate?.(); }}
+              onClick={(e) => { e.stopPropagation(); navigate('/?filter=completed'); onNavigate?.(); }}
             >
               <CheckCircleOutlined />
               <span>已完成</span>
             </div>
             <div 
               className={`filter-item ${selectedKey === 'filter-trash' ? 'active' : ''}`}
-              onClick={() => { navigate('/?filter=trash'); onNavigate?.(); }}
+              onClick={(e) => { e.stopPropagation(); navigate('/?filter=trash'); onNavigate?.(); }}
             >
               <DeleteOutlined />
               <span>垃圾桶</span>
