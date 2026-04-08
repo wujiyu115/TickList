@@ -304,18 +304,18 @@ const TaskPage: React.FC = () => {
         params.tags = conditions.tags.join(',');
       }
         
-      // 日期范围筛选
+      // 日期范围筛选（使用 toISOString 保持与数据库 UTC 存储一致）
       if (conditions.date_range) {
-        const today = moment().format('YYYY-MM-DD');
+        const todayStart = moment().startOf('day').toISOString();
         if (conditions.date_range === 'today') {
-          params.start_date = today;
-          params.end_date = moment().add(1, 'day').format('YYYY-MM-DD');
+          params.start_date = todayStart;
+          params.end_date = moment().add(1, 'day').startOf('day').toISOString();
         } else if (conditions.date_range === 'week') {
-          params.start_date = today;
-          params.end_date = moment().add(7, 'days').format('YYYY-MM-DD');
+          params.start_date = todayStart;
+          params.end_date = moment().add(7, 'days').startOf('day').toISOString();
         } else if (conditions.date_range === 'month') {
-          params.start_date = today;
-          params.end_date = moment().endOf('month').format('YYYY-MM-DD');
+          params.start_date = todayStart;
+          params.end_date = moment().endOf('month').endOf('day').toISOString();
         }
       }
         
@@ -331,14 +331,11 @@ const TaskPage: React.FC = () => {
     } else {
       // 原有的筛选逻辑
       if (filter === 'today') {
-        const today = moment().format('YYYY-MM-DD');
-        params.start_date = today;
-        params.end_date = moment().add(1, 'day').format('YYYY-MM-DD');
+        params.start_date = moment().startOf('day').toISOString();
+        params.end_date = moment().add(1, 'day').startOf('day').toISOString();
       } else if (filter === 'week') {
-        const today = moment().format('YYYY-MM-DD');
-        const weekLater = moment().add(7, 'days').format('YYYY-MM-DD');
-        params.start_date = today;
-        params.end_date = weekLater;
+        params.start_date = moment().startOf('day').toISOString();
+        params.end_date = moment().add(7, 'days').startOf('day').toISOString();
       }
         
       // 按清单筛选

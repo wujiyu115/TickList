@@ -399,7 +399,8 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
 
         case 'today':
           await updateTaskData(task.id, { 
-            due_date: moment().endOf('day').toISOString()
+            start_time: moment().startOf('day').toISOString(),
+            due_date: moment().startOf('day').toISOString()
           });
           message.success('已设置为今天');
           await refreshTasks();
@@ -407,15 +408,18 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
 
         case 'tomorrow':
           await updateTaskData(task.id, { 
-            due_date: moment().add(1, 'day').endOf('day').toISOString()
+            start_time: moment().add(1, 'day').startOf('day').toISOString(),
+            due_date: moment().add(1, 'day').startOf('day').toISOString()
           });
           message.success('已设置为明天');
           await refreshTasks();
           break;
 
         case 'next-week':
+          const nextMonday = moment().add(1, 'week').startOf('week').add(1, 'day');
           await updateTaskData(task.id, { 
-            due_date: moment().add(1, 'week').startOf('week').add(1, 'day').endOf('day').toISOString()
+            start_time: nextMonday.clone().startOf('day').toISOString(),
+            due_date: nextMonday.clone().startOf('day').toISOString()
           });
           message.success('已设置为下周一');
           await refreshTasks();
@@ -556,7 +560,10 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
   // 处理自定义日期确认
   const handleCustomDateOk = async () => {
     if (customDate && task) {
-      await updateTaskData(task.id, { due_date: customDate.toISOString() });
+      await updateTaskData(task.id, { 
+        start_time: customDate.clone().startOf('day').toISOString(),
+        due_date: customDate.clone().startOf('day').toISOString()
+      });
       message.success('截止日期已设置');
       await refreshTasks();
     }

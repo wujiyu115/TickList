@@ -383,7 +383,7 @@ class TaskDAO:
             if start_date and end_date:
                 query = query.filter(
                     TaskModel.start_time >= start_date.isoformat(),
-                    TaskModel.start_time <= end_date.isoformat()
+                    TaskModel.start_time < end_date.isoformat()
                 )
             
             # 排序
@@ -705,7 +705,7 @@ class TaskDAO:
             if start_date and end_date:
                 query = query.filter(
                     TaskModel.start_time >= start_date.isoformat(),
-                    TaskModel.start_time <= end_date.isoformat()
+                    TaskModel.start_time < end_date.isoformat()
                 )
 
             return query.count()
