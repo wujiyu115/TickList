@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Input, Checkbox, Button, Popover, DatePicker, TimePicker, Switch, Segmented } from 'antd';
-import { CalendarOutlined, MinusOutlined, CloseOutlined, PlusOutlined, ClockCircleOutlined, CheckOutlined, SendOutlined } from '@ant-design/icons';
+import React, { useEffect, useState, useRef } from 'react';
+import { Input, Checkbox, Button, Popover, DatePicker, TimePicker, Switch, Segmented, Tooltip, Dropdown } from 'antd';
+import { CalendarOutlined, MinusOutlined, CloseOutlined, PlusOutlined, ClockCircleOutlined, CheckOutlined, SendOutlined, FontSizeOutlined, EllipsisOutlined, BoldOutlined, ItalicOutlined, StrikethroughOutlined, OrderedListOutlined, UnorderedListOutlined, LinkOutlined, CodeOutlined, TableOutlined, UndoOutlined, RedoOutlined, UnderlineOutlined, CheckSquareOutlined } from '@ant-design/icons';
+import TaskContextMenu from './TaskContextMenu';
 import { useTaskContext } from '../contexts/TaskContext';
 import { Task } from '../types';
 import dayjs, { Dayjs } from 'dayjs';
@@ -115,6 +116,9 @@ const TaskEditor: React.FC = () => {
   const [isPreview, setIsPreview] = useState(false);
   const [addingSubtask, setAddingSubtask] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [showMarkdownToolbar, setShowMarkdownToolbar] = useState(false);
+  const [moreMenuVisible, setMoreMenuVisible] = useState(false);
+  const descTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 日期选择相关状态
   const [datePopoverVisible, setDatePopoverVisible] = useState(false);
@@ -315,6 +319,45 @@ const TaskEditor: React.FC = () => {
     setTempReminder(selectedReminder);
     setReminderPanelVisible(false);
   };
+
+  // Markdown 工具栏插入函数
+  const insertMarkdown = (before: string, after: string = '', placeholder: string = '') => {
+    const textarea = descTextareaRef.current;
+    if (!textarea) return;
+    textarea.focus();
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = description.substring(start, end);
+    const text = selected || placeholder;
+    const newValue = description.substring(0, start) + before + text + after + description.substring(end);
+    setDescription(newValue);
+    // 保存到后端
+    updateTaskData(selectedTask.id, { description: newValue });
+    // 设置光标位置
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const cursorPos = selected ? start + before.length + selected.length + after.length : start + before.length;
+      const cursorEnd = selected ? cursorPos : cursorPos + text.length;
+      textarea.setSelectionRange(cursorPos, cursorEnd);
+    });
+  };
+
+  const mdTools = [
+    { icon: <UndoOutlined />, title: '撤销', action: () => { descTextareaRef.current?.focus(); document.execCommand('undo'); } },
+    { icon: <RedoOutlined />, title: '重做', action: () => { descTextareaRef.current?.focus(); document.execCommand('redo'); } },
+    { icon: <span style={{ fontWeight: 700 }}>H</span>, title: '标题', action: () => insertMarkdown('## ', '', '标题') },
+    { icon: <BoldOutlined />, title: '加粗', action: () => insertMarkdown('**', '**', '文本') },
+    { icon: <CheckSquareOutlined />, title: '复选框', action: () => insertMarkdown('- [ ] ', '', '待办') },
+    { icon: <UnorderedListOutlined />, title: '无序列表', action: () => insertMarkdown('- ', '', '列表项') },
+    { icon: <OrderedListOutlined />, title: '有序列表', action: () => insertMarkdown('1. ', '', '列表项') },
+    { icon: <ItalicOutlined />, title: '斜体', action: () => insertMarkdown('*', '*', '文本') },
+    { icon: <UnderlineOutlined />, title: '下划线', action: () => insertMarkdown('<u>', '</u>', '文本') },
+    { icon: <StrikethroughOutlined />, title: '删除线', action: () => insertMarkdown('~~', '~~', '文本') },
+    { icon: <TableOutlined />, title: '表格', action: () => insertMarkdown('| 列1 | 列2 |\n| --- | --- |\n| 内容 | 内容 |\n') },
+    { icon: <LinkOutlined />, title: '链接', action: () => insertMarkdown('[', '](url)', '文本') },
+    { icon: <CodeOutlined />, title: '代码', action: () => insertMarkdown('`', '`', '代码') },
+    { icon: <span style={{ fontWeight: 600 }}>&ldquo;&rdquo;</span>, title: '引用', action: () => insertMarkdown('> ', '', '引用') },
+  ];
 
   // 获取提醒选项标签
   const getReminderLabel = () => {
@@ -626,6 +669,8 @@ const TaskEditor: React.FC = () => {
         />
       </div>
 
+      {/* 可滚动内容区域：描述 + 子任务 */}
+      <div className="editor-scrollable">
       {/* 描述 - Markdown */}
       <div className="editor-description">
         <div className="desc-header">
@@ -641,6 +686,7 @@ const TaskEditor: React.FC = () => {
           />
         ) : (
           <Input.TextArea
+            ref={el => { descTextareaRef.current = el?.resizableTextArea?.textArea || null; }}
             value={description}
             onChange={e => setDescription(e.target.value)}
             onBlur={handleDescBlur}
@@ -667,7 +713,7 @@ const TaskEditor: React.FC = () => {
         ))}
 
         {/* 添加子任务 */}
-        {addingSubtask ? (
+        {addingSubtask && (
           <div 
             className="add-subtask-input"
             onMouseDown={e => e.preventDefault()}
@@ -689,12 +735,46 @@ const TaskEditor: React.FC = () => {
               variant="borderless"
             />
           </div>
-        ) : (
-          <div className="add-subtask-btn" onClick={() => setAddingSubtask(true)}>
-            <PlusOutlined />
-            <span>添加子任务</span>
+        )}
+      </div>
+      </div>
+
+      {/* 底部工具栏 */}
+      <div className="editor-toolbar">
+        {showMarkdownToolbar && (
+          <div className="markdown-toolbar">
+            {mdTools.map((tool, idx) => (
+              <Tooltip key={idx} title={tool.title}>
+                <span className="md-tool-btn" onClick={tool.action}>{tool.icon}</span>
+              </Tooltip>
+            ))}
           </div>
         )}
+        <div className="toolbar-actions">
+          <div className="toolbar-left">
+            <Tooltip title="添加子任务">
+              <PlusOutlined className="toolbar-icon" onClick={() => setAddingSubtask(true)} />
+            </Tooltip>
+          </div>
+          <div className="toolbar-right">
+            <Tooltip title="格式">
+              <FontSizeOutlined className="toolbar-icon" onClick={() => setShowMarkdownToolbar(!showMarkdownToolbar)} />
+            </Tooltip>
+            <Dropdown
+              dropdownRender={() => (
+                <TaskContextMenu task={selectedTask} onClose={() => setMoreMenuVisible(false)} />
+              )}
+              open={moreMenuVisible}
+              onOpenChange={setMoreMenuVisible}
+              trigger={['click']}
+              placement="topRight"
+            >
+              <Tooltip title="更多">
+                <EllipsisOutlined className="toolbar-icon" />
+              </Tooltip>
+            </Dropdown>
+          </div>
+        </div>
       </div>
     </div>
   );

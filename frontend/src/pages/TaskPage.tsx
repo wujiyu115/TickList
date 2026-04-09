@@ -16,6 +16,7 @@ import KanbanView from '../components/KanbanView';
 import CompletedTaskList from '../components/CompletedTaskList';
 import TaskEditor from '../components/TaskEditor';
 import TaskContextMenu from '../components/TaskContextMenu';
+import { useLongPress } from '../hooks/useLongPress';
 import { getLists } from '../api/list';
 import { getTags } from '../api/tag';
 import { getFilters } from '../api/filter';
@@ -23,6 +24,57 @@ import { getSettings } from '../api/settings';
 import { getTrashTasks, emptyTrash, getTasks } from '../api/task';
 import { Task, TaskList as TaskListType, Tag, Filter } from '../types';
 import './TaskPage.less';
+
+// 垃圾箱任务项组件（支持长按右键菜单）
+interface TrashTaskItemProps {
+  task: Task;
+  isContextMenuOpen: boolean;
+  onContextMenuChange: (open: boolean) => void;
+  onClose: () => void;
+}
+
+const TrashTaskItem: React.FC<TrashTaskItemProps> = ({ task, isContextMenuOpen, onContextMenuChange, onClose }) => {
+  const longPressHandlers = useLongPress({
+    onLongPress: () => onContextMenuChange(true),
+  });
+
+  return (
+    <Dropdown
+      open={isContextMenuOpen}
+      onOpenChange={onContextMenuChange}
+      dropdownRender={() => (
+        <TaskContextMenu
+          task={task}
+          isTrashView={true}
+          onClose={onClose}
+        />
+      )}
+      trigger={['contextMenu']}
+    >
+      <div
+        className="trash-task-item"
+        style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+        onContextMenu={(e) => e.preventDefault()}
+        onClick={() => {
+          if (longPressHandlers.isLongPress.current) {
+            longPressHandlers.isLongPress.current = false;
+            return;
+          }
+        }}
+        onTouchStart={longPressHandlers.onTouchStart}
+        onTouchMove={longPressHandlers.onTouchMove}
+        onTouchEnd={longPressHandlers.onTouchEnd}
+      >
+        <div className="trash-task-content">
+          <div className="trash-task-title">{task.title}</div>
+          {task.description && (
+            <div className="trash-task-desc">{task.description.split('\n')[0]}</div>
+          )}
+        </div>
+      </div>
+    </Dropdown>
+  );
+};
 
 // 视图类型
 type ViewMode = 'list' | 'kanban';
@@ -480,32 +532,16 @@ const TaskPage: React.FC = () => {
       return (
         <div className="trash-task-list" style={{ flex: 1, overflow: 'auto', padding: '0 20px' }}>
           {trashTasks.map(task => (
-            <Dropdown
+            <TrashTaskItem
               key={task.id}
-              open={trashContextTaskId === task.id}
-              onOpenChange={(open) => setTrashContextTaskId(open ? task.id : null)}
-              dropdownRender={() => (
-                <TaskContextMenu
-                  task={task}
-                  isTrashView={true}
-                  onClose={() => {
-                    setTrashContextTaskId(null);
-                    // 恢复或删除后刷新垃圾箱列表
-                    loadTrashTasks(1);
-                  }}
-                />
-              )}
-              trigger={['contextMenu']}
-            >
-              <div className="trash-task-item" onContextMenu={(e) => e.preventDefault()}>
-                <div className="trash-task-content">
-                  <div className="trash-task-title">{task.title}</div>
-                  {task.description && (
-                    <div className="trash-task-desc">{task.description.split('\n')[0]}</div>
-                  )}
-                </div>
-              </div>
-            </Dropdown>
+              task={task}
+              isContextMenuOpen={trashContextTaskId === task.id}
+              onContextMenuChange={(open) => setTrashContextTaskId(open ? task.id : null)}
+              onClose={() => {
+                setTrashContextTaskId(null);
+                loadTrashTasks(1);
+              }}
+            />
           ))}
           {trashTasks.length < trashTotal && (
             <div className="load-more-container" style={{ textAlign: 'center', padding: '16px 0' }}>

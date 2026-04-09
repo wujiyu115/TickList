@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import moment from 'moment';
 import { Task } from '../types';
 import { useTaskContext } from '../contexts/TaskContext';
+import { useLongPress } from '../hooks/useLongPress';
 import TaskContextMenu from './TaskContextMenu';
 import './KanbanView.less';
 
@@ -75,6 +76,10 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ task, allTasks, hideDetails }) 
     setContextMenuVisible(true);
   };
 
+  const longPressHandlers = useLongPress({
+    onLongPress: () => setContextMenuVisible(true),
+  });
+
   return (
     <div className="kanban-card-wrapper">
       <Dropdown
@@ -90,8 +95,18 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ task, allTasks, hideDetails }) 
       >
         <div
           className={`kanban-card ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}`}
-          onClick={() => selectTask(task)}
+          style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+          onClick={() => {
+            if (longPressHandlers.isLongPress.current) {
+              longPressHandlers.isLongPress.current = false;
+              return;
+            }
+            selectTask(task);
+          }}
           onContextMenu={handleContextMenu}
+          onTouchStart={longPressHandlers.onTouchStart}
+          onTouchMove={longPressHandlers.onTouchMove}
+          onTouchEnd={longPressHandlers.onTouchEnd}
         >
           {/* 左侧蓝色竖条 */}
           <div className="card-left-bar" />

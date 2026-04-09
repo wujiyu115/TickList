@@ -4,6 +4,7 @@ import { CaretDownOutlined, CaretRightOutlined, ClockCircleOutlined } from '@ant
 import moment from 'moment';
 import { Task } from '../types';
 import { useTaskContext } from '../contexts/TaskContext';
+import { useLongPress } from '../hooks/useLongPress';
 import TaskContextMenu from './TaskContextMenu';
 import './TaskItem.less';
 
@@ -67,6 +68,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
     return date.format('YYYY-M-D');
   };
 
+  const longPressHandlers = useLongPress({
+    onLongPress: () => setContextMenuVisible(true),
+  });
+
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     setContextMenuVisible(true);
@@ -104,9 +109,18 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
       >
         <div
           className={`task-item-new ${isSelected ? 'selected' : ''} ${isCompleted ? 'completed' : ''}`}
-          style={{ paddingLeft: depth * 24 + 12 }}
-          onClick={() => selectTask(task)}
+          style={{ paddingLeft: depth * 24 + 12, userSelect: 'none', WebkitUserSelect: 'none' }}
+          onClick={() => {
+            if (longPressHandlers.isLongPress.current) {
+              longPressHandlers.isLongPress.current = false;
+              return;
+            }
+            selectTask(task);
+          }}
           onContextMenu={handleContextMenu}
+          onTouchStart={longPressHandlers.onTouchStart}
+          onTouchMove={longPressHandlers.onTouchMove}
+          onTouchEnd={longPressHandlers.onTouchEnd}
         >
           {/* 展开/折叠箭头 */}
           {hasChildren ? (
