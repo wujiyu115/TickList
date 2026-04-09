@@ -6,7 +6,7 @@ FROM --platform=$BUILDPLATFORM oven/bun:1-alpine AS frontend-build
 WORKDIR /app/frontend
 
 # 复制前端依赖文件
-COPY frontend/package.json frontend/bun.lockb ./
+COPY frontend/package.json frontend/bun.lock ./
 
 # 安装前端依赖（使用缓存加速）
 RUN --mount=type=cache,target=/root/.bun/install/cache bun install --frozen-lockfile
