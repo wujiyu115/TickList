@@ -24,12 +24,10 @@ echo "正在构建前端应用..."
 cd frontend
 
 echo "正在安装前端依赖..."
-if [ ! -d "node_modules" ]; then
-    npm install
-fi
+bun install
 
 echo "正在构建前端开发版本（带 source map）..."
-npm run build:dev
+bun run build:dev
 
 if [ $? -ne 0 ]; then
     echo "前端构建失败，请检查错误信息"
@@ -40,7 +38,7 @@ echo "前端构建完成！"
 echo "正在启动前端监听模式..."
 
 # 在后台启动前端监听构建
-npm run build:dev -- --watch &
+bun run build:dev -- --watch &
 FRONTEND_PID=$!
 
 echo "前端监听模式已启动，文件变化时将自动重新构建"
@@ -57,13 +55,13 @@ fi
 echo "正在启动后端服务..."
 
 # 启动后端服务
-if [ ! -d "venv" ]; then
+if [ ! -d ".venv" ]; then
     echo "创建 Python 虚拟环境..."
-    python3 -m venv venv
+    uv venv
 fi
 
-source venv/bin/activate
-pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+source .venv/bin/activate
+uv pip install -r requirements.txt
 
 echo "后端服务启动中..."
 python run_dev.py &

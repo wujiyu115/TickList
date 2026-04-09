@@ -1,21 +1,21 @@
 # ==========================================
 # Stage 1: Frontend Build
 # ==========================================
-FROM --platform=$BUILDPLATFORM node:20-alpine AS frontend-build
+FROM --platform=$BUILDPLATFORM oven/bun:1-alpine AS frontend-build
 
 WORKDIR /app/frontend
 
 # 复制前端依赖文件
-COPY frontend/package.json frontend/package-lock.json ./
+COPY frontend/package.json frontend/bun.lockb ./
 
 # 安装前端依赖（使用缓存加速）
-RUN --mount=type=cache,target=/root/.npm npm ci
+RUN --mount=type=cache,target=/root/.bun/install/cache bun install --frozen-lockfile
 
 # 复制前端源代码
 COPY frontend/ ./
 
 # 构建前端
-RUN npm run build
+RUN bun run build
 
 # ==========================================
 # Stage 2: Production
@@ -28,11 +28,14 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
+# 安装 uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+
 # 复制后端依赖文件
 COPY backend/requirements.txt ./
 
 # 安装 Python 依赖（使用缓存加速）
-RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/uv uv pip install --system -r requirements.txt
 
 # 复制后端代码
 COPY backend/ ./

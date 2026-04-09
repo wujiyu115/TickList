@@ -77,7 +77,8 @@
 ### 前置要求
 
 - Python 3.8+
-- Node.js 14+
+- [uv](https://docs.astral.sh/uv/)（Python 依赖管理）
+- [Bun](https://bun.sh/)（前端包管理）
 - Docker（可选，用于容器化部署）
 
 > **数据库说明**：默认使用 SQLite，无需额外安装和配置。如需使用 MySQL，请确保 MySQL 5.7+ 服务可用。
@@ -227,7 +228,7 @@ cd backend
 
 2. 安装 Python 依赖：
 ```bash
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 3. 配置：
@@ -259,19 +260,19 @@ cd frontend
 
 2. 安装依赖：
 ```bash
-npm install
+bun install
 ```
 
 3. 启动开发服务器：
 ```bash
-npm run dev
+bun run dev
 ```
 
 前端服务将在 `http://localhost:3000` 启动。
 
 4. 构建生产版本：
 ```bash
-npm run build
+bun run build
 ```
 
 构建产物将输出到 `frontend/dist` 目录。
@@ -336,7 +337,7 @@ docker run -d \
 
 **后端**：FastAPI + SQLAlchemy（SQLite/MySQL） + JWT + bcrypt + py_webauthn
 
-**前端**：React 18 + TypeScript + Ant Design 5 + Webpack 5 + Axios + @simplewebauthn/browser
+**前端**：React 18 + TypeScript + Ant Design 5 + Rsbuild + Axios + @simplewebauthn/browser
 
 ### 项目结构
 
