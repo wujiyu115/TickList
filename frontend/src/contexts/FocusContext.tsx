@@ -101,6 +101,22 @@ export const FocusProvider: React.FC<FocusProviderProps> = ({ children }) => {
   const notificationEnabled = settings?.notification_enabled ?? true;
   const notificationSound = settings?.notification_sound ?? true;
 
+  const showTimerCompletionModal = useCallback((phase: TimerPhase) => {
+    const isWorkComplete = phase === 'work';
+    const title = isWorkComplete ? '番茄时间到' : '休息时间到';
+    const content = isWorkComplete
+      ? `这一轮专注已完成${linkedTask?.title ? `：${linkedTask.title}` : ''}。现在可以休息一下。`
+      : '休息结束了，开始下一轮专注吧。';
+
+    Modal.info({
+      title,
+      content,
+      okText: isWorkComplete ? '去休息' : '继续专注',
+      centered: true,
+      maskClosable: true,
+    });
+  }, [linkedTask]);
+
   // 播放提示音
   const playNotificationSound = useCallback(() => {
     if (!notificationSound) return;
@@ -152,6 +168,7 @@ export const FocusProvider: React.FC<FocusProviderProps> = ({ children }) => {
     async (phase: TimerPhase) => {
       if (notificationEnabled) {
         playNotificationSound();
+        showTimerCompletionModal(phase);
       }
 
       if (phase === 'work') {
@@ -179,7 +196,7 @@ export const FocusProvider: React.FC<FocusProviderProps> = ({ children }) => {
         }
       }
     },
-    [notificationEnabled, playNotificationSound, linkedTaskId, workDuration, loadOverview, loadSessions]
+    [notificationEnabled, playNotificationSound, showTimerCompletionModal, linkedTaskId, workDuration, loadOverview, loadSessions]
   );
 
   // 计时器
