@@ -50,6 +50,7 @@ async def register_options(user_id: str = Depends(get_current_user)):
     """生成 WebAuthn 注册选项"""
     user = user_dao.find_by_id(user_id)
     if not user:
+        logger.warning(f"WebAuthn register options requested for missing user: {user_id}")
         raise HTTPException(status_code=404, detail="用户不存在")
 
     # 获取用户已有凭证，排除重复注册
@@ -77,6 +78,12 @@ async def register_options(user_id: str = Depends(get_current_user)):
     _cleanup_challenges()
     challenge_b64 = bytes_to_base64url(options.challenge)
     _challenges[challenge_b64] = {'user_id': user_id, 'timestamp': time.time()}
+    logger.info(
+        "WebAuthn register options generated "
+        f"user_id={user_id} username={user['username']} "
+        f"exclude_credentials={len(existing_credentials)} "
+        f"rp_id={config.get_webauthn_rp_id()} origin={config.get_webauthn_origin()}"
+    )
 
     return json.loads(options_to_json(options))
 
@@ -86,6 +93,11 @@ async def register_options(user_id: str = Depends(get_current_user)):
 async def register_verify(body: dict, user_id: str = Depends(get_current_user)):
     """验证 WebAuthn 注册响应并保存凭证"""
     _cleanup_challenges()
+    logger.info(
+        "WebAuthn register verify requested "
+        f"user_id={user_id} credential_id={body.get('id') or body.get('rawId')} "
+        f"response_type={body.get('type')}"
+    )
     matched_challenge = None
     for ch, data in _challenges.items():
         if data['user_id'] == user_id:
@@ -93,6 +105,7 @@ async def register_verify(body: dict, user_id: str = Depends(get_current_user)):
             break
 
     if not matched_challenge:
+        logger.warning(f"WebAuthn register verify failed due to expired challenge: user_id={user_id}")
         raise HTTPException(status_code=400, detail="Challenge 已过期，请重新注册")
 
     try:
@@ -103,7 +116,11 @@ async def register_verify(body: dict, user_id: str = Depends(get_current_user)):
             expected_rp_id=config.get_webauthn_rp_id(),
         )
     except Exception as e:
-        logger.error(f"WebAuthn registration verification failed: {e}")
+        logger.error(
+            "WebAuthn registration verification failed "
+            f"user_id={user_id} rp_id={config.get_webauthn_rp_id()} "
+            f"origin={config.get_webauthn_origin()} error={e}"
+        )
         raise HTTPException(status_code=400, detail=f"验证失败: {str(e)}")
     finally:
         _challenges.pop(matched_challenge, None)
@@ -119,6 +136,11 @@ async def register_verify(body: dict, user_id: str = Depends(get_current_user)):
     }
 
     result = webauthn_dao.create_credential(user_id, credential_data)
+    logger.info(
+        "WebAuthn registration completed "
+        f"user_id={user_id} credential_id={credential_data['credential_id']} "
+        f"device_name={credential_data['device_name']}"
+    )
     return {"message": "Passkey 注册成功", "credential": result}
 
 

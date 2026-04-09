@@ -36,8 +36,8 @@ const PasskeyManagePage: React.FC = () => {
     setRegisterLoading(true);
     try {
       const optionsRes = await getPasskeyRegisterOptions();
-      const options = optionsRes as any;
-      const credential = await startRegistration(options);
+      const options = (optionsRes as any).data ?? optionsRes;
+      const credential = await startRegistration({ optionsJSON: options });
       await verifyPasskeyRegister(credential, 'My Passkey');
       message.success('Passkey 注册成功');
       loadCredentials();
@@ -45,7 +45,7 @@ const PasskeyManagePage: React.FC = () => {
       if (error.name === 'NotAllowedError') {
         message.info('已取消注册');
       } else {
-        message.error(error.response?.data?.detail || '注册失败');
+        message.error(error.response?.data?.detail || error.message || '注册失败');
       }
     } finally {
       setRegisterLoading(false);
