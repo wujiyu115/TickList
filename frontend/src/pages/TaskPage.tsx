@@ -317,6 +317,11 @@ const TaskPage: React.FC = () => {
 
   // 当视图切换时，重置分页状态并加载数据
   useEffect(() => {
+    // 无任何筛选参数时跳过加载，等待 useEffect 1 导航到默认过滤条件
+    if (!filter && !listId && !tagFilter && !filterId && !tagsParam && !priorityParam && !keywordParam) {
+      return;
+    }
+
     const isTrashView = filter === 'trash';
     const isCompletedView = filter === 'completed';
 
