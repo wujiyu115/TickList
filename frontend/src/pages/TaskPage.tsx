@@ -129,6 +129,7 @@ const TaskPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const userManuallyChangedView = useRef(false); // 标记用户是否已手动切换视图
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
+  const [sortMode, setSortMode] = useState<string>('custom');
   const [hideCompleted, setHideCompleted] = useState(() => {
     return localStorage.getItem('hideCompleted') === 'true';
   });
@@ -585,6 +586,7 @@ const TaskPage: React.FC = () => {
     }
     return (
       <TaskList
+        sortMode={sortMode}
         hideCompleted={hideCompleted}
         hideDetails={hideDetails}
         completedTasks={completedTasks}
@@ -622,7 +624,22 @@ const TaskPage: React.FC = () => {
               )
             ) : (
               <>
-                <Button type="text" icon={<SortAscendingOutlined />} />
+                <Dropdown
+                  menu={{
+                    items: [
+                      { key: 'custom', label: '自定义' },
+                      { key: 'time', label: '时间' },
+                      { key: 'title', label: '标题' },
+                      { key: 'priority', label: '优先级' },
+                    ],
+                    selectedKeys: [sortMode],
+                    onClick: ({ key }) => setSortMode(key),
+                  }}
+                  trigger={['click']}
+                  placement="bottomRight"
+                >
+                  <Button type="text" icon={<SortAscendingOutlined />}>排序</Button>
+                </Dropdown>
                 <Popover
                   content={viewMenuContent}
                   trigger="click"

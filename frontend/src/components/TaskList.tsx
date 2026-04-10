@@ -56,6 +56,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
 };
 
 interface TaskListProps {
+  sortMode?: string;
   hideCompleted?: boolean;
   hideDetails?: boolean;
   completedTasks?: Task[];
@@ -65,7 +66,33 @@ interface TaskListProps {
   onLoadMoreCompleted?: () => void;
 }
 
+const sortTasks = (taskList: Task[], mode: string): Task[] => {
+  if (mode === 'custom') return taskList;
+
+  return [...taskList].sort((a, b) => {
+    switch (mode) {
+      case 'time': {
+        const timeA = a.due_date || a.start_time || '';
+        const timeB = b.due_date || b.start_time || '';
+        if (!timeA && !timeB) return 0;
+        if (!timeA) return 1;
+        if (!timeB) return -1;
+        return timeA.localeCompare(timeB);
+      }
+      case 'title':
+        return (a.title || '').localeCompare(b.title || '', 'zh-CN');
+      case 'priority': {
+        const priorityOrder = (p: number) => (p === 0 ? 5 : p);
+        return priorityOrder(a.priority) - priorityOrder(b.priority);
+      }
+      default:
+        return 0;
+    }
+  });
+};
+
 const TaskList: React.FC<TaskListProps> = ({
+  sortMode,
   hideCompleted,
   hideDetails,
   completedTasks: externalCompletedTasks,
@@ -89,9 +116,9 @@ const TaskList: React.FC<TaskListProps> = ({
   );
   const topLevelTasks = tasks.filter(t => !childIdSet.has(t.id));
 
-  // 按状态分组
-  const pendingTasks = topLevelTasks.filter(t => t.status === 'pending');
-  const inProgressTasks = topLevelTasks.filter(t => t.status === 'in_progress');
+  // 按状态分组并应用排序
+  const pendingTasks = sortTasks(topLevelTasks.filter(t => t.status === 'pending'), sortMode || 'custom');
+  const inProgressTasks = sortTasks(topLevelTasks.filter(t => t.status === 'in_progress'), sortMode || 'custom');
 
   // 已完成任务：优先使用外部独立加载的分页数据，否则从 tasks 中过滤
   const hasExternalCompleted = externalCompletedTasks !== undefined;
