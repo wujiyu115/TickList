@@ -373,15 +373,22 @@
 @media (max-width: 768px) {
   .task-page {
     flex-direction: column;
+  }
+}
 
-    .task-page-right {
-      width: 100%;
-      max-height: 50vh;
-      overflow-y: auto;
-      border-left: none;
-      border-top: 1px solid var(--ant-color-border, #f0f0f0);
-      flex-shrink: unset;
-    }
+// 移动端 Drawer 样式
+.task-editor-drawer {
+  .ant-drawer-body {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .task-editor-new {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
 }
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { Button, Popover, Checkbox, Divider, Tooltip, Popconfirm, Spin, Empty, message, Dropdown } from 'antd';
+import { Button, Popover, Checkbox, Divider, Tooltip, Popconfirm, Spin, Empty, message, Dropdown, Drawer } from 'antd';
 import { 
   UnorderedListOutlined, 
   SortAscendingOutlined, 
@@ -83,6 +83,13 @@ const PAGE_SIZE = 50;
 
 const TaskPage: React.FC = () => {
   const { fetchTasks, selectedTask, selectTask } = useTaskContext();
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const filter = searchParams.get('filter');
@@ -659,9 +666,23 @@ const TaskPage: React.FC = () => {
       
       {/* 右侧详情区域 - 选中任务时显示（垃圾箱中不显示编辑器） */}
       {selectedTask && !isTrashView && (
-        <div className="task-page-right">
-          <TaskEditor />
-        </div>
+        isMobile ? (
+          <Drawer
+            open={!!selectedTask}
+            onClose={() => selectTask(null)}
+            placement="bottom"
+            height="100%"
+            closable={false}
+            styles={{ body: { padding: 0 } }}
+            className="task-editor-drawer"
+          >
+            <TaskEditor />
+          </Drawer>
+        ) : (
+          <div className="task-page-right">
+            <TaskEditor />
+          </div>
+        )
       )}
     </div>
   );
