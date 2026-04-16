@@ -212,11 +212,51 @@
         font-size: 14px;
       }
     }
+
+    .desc-wrapper {
+      position: relative;
+      max-height: 120px;
+      overflow-y: auto;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      transition: border-color 0.2s;
+
+      &:hover {
+        border-color: var(--ant-color-border-secondary, #f0f0f0);
+
+        .desc-expand-icon {
+          opacity: 1;
+        }
+      }
+
+      &:focus-within {
+        border-color: var(--ant-color-primary, #1890ff);
+      }
+    }
+
+    .desc-expand-icon {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-size: 14px;
+      color: var(--ant-color-text-tertiary);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      opacity: 0;
+      transition: opacity 0.2s, color 0.2s;
+      background: var(--ant-color-bg-container, #fff);
+
+      &:hover {
+        color: var(--ant-color-text);
+        background: var(--ant-color-bg-text-hover, #f5f5f5);
+      }
+    }
     
     .desc-textarea {
       font-size: 14px;
       line-height: 1.6;
-      padding: 8px 0;
+      padding: 8px;
       
       &::placeholder {
         color: #bfbfbf;
@@ -390,16 +430,65 @@
         border-bottom: 1px solid var(--ant-color-bg-text-hover);
         font-size: 14px;
 
-        .drag-handle {
-          color: #ccc;
-          font-size: 12px;
-          cursor: grab;
-          flex-shrink: 0;
-        }
-
         .checklist-text {
           flex: 1;
           line-height: 1.6;
+          cursor: text;
+          padding: 2px 4px;
+          border-radius: 4px;
+
+          &:hover {
+            background: var(--ant-color-bg-text-hover, #f5f5f5);
+          }
+        }
+
+        .checklist-edit-input {
+          flex: 1;
+          font-size: 14px;
+          padding: 2px 4px;
+        }
+
+        .checklist-drag {
+          font-size: 14px;
+          color: #ccc;
+          cursor: grab;
+          padding: 4px;
+          border-radius: 4px;
+          opacity: 0;
+          transition: opacity 0.2s, color 0.2s;
+          flex-shrink: 0;
+
+          &:hover {
+            color: #999;
+            background: var(--ant-color-bg-text-hover, #f5f5f5);
+          }
+
+          &:active {
+            cursor: grabbing;
+          }
+        }
+
+        .checklist-delete {
+          font-size: 14px;
+          color: #ccc;
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 4px;
+          opacity: 0;
+          transition: opacity 0.2s, color 0.2s;
+          flex-shrink: 0;
+
+          &:hover {
+            color: #ff4d4f;
+            background: rgba(255, 77, 79, 0.06);
+          }
+        }
+
+        &:hover {
+          .checklist-delete,
+          .checklist-drag {
+            opacity: 1;
+          }
         }
 
         &.checked {

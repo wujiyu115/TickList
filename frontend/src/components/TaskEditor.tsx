@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Input, Checkbox, Button, Popover, DatePicker, TimePicker, Switch, Segmented, Tooltip, Dropdown } from 'antd';
-import { CalendarOutlined, MinusOutlined, CloseOutlined, PlusOutlined, ClockCircleOutlined, CheckOutlined, SendOutlined, EllipsisOutlined, MenuOutlined, UnorderedListOutlined, FileTextOutlined } from '@ant-design/icons';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { Input, Checkbox, Button, Popover, DatePicker, TimePicker, Switch, Segmented, Tooltip, Dropdown, Modal } from 'antd';
+import { CalendarOutlined, MinusOutlined, CloseOutlined, PlusOutlined, ClockCircleOutlined, CheckOutlined, SendOutlined, EllipsisOutlined, DeleteOutlined, HolderOutlined, UnorderedListOutlined, FileTextOutlined, ExpandOutlined } from '@ant-design/icons';
 import TaskContextMenu from './TaskContextMenu';
 import { useTaskContext } from '../contexts/TaskContext';
 import { Task } from '../types';
@@ -100,6 +100,10 @@ const TaskEditor: React.FC = () => {
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
   const [contentItems, setContentItems] = useState<Array<{text: string, checked: boolean}>>([]);
   const [contentViewMode, setContentViewMode] = useState<'detail' | 'checklist'>('detail');
+  const [editingCheckIdx, setEditingCheckIdx] = useState<number | null>(null);
+  const [editingCheckText, setEditingCheckText] = useState('');
+  const [descFullscreen, setDescFullscreen] = useState(false);
+  const [fullscreenDesc, setFullscreenDesc] = useState('');
   const [contentText, setContentText] = useState('');
 
   // 日期选择相关状态
@@ -137,6 +141,15 @@ const TaskEditor: React.FC = () => {
         setContentItems([]);
         setContentText('');
       }
+
+      // 从 localStorage 恢复视图模式
+      const savedMode = localStorage.getItem(`task_view_mode_${selectedTask.id}`);
+      if (savedMode === 'checklist' || savedMode === 'detail') {
+        setContentViewMode(savedMode);
+      } else {
+        setContentViewMode('detail');
+      }
+      setEditingCheckIdx(null);
       
       // 初始化日期状态
       if (selectedTask.start_time) {
@@ -340,8 +353,114 @@ const TaskEditor: React.FC = () => {
     updateTaskData(selectedTask.id, { content: JSON.stringify(newItems) });
   };
 
+  // 删除检查事项
+  const handleDeleteContentItem = (index: number) => {
+    const newItems = contentItems.filter((_, idx) => idx !== index);
+    setContentItems(newItems);
+    setContentText(newItems.map(item => item.text).join('\n'));
+    updateTaskData(selectedTask.id, { content: JSON.stringify(newItems) });
+  };
+
+  // 检查事项行内编辑
+  const handleCheckTextEdit = (index: number) => {
+    setEditingCheckIdx(index);
+    setEditingCheckText(contentItems[index].text);
+  };
+
+  const handleCheckTextSave = (index: number) => {
+    if (editingCheckText.trim() === '') {
+      // 空文本则删除该项
+      handleDeleteContentItem(index);
+    } else if (editingCheckText !== contentItems[index].text) {
+      const newItems = contentItems.map((item, idx) =>
+        idx === index ? { ...item, text: editingCheckText } : item
+      );
+      setContentItems(newItems);
+      setContentText(newItems.map(item => item.text).join('\n'));
+      updateTaskData(selectedTask.id, { content: JSON.stringify(newItems) });
+    }
+    setEditingCheckIdx(null);
+  };
+
+  // 编辑中回车：保存当前项并在下方插入新项进入编辑
+  const handleCheckTextEnter = (index: number) => {
+    const currentText = editingCheckText.trim();
+    const newItems = [...contentItems];
+    // 更新当前项文本
+    if (currentText !== '' && currentText !== newItems[index].text) {
+      newItems[index] = { ...newItems[index], text: currentText };
+    }
+    // 在下方插入空项
+    newItems.splice(index + 1, 0, { text: '', checked: false });
+    setContentItems(newItems);
+    setContentText(newItems.map(item => item.text).join('\n'));
+    updateTaskData(selectedTask.id, { content: JSON.stringify(newItems) });
+    // 进入新项编辑
+    setEditingCheckIdx(index + 1);
+    setEditingCheckText('');
+  };
+
+  // 拖拽排序（支持桌面端和移动端）
+  const dragIndexRef = useRef<number | null>(null);
+  const dragOverIndexRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number>(0);
+  const touchItemRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const handleDragStart = useCallback((index: number) => {
+    dragIndexRef.current = index;
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    dragOverIndexRef.current = index;
+  }, []);
+
+  const applyDragReorder = useCallback(() => {
+    const from = dragIndexRef.current;
+    const to = dragOverIndexRef.current;
+    if (from === null || to === null || from === to) {
+      dragIndexRef.current = null;
+      dragOverIndexRef.current = null;
+      return;
+    }
+    const newItems = [...contentItems];
+    const [moved] = newItems.splice(from, 1);
+    newItems.splice(to, 0, moved);
+    setContentItems(newItems);
+    setContentText(newItems.map(item => item.text).join('\n'));
+    updateTaskData(selectedTask.id, { content: JSON.stringify(newItems) });
+    dragIndexRef.current = null;
+    dragOverIndexRef.current = null;
+  }, [contentItems, selectedTask?.id, updateTaskData]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent, index: number) => {
+    dragIndexRef.current = index;
+    touchStartYRef.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (dragIndexRef.current === null) return;
+    const touchY = e.touches[0].clientY;
+    // 找到当前触摸位置下的目标项
+    for (let i = 0; i < touchItemRefs.current.length; i++) {
+      const el = touchItemRefs.current[i];
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        if (touchY >= rect.top && touchY <= rect.bottom) {
+          dragOverIndexRef.current = i;
+          break;
+        }
+      }
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    applyDragReorder();
+  }, [applyDragReorder]);
+
   // 切换视图模式
   const handleToggleViewMode = () => {
+    let newMode: 'detail' | 'checklist';
     if (contentViewMode === 'detail') {
       // 切换前先保存 detail 模式的编辑
       const lines = contentText.split('\n').filter(line => line.trim() !== '');
@@ -354,10 +473,12 @@ const TaskEditor: React.FC = () => {
       if (json !== selectedTask.content) {
         updateTaskData(selectedTask.id, { content: json });
       }
-      setContentViewMode('checklist');
+      newMode = 'checklist';
     } else {
-      setContentViewMode('detail');
+      newMode = 'detail';
     }
+    setContentViewMode(newMode);
+    localStorage.setItem(`task_view_mode_${selectedTask.id}`, newMode);
   };
 
   // 获取提醒选项标签
@@ -679,16 +800,51 @@ const TaskEditor: React.FC = () => {
       <div className="editor-scrollable">
       {/* 描述 */}
       <div className="editor-description">
-        <Input.TextArea
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          onBlur={handleDescBlur}
-          placeholder="添加描述..."
-          autoSize={{ minRows: 1, maxRows: 10 }}
-          variant="borderless"
-          className="desc-textarea"
-        />
+        <div className="desc-wrapper">
+          <Input.TextArea
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            onBlur={handleDescBlur}
+            placeholder="添加描述..."
+            autoSize={{ minRows: 1, maxRows: 4 }}
+            variant="borderless"
+            className="desc-textarea"
+          />
+          <Tooltip title="全屏编辑">
+            <ExpandOutlined
+              className="desc-expand-icon"
+              onClick={() => { setFullscreenDesc(description); setDescFullscreen(true); }}
+            />
+          </Tooltip>
+        </div>
       </div>
+
+      {/* 描述全屏编辑 Modal */}
+      <Modal
+        title="编辑描述"
+        open={descFullscreen}
+        onOk={() => {
+          setDescription(fullscreenDesc);
+          if (fullscreenDesc !== selectedTask.description) {
+            updateTaskData(selectedTask.id, { description: fullscreenDesc });
+          }
+          setDescFullscreen(false);
+        }}
+        onCancel={() => setDescFullscreen(false)}
+        okText="保存"
+        cancelText="取消"
+        width="90%"
+        style={{ maxWidth: 800, top: 20 }}
+        styles={{ body: { padding: '12px 0' } }}
+      >
+        <Input.TextArea
+          value={fullscreenDesc}
+          onChange={e => setFullscreenDesc(e.target.value)}
+          autoSize={{ minRows: 15, maxRows: 30 }}
+          placeholder="输入描述内容..."
+          style={{ fontSize: 14, lineHeight: 1.8 }}
+        />
+      </Modal>
 
       <div className="editor-divider" />
 
@@ -707,13 +863,42 @@ const TaskEditor: React.FC = () => {
         ) : (
           <div className="checklist-view">
             {contentItems.map((item, idx) => (
-              <div key={idx} className={`checklist-item ${item.checked ? 'checked' : ''}`}>
-                <MenuOutlined className="drag-handle" />
+              <div
+                key={idx}
+                ref={el => { touchItemRefs.current[idx] = el; }}
+                className={`checklist-item ${item.checked ? 'checked' : ''}`}
+                draggable
+                onDragStart={() => handleDragStart(idx)}
+                onDragOver={(e) => handleDragOver(e, idx)}
+                onDrop={applyDragReorder}
+              >
                 <Checkbox
                   checked={item.checked}
                   onChange={() => handleCheckToggle(idx)}
                 />
-                <span className="checklist-text">{item.text}</span>
+                {editingCheckIdx === idx ? (
+                  <Input
+                    className="checklist-edit-input"
+                    value={editingCheckText}
+                    onChange={e => setEditingCheckText(e.target.value)}
+                    onBlur={() => { if (editingCheckIdx === idx) handleCheckTextSave(idx); }}
+                    onPressEnter={(e) => { e.preventDefault(); handleCheckTextEnter(idx); }}
+                    autoFocus
+                    variant="borderless"
+                  />
+                ) : (
+                  <span className="checklist-text" onClick={() => handleCheckTextEdit(idx)}>{item.text}</span>
+                )}
+                <HolderOutlined
+                  className="checklist-drag"
+                  onTouchStart={(e: any) => handleTouchStart(e, idx)}
+                  onTouchMove={handleTouchMove as any}
+                  onTouchEnd={handleTouchEnd}
+                />
+                <DeleteOutlined
+                  className="checklist-delete"
+                  onClick={() => handleDeleteContentItem(idx)}
+                />
               </div>
             ))}
             {contentItems.length === 0 && (
