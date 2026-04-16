@@ -8,12 +8,12 @@ import { Task } from '../../types';
 // Mock TaskContext
 const mockTasks: Task[] = [
   {
-    id: '1', title: 'B任务', description: '', status: 'pending', priority: 1,
+    id: '1', title: 'B任务', description: '', content: '', status: 'pending', priority: 1,
     child_ids: [], user_id: '1', is_pinned: false, tags: [], order: 0,
     created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z',
   },
   {
-    id: '2', title: 'A任务', description: '', status: 'in_progress', priority: 2,
+    id: '2', title: 'A任务', description: '', content: '', status: 'in_progress', priority: 2,
     child_ids: [], user_id: '1', is_pinned: false, tags: [], order: 1,
     created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z',
   },

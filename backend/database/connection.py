@@ -84,6 +84,7 @@ class DatabaseConnection:
                 ('pomodoro_count', 'INTEGER DEFAULT 0'),
                 ('focus_duration', 'INTEGER DEFAULT 0'),
                 ('deleted_at', 'VARCHAR(50)'),
+                ('content', 'TEXT DEFAULT ""'),
             ],
             'countdowns': [
                 ('push_due_notify', 'BOOLEAN DEFAULT 0'),

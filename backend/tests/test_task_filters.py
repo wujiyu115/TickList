@@ -56,6 +56,7 @@ class TaskDateFilterTests(unittest.TestCase):
                 title="Due today",
                 user_id=user_id,
                 due_date=datetime(2026, 4, 8, 20, 0, 0),
+                content='',
             )
         )
         task_dao.create_task(
@@ -64,6 +65,7 @@ class TaskDateFilterTests(unittest.TestCase):
                 title="Due tomorrow",
                 user_id=user_id,
                 due_date=datetime(2026, 4, 9, 20, 0, 0),
+                content='',
             )
         )
 
@@ -86,6 +88,7 @@ class TaskDateFilterTests(unittest.TestCase):
                 title="Start today",
                 user_id=user_id,
                 start_time=datetime(2026, 4, 8, 9, 0, 0),
+                content='',
             )
         )
 
@@ -107,6 +110,7 @@ class TaskDateFilterTests(unittest.TestCase):
                 title="Due in range",
                 user_id=user_id,
                 due_date=datetime(2026, 4, 8, 23, 59, 0),
+                content='',
             )
         )
         task_dao.create_task(
@@ -115,6 +119,7 @@ class TaskDateFilterTests(unittest.TestCase):
                 title="Due on end boundary",
                 user_id=user_id,
                 due_date=datetime(2026, 4, 9, 0, 0, 0),
+                content='',
             )
         )
 

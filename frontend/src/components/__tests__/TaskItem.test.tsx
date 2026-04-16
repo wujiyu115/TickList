@@ -31,6 +31,7 @@ const baseTask: Task = {
   id: '1',
   title: '测试任务标题',
   description: '任务描述',
+  content: '',
   status: 'pending',
   priority: 1,
   child_ids: [],

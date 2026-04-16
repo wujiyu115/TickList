@@ -35,6 +35,7 @@ class Task:
         title: str,
         user_id: str,
         description: str = '',
+        content: str = '',
         status: str = 'pending',
         priority: int = 0,
         child_ids: Optional[List[str]] = None,
@@ -50,6 +51,7 @@ class Task:
         self.id = id
         self.title = title
         self.description = description
+        self.content = content  # 检查事项 JSON 字符串
         self.status = status  # pending, in_progress, completed
         self.priority = priority  # 0-4 (0=无, 1=红旗, 2=黄旗, 3=蓝旗, 4=灰旗)
         self.child_ids = child_ids or []
@@ -73,6 +75,7 @@ class Task:
             'id': self.id,
             'title': self.title,
             'description': self.description,
+            'content': self.content,
             'status': self.status,
             'priority': self.priority,
             'child_ids': self.child_ids,

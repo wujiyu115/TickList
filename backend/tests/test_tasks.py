@@ -20,6 +20,7 @@ def test_create_task(app_client, auth_headers):
     data = _create_task(app_client, auth_headers, title="My Task")
     assert data["title"] == "My Task"
     assert data["status"] == "pending"
+    assert data["content"] == ""
 
 
 def test_get_tasks(app_client, auth_headers):
@@ -78,6 +79,7 @@ def test_create_subtask(app_client, auth_headers):
         app_client, auth_headers, title="Child", parent_task_id=parent["id"]
     )
     assert child["title"] == "Child"
+    assert child["content"] == ""
 
 
 def test_get_children(app_client, auth_headers):
@@ -115,6 +117,43 @@ def test_duplicate_task(app_client, auth_headers):
     assert resp.status_code == 200
     dup = resp.json()
     assert dup["id"] != task["id"]
+    assert dup["content"] == ""
+
+
+# ------------------------------------------------------------------
+# 垃圾箱
+# ------------------------------------------------------------------
+
+def test_update_task_content(app_client, auth_headers):
+    """更新任务 content 字段（检查事项）"""
+    task = _create_task(app_client, auth_headers, title="Content Task")
+    assert task["content"] == ""
+
+    # 第一次更新 content
+    content_v1 = '[{"text": "检查项1", "checked": false}, {"text": "检查项2", "checked": true}]'
+    resp = app_client.put(
+        f"/api/tasks/{task['id']}",
+        json={"content": content_v1},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    updated = resp.json()
+    assert updated["content"] == content_v1
+
+    # 获取详情验证
+    resp2 = app_client.get(f"/api/tasks/{task['id']}", headers=auth_headers)
+    assert resp2.status_code == 200
+    assert resp2.json()["content"] == content_v1
+
+    # 第二次更新 content（模拟勾选状态变化）
+    content_v2 = '[{"text": "检查项1", "checked": true}, {"text": "检查项2", "checked": true}]'
+    resp3 = app_client.put(
+        f"/api/tasks/{task['id']}",
+        json={"content": content_v2},
+        headers=auth_headers,
+    )
+    assert resp3.status_code == 200
+    assert resp3.json()["content"] == content_v2
 
 
 # ------------------------------------------------------------------

@@ -31,6 +31,7 @@ class TaskModel(Base):
     id = Column(String(36), primary_key=True)
     title = Column(String(500), nullable=False)
     description = Column(Text)
+    content = Column(Text, default='')  # 检查事项 JSON 字符串
     status = Column(String(50), default='pending', index=True)  # pending/in_progress/completed
     priority = Column(Integer, default=0)  # 0-4 (0=无, 1=红旗, 2=黄旗, 3=蓝旗, 4=灰旗)
     user_id = Column(String(36), nullable=False, index=True)

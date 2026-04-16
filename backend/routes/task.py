@@ -16,6 +16,7 @@ router = APIRouter()
 class TaskCreate(BaseModel):
     title: str
     description: str = ''
+    content: str = ''
     status: str = 'pending'
     priority: int = 0
     parent_task_id: Optional[str] = None  # 创建子任务时传父任务 ID
@@ -31,6 +32,7 @@ class TaskCreate(BaseModel):
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
+    content: Optional[str] = None
     status: Optional[str] = None
     priority: Optional[int] = None
     list_id: Optional[str] = None
@@ -127,6 +129,7 @@ async def create_task(
             id=str(uuid.uuid4()),
             title=task_data.title,
             description=task_data.description,
+            content=task_data.content,
             status=task_data.status,
             priority=task_data.priority,
             list_id=task_data.list_id,

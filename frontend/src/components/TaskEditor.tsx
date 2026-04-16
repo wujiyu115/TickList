@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Input, Checkbox, Button, Popover, DatePicker, TimePicker, Switch, Segmented, Tooltip, Dropdown } from 'antd';
-import { CalendarOutlined, MinusOutlined, CloseOutlined, PlusOutlined, ClockCircleOutlined, CheckOutlined, SendOutlined, FontSizeOutlined, EllipsisOutlined, BoldOutlined, ItalicOutlined, StrikethroughOutlined, OrderedListOutlined, UnorderedListOutlined, LinkOutlined, CodeOutlined, TableOutlined, UndoOutlined, RedoOutlined, UnderlineOutlined, CheckSquareOutlined } from '@ant-design/icons';
+import { CalendarOutlined, MinusOutlined, CloseOutlined, PlusOutlined, ClockCircleOutlined, CheckOutlined, SendOutlined, EllipsisOutlined, MenuOutlined, UnorderedListOutlined, FileTextOutlined } from '@ant-design/icons';
 import TaskContextMenu from './TaskContextMenu';
 import { useTaskContext } from '../contexts/TaskContext';
 import { Task } from '../types';
@@ -8,24 +8,6 @@ import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/zh-cn';
 dayjs.locale('zh-cn');
 
-
-// 简单 Markdown 渲染函数
-const simpleMarkdown = (text: string): string => {
-  if (!text) return '';
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code>$1</code>')
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>[\s\S]*<\/li>)/, '<ul>$1</ul>')
-    .replace(/\n/g, '<br/>');
-};
 
 // 提醒选项类型
 type ReminderOption = 'on_time' | '5min' | '30min' | '1hour' | '1day' | 'on_end' | 'custom';
@@ -113,12 +95,12 @@ const TaskEditor: React.FC = () => {
   const [editingTitle, setEditingTitle] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [isPreview, setIsPreview] = useState(false);
   const [addingSubtask, setAddingSubtask] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
-  const [showMarkdownToolbar, setShowMarkdownToolbar] = useState(false);
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
-  const descTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [contentItems, setContentItems] = useState<Array<{text: string, checked: boolean}>>([]);
+  const [contentViewMode, setContentViewMode] = useState<'detail' | 'checklist'>('detail');
+  const [contentText, setContentText] = useState('');
 
   // 日期选择相关状态
   const [datePopoverVisible, setDatePopoverVisible] = useState(false);
@@ -139,8 +121,22 @@ const TaskEditor: React.FC = () => {
     if (selectedTask) {
       setTitle(selectedTask.title);
       setDescription(selectedTask.description || '');
-      setIsPreview(false);
       setAddingSubtask(false);
+
+      // 解析 content 为 contentItems
+      try {
+        const parsed = selectedTask.content ? JSON.parse(selectedTask.content) : [];
+        if (Array.isArray(parsed)) {
+          setContentItems(parsed);
+          setContentText(parsed.map((item: {text: string}) => item.text).join('\n'));
+        } else {
+          setContentItems([]);
+          setContentText('');
+        }
+      } catch {
+        setContentItems([]);
+        setContentText('');
+      }
       
       // 初始化日期状态
       if (selectedTask.start_time) {
@@ -320,44 +316,49 @@ const TaskEditor: React.FC = () => {
     setReminderPanelVisible(false);
   };
 
-  // Markdown 工具栏插入函数
-  const insertMarkdown = (before: string, after: string = '', placeholder: string = '') => {
-    const textarea = descTextareaRef.current;
-    if (!textarea) return;
-    textarea.focus();
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selected = description.substring(start, end);
-    const text = selected || placeholder;
-    const newValue = description.substring(0, start) + before + text + after + description.substring(end);
-    setDescription(newValue);
-    // 保存到后端
-    updateTaskData(selectedTask.id, { description: newValue });
-    // 设置光标位置
-    requestAnimationFrame(() => {
-      textarea.focus();
-      const cursorPos = selected ? start + before.length + selected.length + after.length : start + before.length;
-      const cursorEnd = selected ? cursorPos : cursorPos + text.length;
-      textarea.setSelectionRange(cursorPos, cursorEnd);
-    });
+  // 详情模式失焦保存 content
+  const handleContentDetailBlur = () => {
+    const lines = contentText.split('\n').filter(line => line.trim() !== '');
+    const newItems = lines.map((line, idx) => ({
+      text: line,
+      checked: idx < contentItems.length ? contentItems[idx].checked : false,
+    }));
+    setContentItems(newItems);
+    const json = JSON.stringify(newItems);
+    if (json !== selectedTask.content) {
+      updateTaskData(selectedTask.id, { content: json });
+    }
   };
 
-  const mdTools = [
-    { icon: <UndoOutlined />, title: '撤销', action: () => { descTextareaRef.current?.focus(); document.execCommand('undo'); } },
-    { icon: <RedoOutlined />, title: '重做', action: () => { descTextareaRef.current?.focus(); document.execCommand('redo'); } },
-    { icon: <span style={{ fontWeight: 700 }}>H</span>, title: '标题', action: () => insertMarkdown('## ', '', '标题') },
-    { icon: <BoldOutlined />, title: '加粗', action: () => insertMarkdown('**', '**', '文本') },
-    { icon: <CheckSquareOutlined />, title: '复选框', action: () => insertMarkdown('- [ ] ', '', '待办') },
-    { icon: <UnorderedListOutlined />, title: '无序列表', action: () => insertMarkdown('- ', '', '列表项') },
-    { icon: <OrderedListOutlined />, title: '有序列表', action: () => insertMarkdown('1. ', '', '列表项') },
-    { icon: <ItalicOutlined />, title: '斜体', action: () => insertMarkdown('*', '*', '文本') },
-    { icon: <UnderlineOutlined />, title: '下划线', action: () => insertMarkdown('<u>', '</u>', '文本') },
-    { icon: <StrikethroughOutlined />, title: '删除线', action: () => insertMarkdown('~~', '~~', '文本') },
-    { icon: <TableOutlined />, title: '表格', action: () => insertMarkdown('| 列1 | 列2 |\n| --- | --- |\n| 内容 | 内容 |\n') },
-    { icon: <LinkOutlined />, title: '链接', action: () => insertMarkdown('[', '](url)', '文本') },
-    { icon: <CodeOutlined />, title: '代码', action: () => insertMarkdown('`', '`', '代码') },
-    { icon: <span style={{ fontWeight: 600 }}>&ldquo;&rdquo;</span>, title: '引用', action: () => insertMarkdown('> ', '', '引用') },
-  ];
+  // 检查事项模式切换 checked
+  const handleCheckToggle = (index: number) => {
+    const newItems = contentItems.map((item, idx) =>
+      idx === index ? { ...item, checked: !item.checked } : item
+    );
+    setContentItems(newItems);
+    setContentText(newItems.map(item => item.text).join('\n'));
+    updateTaskData(selectedTask.id, { content: JSON.stringify(newItems) });
+  };
+
+  // 切换视图模式
+  const handleToggleViewMode = () => {
+    if (contentViewMode === 'detail') {
+      // 切换前先保存 detail 模式的编辑
+      const lines = contentText.split('\n').filter(line => line.trim() !== '');
+      const newItems = lines.map((line, idx) => ({
+        text: line,
+        checked: idx < contentItems.length ? contentItems[idx].checked : false,
+      }));
+      setContentItems(newItems);
+      const json = JSON.stringify(newItems);
+      if (json !== selectedTask.content) {
+        updateTaskData(selectedTask.id, { content: json });
+      }
+      setContentViewMode('checklist');
+    } else {
+      setContentViewMode('detail');
+    }
+  };
 
   // 获取提醒选项标签
   const getReminderLabel = () => {
@@ -667,34 +668,58 @@ const TaskEditor: React.FC = () => {
           className="title-input"
           placeholder="任务标题"
         />
+        <Tooltip title={contentViewMode === 'detail' ? '切换为检查事项' : '切换为详情'}>
+          <span className="content-toggle-icon" onClick={handleToggleViewMode}>
+            {contentViewMode === 'detail' ? <UnorderedListOutlined /> : <FileTextOutlined />}
+          </span>
+        </Tooltip>
       </div>
 
       {/* 可滚动内容区域：描述 + 子任务 */}
       <div className="editor-scrollable">
-      {/* 描述 - Markdown */}
+      {/* 描述 */}
       <div className="editor-description">
-        <div className="desc-header">
-          <span className="desc-label">描述</span>
-          <Button type="text" size="small" onClick={() => setIsPreview(!isPreview)}>
-            {isPreview ? '编辑' : '预览'}
-          </Button>
-        </div>
-        {isPreview ? (
-          <div 
-            className="desc-preview markdown-body" 
-            dangerouslySetInnerHTML={{ __html: simpleMarkdown(description) }} 
+        <Input.TextArea
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          onBlur={handleDescBlur}
+          placeholder="添加描述..."
+          autoSize={{ minRows: 1, maxRows: 10 }}
+          variant="borderless"
+          className="desc-textarea"
+        />
+      </div>
+
+      <div className="editor-divider" />
+
+      {/* 检查事项 / 详情内容区 */}
+      <div className="editor-content">
+        {contentViewMode === 'detail' ? (
+          <Input.TextArea
+            value={contentText}
+            onChange={e => setContentText(e.target.value)}
+            onBlur={handleContentDetailBlur}
+            placeholder="添加检查事项，每行一条..."
+            autoSize={{ minRows: 3, maxRows: 20 }}
+            variant="borderless"
+            className="content-textarea"
           />
         ) : (
-          <Input.TextArea
-            ref={el => { descTextareaRef.current = el?.resizableTextArea?.textArea || null; }}
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            onBlur={handleDescBlur}
-            placeholder="添加描述（支持 Markdown）..."
-            autoSize={{ minRows: 3, maxRows: 15 }}
-            variant="borderless"
-            className="desc-textarea"
-          />
+          <div className="checklist-view">
+            {contentItems.map((item, idx) => (
+              <div key={idx} className={`checklist-item ${item.checked ? 'checked' : ''}`}>
+                <MenuOutlined className="drag-handle" />
+                <Checkbox
+                  checked={item.checked}
+                  onChange={() => handleCheckToggle(idx)}
+                />
+                <span className="checklist-text">{item.text}</span>
+              </div>
+            ))}
+            {contentItems.length === 0 && (
+              <div style={{ color: '#999', padding: '8px 0', fontSize: 14 }}>暂无检查事项</div>
+            )}
+          </div>
         )}
       </div>
 
@@ -741,15 +766,6 @@ const TaskEditor: React.FC = () => {
 
       {/* 底部工具栏 */}
       <div className="editor-toolbar">
-        {showMarkdownToolbar && (
-          <div className="markdown-toolbar">
-            {mdTools.map((tool, idx) => (
-              <Tooltip key={idx} title={tool.title}>
-                <span className="md-tool-btn" onClick={tool.action}>{tool.icon}</span>
-              </Tooltip>
-            ))}
-          </div>
-        )}
         <div className="toolbar-actions">
           <div className="toolbar-left">
             <Tooltip title="添加子任务">
@@ -757,9 +773,6 @@ const TaskEditor: React.FC = () => {
             </Tooltip>
           </div>
           <div className="toolbar-right">
-            <Tooltip title="格式">
-              <FontSizeOutlined className="toolbar-icon" onClick={() => setShowMarkdownToolbar(!showMarkdownToolbar)} />
-            </Tooltip>
             <Dropdown
               dropdownRender={() => (
                 <TaskContextMenu task={selectedTask} onClose={() => setMoreMenuVisible(false)} />

@@ -28,6 +28,7 @@ export interface Task {
   focus_duration?: number;     // 专注时长（秒）
   created_at: string;
   updated_at: string;
+  content: string;
   completed_at?: string;
   children?: Task[];
 }
@@ -46,6 +47,7 @@ export interface TaskCreateRequest {
   is_pinned?: boolean;
   tags?: string[];
   order?: number;
+  content?: string;
 }
 
 // 任务更新请求
@@ -62,6 +64,7 @@ export interface TaskUpdateRequest {
   tags?: string[];
   order?: number;
   push_due_notify?: boolean;
+  content?: string;
 }
 
 // 任务统计

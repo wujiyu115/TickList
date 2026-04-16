@@ -26,6 +26,7 @@ def test_import_data(app_client, auth_headers):
                     "title": "Imported Task",
                     "status": "pending",
                     "priority": 0,
+                    "content": "",
                     "tags": [],       # tags 通过关系表存储
                     "child_ids": [],
                 }

@@ -22,6 +22,7 @@ export const mockTask = (overrides?: Partial<Task>): Task => ({
   id: nextId(),
   title: '测试任务',
   description: '',
+  content: '',
   status: 'pending',
   priority: 0,
   child_ids: [],
