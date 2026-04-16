@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Checkbox, Dropdown, Button } from 'antd';
 import { PlusOutlined, EllipsisOutlined, CaretDownOutlined, CaretRightOutlined, BellOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { Task } from '../types';
 import { useTaskContext } from '../contexts/TaskContext';
 import { useLongPress } from '../hooks/useLongPress';
@@ -49,9 +49,9 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ task, allTasks, hideDetails }) 
   };
 
   const formatDate = (dateStr: string) => {
-    const date = moment(dateStr);
-    const today = moment().startOf('day');
-    const tomorrow = moment().add(1, 'day').startOf('day');
+    const date = dayjs(dateStr);
+    const today = dayjs().startOf('day');
+    const tomorrow = dayjs().add(1, 'day').startOf('day');
     
     if (date.isSame(today, 'day')) return '今天';
     if (date.isSame(tomorrow, 'day')) return '明天';
@@ -60,7 +60,7 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ task, allTasks, hideDetails }) 
   };
 
   const formatTime = (timeStr: string) => {
-    return moment(timeStr).format('HH:mm');
+    return dayjs(timeStr).format('HH:mm');
   };
 
   // 获取描述摘要（第一行，以"-"开头）
@@ -155,7 +155,7 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ task, allTasks, hideDetails }) 
             {!hideDetails && (
               <div className="card-meta">
                 {task.due_date && (
-                  <span className={`meta-tag date-tag ${moment(task.due_date).isSame(moment(), 'day') ? 'today' : ''}`}>
+                  <span className={`meta-tag date-tag ${dayjs(task.due_date).isSame(dayjs(), 'day') ? 'today' : ''}`}>
                     {formatDate(task.due_date)}
                   </span>
                 )}

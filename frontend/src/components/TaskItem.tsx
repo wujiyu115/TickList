@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Checkbox, Dropdown, Input } from 'antd';
 import { CaretDownOutlined, CaretRightOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { Task } from '../types';
 import { useTaskContext } from '../contexts/TaskContext';
 import { useLongPress } from '../hooks/useLongPress';
@@ -52,9 +52,9 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
   };
 
   const formatDate = (dateStr: string) => {
-    const date = moment(dateStr);
-    const today = moment().startOf('day');
-    const tomorrow = moment().add(1, 'day').startOf('day');
+    const date = dayjs(dateStr);
+    const today = dayjs().startOf('day');
+    const tomorrow = dayjs().add(1, 'day').startOf('day');
     
     if (date.isSame(today, 'day')) {
       return '今天';

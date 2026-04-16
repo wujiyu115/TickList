@@ -383,6 +383,44 @@ ticklist/
 2. 前端：在 `frontend/src/api/` 添加 API 调用
 3. 创建对应的组件和页面
 
+### 测试
+
+项目拥有完整的自动化测试体系，后端使用 pytest、前端使用 Vitest，共 133 个测试用例，覆盖全部核心模块。
+
+#### 运行测试
+
+```bash
+# 一键运行全部测试（前端 + 后端）
+bash run_all_test.sh
+
+# 单独运行后端测试
+cd backend && python -m pytest tests/ -v
+
+# 单独运行前端测试
+cd frontend && bun run test:run
+
+# 前端测试 UI 模式（交互式）
+cd frontend && bun run test:ui
+```
+
+#### 后端测试
+
+- **框架**：pytest + httpx TestClient + SQLite 内存数据库
+- **测试文件**：`backend/tests/`
+- **覆盖模块**：认证、任务管理、清单、标签、日历、统计、倒数日、专注、设置、过滤器、数据导入导出
+
+#### 前端测试
+
+- **框架**：Vitest + MSW (Mock Service Worker) + @testing-library/react
+- **测试文件**：`frontend/src/**/__tests__/`
+- **测试类型**：API 层测试 + 组件测试 + 页面测试
+- **覆盖范围**：全部 12 个页面、核心组件（TaskItem、TaskList、TaskCreateModal）、4 个 API 模块
+
+#### 编写新测试
+
+- **后端**：使用 `conftest.py` 中的 fixtures（`app_client`、`auth_headers` 等），测试函数自动获取已认证的客户端实例
+- **前端**：MSW handlers 自动拦截 API 请求，mock 数据工厂在 `src/tests/mocks/data.ts` 中统一管理
+
 ### 数据库索引
 
 系统使用 SQLAlchemy ORM，会自动管理以下索引以优化查询性能：

@@ -7,7 +7,8 @@ import uuid
 
 from middleware.jwt_middleware import get_current_user
 from database.dao.tag_dao import tag_dao
-from database.dao.task_dao import task_dao
+from database.connection import db_connection
+from database.models import TaskTagModel
 from models import Tag
 from utils.logger import logger
 
@@ -135,10 +136,13 @@ async def delete_tag(
             raise HTTPException(status_code=404, detail='标签不存在')
         
         # 检查标签是否被任务引用
-        tasks_with_tag = task_dao.collection.count_documents({
-            "user_id": current_user_id,
-            "tags": tag['name']  # MongoDB 会在数组中搜索
-        })
+        session = db_connection.get_session()
+        try:
+            tasks_with_tag = session.query(TaskTagModel).filter(
+                TaskTagModel.tag_id == tag_id
+            ).count()
+        finally:
+            session.close()
         if tasks_with_tag > 0:
             raise HTTPException(
                 status_code=400,

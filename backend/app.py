@@ -15,10 +15,6 @@ from database.connection import db_connection
 # 加载环境变量
 load_dotenv()
 
-# 在应用启动时创建所有表并迁移缺失的列
-db_connection.create_tables()
-db_connection.migrate_tables()
-
 # 添加项目根目录到 Python 路径
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
@@ -167,6 +163,10 @@ app = create_app()
 # 启动事件 - 启动调度器
 @app.on_event("startup")
 async def startup_event():
+    # 创建所有表并迁移缺失的列（从模块级移入 startup，避免 import 时产生副作用）
+    db_connection.create_tables()
+    db_connection.migrate_tables()
+
     scheduler_service.start()
     
     # 同步 ADMIN_USERNAME 配置：如果指定的管理员用户已存在但不是 admin，自动升级

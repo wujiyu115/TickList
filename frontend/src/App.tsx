@@ -1,11 +1,12 @@
-import React, { useState, useEffect, createContext } from 'react';
+import React, { useState, useEffect, createContext, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { message, ConfigProvider, theme as antdTheme } from 'antd';
+import { message, ConfigProvider, theme as antdTheme, Spin } from 'antd';
 import MainLayout from './layouts/MainLayout';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import ChangePasswordPage from './pages/ChangePasswordPage';
-import PasskeyManagePage from './pages/PasskeyManagePage';
+
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const ChangePasswordPage = lazy(() => import('./pages/ChangePasswordPage'));
+const PasskeyManagePage = lazy(() => import('./pages/PasskeyManagePage'));
 import { FocusProvider } from './contexts/FocusContext';
 import { getCurrentUser } from './api/auth';
 import { getSettings } from './api/settings';
@@ -136,6 +137,7 @@ const App: React.FC = () => {
     >
       <ThemeContext.Provider value={{ primaryColor, isDark, setTheme }}>
         <FocusProvider>
+        <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Spin size="large" /></div>}>
         <Routes>
           <Route
             path="/login"
@@ -188,6 +190,7 @@ const App: React.FC = () => {
             }
           />
         </Routes>
+        </Suspense>
         </FocusProvider>
       </ThemeContext.Provider>
     </ConfigProvider>

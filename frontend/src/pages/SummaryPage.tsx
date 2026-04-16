@@ -21,7 +21,7 @@ import {
   CheckSquareOutlined
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { getTasks } from '../api/task';
 import { getLists } from '../api/list';
 import { getTags } from '../api/tag';
@@ -36,7 +36,7 @@ type StatusOption = 'all' | 'completed' | 'in_progress' | 'pending';
 
 // 计算时间范围
 const getDateRange = (option: TimeOption): { start: string; end: string } | null => {
-  const today = moment().startOf('day');
+  const today = dayjs().startOf('day');
   
   switch (option) {
     case 'today':
@@ -64,7 +64,7 @@ const getDateRange = (option: TimeOption): { start: string; end: string } | null
 
 // 时间选项显示文本
 const getTimeOptionLabel = (option: TimeOption): string => {
-  const today = moment();
+  const today = dayjs();
   switch (option) {
     case 'today': return '今天';
     case 'tomorrow': return '明天';
@@ -189,9 +189,9 @@ const SummaryPage: React.FC = () => {
     { key: 'today', label: <span className={timeOption === 'today' ? 'selected-option' : ''}>今天 {timeOption === 'today' && <CheckOutlined />}</span> },
     { key: 'tomorrow', label: <span className={timeOption === 'tomorrow' ? 'selected-option' : ''}>明天 {timeOption === 'tomorrow' && <CheckOutlined />}</span> },
     { key: 'yesterday', label: <span className={timeOption === 'yesterday' ? 'selected-option' : ''}>昨天 {timeOption === 'yesterday' && <CheckOutlined />}</span> },
-    { key: 'thisWeek', label: <span className={timeOption === 'thisWeek' ? 'selected-option' : ''}>本周 ({moment().startOf('week').format('M月D日')} - {moment().endOf('week').format('M月D日')}) {timeOption === 'thisWeek' && <CheckOutlined />}</span> },
-    { key: 'nextWeek', label: <span className={timeOption === 'nextWeek' ? 'selected-option' : ''}>下周 ({moment().add(1, 'week').startOf('week').format('M月D日')} - {moment().add(1, 'week').endOf('week').format('M月D日')}) {timeOption === 'nextWeek' && <CheckOutlined />}</span> },
-    { key: 'lastWeek', label: <span className={timeOption === 'lastWeek' ? 'selected-option' : ''}>上周 ({moment().subtract(1, 'week').startOf('week').format('M月D日')} - {moment().subtract(1, 'week').endOf('week').format('M月D日')}) {timeOption === 'lastWeek' && <CheckOutlined />}</span> },
+    { key: 'thisWeek', label: <span className={timeOption === 'thisWeek' ? 'selected-option' : ''}>本周 ({dayjs().startOf('week').format('M月D日')} - {dayjs().endOf('week').format('M月D日')}) {timeOption === 'thisWeek' && <CheckOutlined />}</span> },
+    { key: 'nextWeek', label: <span className={timeOption === 'nextWeek' ? 'selected-option' : ''}>下周 ({dayjs().add(1, 'week').startOf('week').format('M月D日')} - {dayjs().add(1, 'week').endOf('week').format('M月D日')}) {timeOption === 'nextWeek' && <CheckOutlined />}</span> },
+    { key: 'lastWeek', label: <span className={timeOption === 'lastWeek' ? 'selected-option' : ''}>上周 ({dayjs().subtract(1, 'week').startOf('week').format('M月D日')} - {dayjs().subtract(1, 'week').endOf('week').format('M月D日')}) {timeOption === 'lastWeek' && <CheckOutlined />}</span> },
     { key: 'thisMonth', label: <span className={timeOption === 'thisMonth' ? 'selected-option' : ''}>本月 {timeOption === 'thisMonth' && <CheckOutlined />}</span> },
     { key: 'lastMonth', label: <span className={timeOption === 'lastMonth' ? 'selected-option' : ''}>上月 {timeOption === 'lastMonth' && <CheckOutlined />}</span> },
     { key: 'custom', label: <span className={timeOption === 'custom' ? 'selected-option' : ''}>自定义 {timeOption === 'custom' && <CheckOutlined />}</span> },
@@ -437,10 +437,10 @@ const SummaryPage: React.FC = () => {
     tasks.forEach(task => {
       // 使用 completed_at 或 start_time 的日期作为分组依据
       const dateStr = task.completed_at 
-        ? moment(task.completed_at).format('M月D日')
+        ? dayjs(task.completed_at).format('M月D日')
         : task.start_time 
-          ? moment(task.start_time).format('M月D日')
-          : moment(task.created_at).format('M月D日');
+          ? dayjs(task.start_time).format('M月D日')
+          : dayjs(task.created_at).format('M月D日');
       
       if (!groups[dateStr]) {
         groups[dateStr] = {};
@@ -483,9 +483,9 @@ const SummaryPage: React.FC = () => {
   // 渲染任务项
   const renderTaskItem = (task: Task, isChild = false) => {
     const dateLabel = task.completed_at 
-      ? moment(task.completed_at).format('M月D日')
+      ? dayjs(task.completed_at).format('M月D日')
       : task.start_time 
-        ? moment(task.start_time).format('M月D日')
+        ? dayjs(task.start_time).format('M月D日')
         : '';
     
     const progress = task.status === 'in_progress' ? getChildProgress(task) : '';

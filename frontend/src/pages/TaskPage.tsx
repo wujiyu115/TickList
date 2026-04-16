@@ -9,7 +9,7 @@ import {
   DeleteOutlined
 } from '@ant-design/icons';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useTaskContext } from '../contexts/TaskContext';
 import TaskList from '../components/TaskList';
 import KanbanView from '../components/KanbanView';
@@ -371,16 +371,16 @@ const TaskPage: React.FC = () => {
         
       // 日期范围筛选（使用 toISOString 保持与数据库 UTC 存储一致）
       if (conditions.date_range) {
-        const todayStart = moment().startOf('day').toISOString();
+        const todayStart = dayjs().startOf('day').toISOString();
         if (conditions.date_range === 'today') {
           params.start_date = todayStart;
-          params.end_date = moment().add(1, 'day').startOf('day').toISOString();
+          params.end_date = dayjs().add(1, 'day').startOf('day').toISOString();
         } else if (conditions.date_range === 'week') {
           params.start_date = todayStart;
-          params.end_date = moment().add(7, 'days').startOf('day').toISOString();
+          params.end_date = dayjs().add(7, 'day').startOf('day').toISOString();
         } else if (conditions.date_range === 'month') {
           params.start_date = todayStart;
-          params.end_date = moment().endOf('month').endOf('day').toISOString();
+          params.end_date = dayjs().endOf('month').endOf('day').toISOString();
         }
       }
         
@@ -396,11 +396,11 @@ const TaskPage: React.FC = () => {
     } else {
       // 原有的筛选逻辑
       if (filter === 'today') {
-        params.start_date = moment().startOf('day').toISOString();
-        params.end_date = moment().add(1, 'day').startOf('day').toISOString();
+        params.start_date = dayjs().startOf('day').toISOString();
+        params.end_date = dayjs().add(1, 'day').startOf('day').toISOString();
       } else if (filter === 'week') {
-        params.start_date = moment().startOf('day').toISOString();
-        params.end_date = moment().add(7, 'days').startOf('day').toISOString();
+        params.start_date = dayjs().startOf('day').toISOString();
+        params.end_date = dayjs().add(7, 'day').startOf('day').toISOString();
       }
         
       // 按清单筛选

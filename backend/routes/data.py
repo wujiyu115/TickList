@@ -76,7 +76,7 @@ async def import_data(
     所有数据的 ID 会被重新生成，关联关系会被正确映射。
     """
     from database.connection import db_connection
-    from database.models import TagModel, TaskListModel, TaskModel, CountdownModel
+    from database.models import TagModel, TaskListModel, TaskModel, CountdownModel, TaskTagModel, TaskChildModel
     
     try:
         data = import_data.data
@@ -180,14 +180,30 @@ async def import_data(
                     due_date=task_data.get('due_date'),
                     reminder_time=task_data.get('reminder_time'),
                     is_pinned=task_data.get('is_pinned', False),
-                    tags=tags,
-                    child_ids=child_ids,
                     order=task_data.get('order', 0),
                     completed_at=task_data.get('completed_at'),
                     created_at=task_data.get('created_at', datetime.now().isoformat()),
                     updated_at=datetime.now().isoformat()
                 )
                 session.add(new_task)
+                
+                # 通过关系表存储标签关联
+                for tag_id in tags:
+                    tag_relation = TaskTagModel(
+                        task_id=new_id,
+                        tag_id=tag_id
+                    )
+                    session.add(tag_relation)
+                
+                # 通过关系表存储父子关系
+                for child_id in child_ids:
+                    child_relation = TaskChildModel(
+                        parent_id=new_id,
+                        child_id=child_id,
+                        user_id=current_user_id
+                    )
+                    session.add(child_relation)
+                
                 stats["tasks"] += 1
             
             # 4. 导入倒数日

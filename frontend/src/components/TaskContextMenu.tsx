@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Menu, message, Input, Button, Popover, Checkbox, Modal, DatePicker } from 'antd';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import {
   CalendarOutlined,
   FlagOutlined,
@@ -54,7 +54,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
   
   // 自定义日期弹窗状态
   const [customDateVisible, setCustomDateVisible] = useState(false);
-  const [customDate, setCustomDate] = useState<moment.Moment | null>(null);
+  const [customDate, setCustomDate] = useState<dayjs.Dayjs | null>(null);
   
   // 加载清单和标签
   useEffect(() => {
@@ -399,8 +399,8 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
 
         case 'today':
           await updateTaskData(task.id, { 
-            start_time: moment().startOf('day').toISOString(),
-            due_date: moment().startOf('day').toISOString()
+            start_time: dayjs().startOf('day').toISOString(),
+            due_date: dayjs().startOf('day').toISOString()
           });
           message.success('已设置为今天');
           await refreshTasks();
@@ -408,18 +408,18 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
 
         case 'tomorrow':
           await updateTaskData(task.id, { 
-            start_time: moment().add(1, 'day').startOf('day').toISOString(),
-            due_date: moment().add(1, 'day').startOf('day').toISOString()
+            start_time: dayjs().add(1, 'day').startOf('day').toISOString(),
+            due_date: dayjs().add(1, 'day').startOf('day').toISOString()
           });
           message.success('已设置为明天');
           await refreshTasks();
           break;
 
         case 'next-week':
-          const nextMonday = moment().add(1, 'week').startOf('week').add(1, 'day');
+          const nextMonday = dayjs().add(1, 'week').startOf('week').add(1, 'day');
           await updateTaskData(task.id, { 
-            start_time: nextMonday.clone().startOf('day').toISOString(),
-            due_date: nextMonday.clone().startOf('day').toISOString()
+            start_time: nextMonday.startOf('day').toISOString(),
+            due_date: nextMonday.startOf('day').toISOString()
           });
           message.success('已设置为下周一');
           await refreshTasks();

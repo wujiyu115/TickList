@@ -62,7 +62,7 @@ export default defineConfig({
       splitChunks: {
         chunks: 'all',
         minSize: 20000,
-        maxSize: 300000,
+        maxSize: 400000,
         cacheGroups: {
           // React 相关库
           react: {
@@ -92,16 +92,9 @@ export default defineConfig({
             chunks: 'all',
             priority: 25,
           },
-          // Monaco Editor
-          monaco: {
-            test: /[\\/]node_modules[\\/](@monaco-editor|monaco-editor)[\\/]/,
-            name: 'monaco-vendor',
-            chunks: 'all',
-            priority: 25,
-          },
           // 工具库
           utils: {
-            test: /[\\/]node_modules[\\/](lodash|moment|dayjs|axios)[\\/]/,
+            test: /[\\/]node_modules[\\/](dayjs|axios)[\\/]/,
             name: 'utils-vendor',
             chunks: 'all',
             priority: 20,

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Button, Dropdown, Checkbox, Spin, Empty } from 'antd';
 import { DownOutlined, CaretDownOutlined, CaretRightOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useTaskContext } from '../contexts/TaskContext';
 import { Task, TaskList as TaskListType } from '../types';
 import { getLists } from '../api/list';
@@ -116,7 +116,7 @@ const CompletedTaskGroup: React.FC<CompletedTaskGroupProps> = ({
                       <ClockCircleOutlined />
                       <span>{progress.completed}/{progress.total}</span>
                       {progress.dueDate && (
-                        <span className="due-date">{moment(progress.dueDate).format('M月D日')}</span>
+                        <span className="due-date">{dayjs(progress.dueDate).format('M月D日')}</span>
                       )}
                     </span>
                   )}
@@ -181,19 +181,19 @@ const CompletedTaskList: React.FC<CompletedTaskListProps> = ({
 
     // 日期筛选
     if (dateFilter !== 'all') {
-      const now = moment();
-      const today = moment().startOf('day');
-      const yesterday = moment().subtract(1, 'day').startOf('day');
-      const thisWeekStart = moment().startOf('week');
-      const lastWeekStart = moment().subtract(1, 'week').startOf('week');
-      const lastWeekEnd = moment().subtract(1, 'week').endOf('week');
-      const thisMonthStart = moment().startOf('month');
-      const lastMonthStart = moment().subtract(1, 'month').startOf('month');
-      const lastMonthEnd = moment().subtract(1, 'month').endOf('month');
+      const now = dayjs();
+      const today = dayjs().startOf('day');
+      const yesterday = dayjs().subtract(1, 'day').startOf('day');
+      const thisWeekStart = dayjs().startOf('week');
+      const lastWeekStart = dayjs().subtract(1, 'week').startOf('week');
+      const lastWeekEnd = dayjs().subtract(1, 'week').endOf('week');
+      const thisMonthStart = dayjs().startOf('month');
+      const lastMonthStart = dayjs().subtract(1, 'month').startOf('month');
+      const lastMonthEnd = dayjs().subtract(1, 'month').endOf('month');
 
       result = result.filter(task => {
         if (!task.completed_at) return false;
-        const completedAt = moment(task.completed_at);
+        const completedAt = dayjs(task.completed_at);
         
         switch (dateFilter) {
           case 'today':
@@ -231,7 +231,7 @@ const CompletedTaskList: React.FC<CompletedTaskListProps> = ({
     const groups: Record<string, Task[]> = {};
     
     filteredTasks.forEach(task => {
-      const completedAt = task.completed_at ? moment(task.completed_at) : moment();
+      const completedAt = task.completed_at ? dayjs(task.completed_at) : dayjs();
       const dateKey = completedAt.format('YYYY-MM-DD');
       if (!groups[dateKey]) {
         groups[dateKey] = [];
@@ -249,7 +249,7 @@ const CompletedTaskList: React.FC<CompletedTaskListProps> = ({
 
   // 格式化日期标签
   const formatDateLabel = (dateKey: string) => {
-    const date = moment(dateKey);
+    const date = dayjs(dateKey);
     const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
     const weekday = weekdays[date.day()];
     return `${date.format('M月D日')} ${weekday}`;

@@ -29,7 +29,7 @@ import {
   HourglassOutlined,
   SendOutlined,
 } from '@ant-design/icons';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { Countdown, CountdownCreateRequest, CountdownUpdateRequest } from '../types';
 import {
   getCountdowns,
@@ -65,19 +65,19 @@ const PRESET_COLORS = [
 
 // 计算剩余天数
 const calculateDaysLeft = (targetDate: string, repeatAnnually: boolean): number => {
-  const target = moment(targetDate);
-  const today = moment().startOf('day');
+  const target = dayjs(targetDate);
+  const today = dayjs().startOf('day');
 
   if (repeatAnnually) {
     // 每年重复：计算今年或明年的对应日期
-    let thisYear = target.clone().year(today.year());
+    let thisYear = target.year(today.year());
     if (thisYear.isBefore(today)) {
-      thisYear.add(1, 'year');
+      thisYear = thisYear.add(1, 'year');
     }
-    return thisYear.diff(today, 'days');
+    return thisYear.diff(today, 'day');
   }
 
-  return target.startOf('day').diff(today, 'days');
+  return target.startOf('day').diff(today, 'day');
 };
 
 // 获取天数显示状态
@@ -148,7 +148,7 @@ const CountdownPage: React.FC = () => {
     setEditingCountdown(countdown);
     form.setFieldsValue({
       title: countdown.title,
-      target_date: moment(countdown.target_date),
+      target_date: dayjs(countdown.target_date),
       category: countdown.category,
       repeat_annually: countdown.repeat_annually,
       is_pinned: countdown.is_pinned,
@@ -282,7 +282,7 @@ const CountdownPage: React.FC = () => {
 
           <div className="card-footer">
             <Text type="secondary" className="target-date">
-              {moment(countdown.target_date).format('YYYY年MM月DD日')}
+              {dayjs(countdown.target_date).format('YYYY年MM月DD日')}
               {countdown.repeat_annually && ' (每年)'}
             </Text>
             <Tag color={categoryConfig.color}>{categoryConfig.label}</Tag>

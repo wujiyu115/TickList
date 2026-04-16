@@ -1,16 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Layout, Drawer } from 'antd';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
+import { Layout, Drawer, Spin } from 'antd';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
 import AppSider from '../components/AppSider';
 import TaskPage from '../pages/TaskPage';
-import StatisticsPage from '../pages/StatisticsPage';
-import CalendarPage from '../pages/CalendarPage';
-import PomodoroPage from '../pages/PomodoroPage';
-import CountdownPage from '../pages/CountdownPage';
-import SummaryPage from '../pages/SummaryPage';
-import SettingsPage from '../pages/SettingsPage';
-import AdminPage from '../pages/admin/AdminPage';
+
+const StatisticsPage = lazy(() => import('../pages/StatisticsPage'));
+const CalendarPage = lazy(() => import('../pages/CalendarPage'));
+const PomodoroPage = lazy(() => import('../pages/PomodoroPage'));
+const CountdownPage = lazy(() => import('../pages/CountdownPage'));
+const SummaryPage = lazy(() => import('../pages/SummaryPage'));
+const SettingsPage = lazy(() => import('../pages/SettingsPage'));
+const AdminPage = lazy(() => import('../pages/admin/AdminPage'));
 import { TaskProvider } from '../contexts/TaskContext';
 import { User } from '../types';
 import './MainLayout.less';
@@ -86,6 +87,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
             onMenuClick={handleMenuClick}
           />
           <Content className="main-content" style={{ padding: 24, overflow: 'auto' }}>
+            <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><Spin size="large" /></div>}>
             <Routes>
               <Route path="/" element={<TaskPage />} />
               <Route path="/calendar" element={<CalendarPage />} />
@@ -103,6 +105,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
                 }
               />
             </Routes>
+            </Suspense>
           </Content>
         </Layout>
 
