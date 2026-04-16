@@ -484,6 +484,33 @@
           }
         }
 
+        .checklist-move-btns {
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+          flex-shrink: 0;
+          margin-left: auto;
+
+          .checklist-move-btn {
+            font-size: 12px;
+            color: #999;
+            padding: 2px 4px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: color 0.2s, background 0.2s;
+
+            &:active {
+              color: var(--ant-color-primary);
+              background: var(--ant-color-bg-text-hover, #f5f5f5);
+            }
+
+            &.disabled {
+              color: #e0e0e0;
+              pointer-events: none;
+            }
+          }
+        }
+
         &:hover {
           .checklist-delete,
           .checklist-drag {
@@ -515,6 +542,15 @@
 @media (max-width: 768px) {
   .task-page {
     flex-direction: column;
+  }
+}
+
+// 移动端触摸设备：检查事项操作按钮始终可见
+@media (hover: none) {
+  .checklist-item {
+    .checklist-delete {
+      opacity: 1 !important;
+    }
   }
 }
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Input, Checkbox, Button, Popover, DatePicker, TimePicker, Switch, Segmented, Tooltip, Dropdown, Modal } from 'antd';
-import { CalendarOutlined, MinusOutlined, CloseOutlined, PlusOutlined, ClockCircleOutlined, CheckOutlined, SendOutlined, EllipsisOutlined, DeleteOutlined, HolderOutlined, UnorderedListOutlined, FileTextOutlined, ExpandOutlined } from '@ant-design/icons';
+import { CalendarOutlined, MinusOutlined, CloseOutlined, PlusOutlined, ClockCircleOutlined, CheckOutlined, SendOutlined, EllipsisOutlined, DeleteOutlined, HolderOutlined, UnorderedListOutlined, FileTextOutlined, ExpandOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import TaskContextMenu from './TaskContextMenu';
 import { useTaskContext } from '../contexts/TaskContext';
 import { Task } from '../types';
@@ -8,6 +8,8 @@ import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/zh-cn';
 dayjs.locale('zh-cn');
 
+// hover 能力检测（区分桌面端/移动端）
+const supportsHover = window.matchMedia('(hover: hover)').matches;
 
 // 提醒选项类型
 type ReminderOption = 'on_time' | '5min' | '30min' | '1hour' | '1day' | 'on_end' | 'custom';
@@ -458,6 +460,23 @@ const TaskEditor: React.FC = () => {
     applyDragReorder();
   }, [applyDragReorder]);
 
+  // 移动端检查事项上移/下移
+  const handleMoveCheckItem = useCallback((index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= contentItems.length) return;
+    const newItems = [...contentItems];
+    [newItems[index], newItems[targetIndex]] = [newItems[targetIndex], newItems[index]];
+    setContentItems(newItems);
+    setContentText(newItems.map(item => item.text).join('\n'));
+    updateTaskData(selectedTask.id, { content: JSON.stringify(newItems) });
+    // 如果当前正在编辑的项被移动，跟随更新编辑索引
+    if (editingCheckIdx === index) {
+      setEditingCheckIdx(targetIndex);
+    } else if (editingCheckIdx === targetIndex) {
+      setEditingCheckIdx(index);
+    }
+  }, [contentItems, selectedTask?.id, updateTaskData, editingCheckIdx]);
+
   // 切换视图模式
   const handleToggleViewMode = () => {
     let newMode: 'detail' | 'checklist';
@@ -889,12 +908,25 @@ const TaskEditor: React.FC = () => {
                 ) : (
                   <span className="checklist-text" onClick={() => handleCheckTextEdit(idx)}>{item.text}</span>
                 )}
-                <HolderOutlined
-                  className="checklist-drag"
-                  onTouchStart={(e: any) => handleTouchStart(e, idx)}
-                  onTouchMove={handleTouchMove as any}
-                  onTouchEnd={handleTouchEnd}
-                />
+                {supportsHover ? (
+                  <HolderOutlined
+                    className="checklist-drag"
+                    onTouchStart={(e: any) => handleTouchStart(e, idx)}
+                    onTouchMove={handleTouchMove as any}
+                    onTouchEnd={handleTouchEnd}
+                  />
+                ) : (
+                  <span className="checklist-move-btns">
+                    <ArrowUpOutlined
+                      className={`checklist-move-btn ${idx === 0 ? 'disabled' : ''}`}
+                      onClick={(e) => { e.stopPropagation(); handleMoveCheckItem(idx, 'up'); }}
+                    />
+                    <ArrowDownOutlined
+                      className={`checklist-move-btn ${idx === contentItems.length - 1 ? 'disabled' : ''}`}
+                      onClick={(e) => { e.stopPropagation(); handleMoveCheckItem(idx, 'down'); }}
+                    />
+                  </span>
+                )}
                 <DeleteOutlined
                   className="checklist-delete"
                   onClick={() => handleDeleteContentItem(idx)}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   CheckSquareOutlined, 
   CalendarOutlined,
@@ -20,6 +20,8 @@ import {
   SettingOutlined,
   FilterOutlined,
   FileTextOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
   InboxOutlined as ArchiveOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
@@ -99,6 +101,10 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
   const dragItemRef = useRef<{ id: string; parent_id: string | null; index: number } | null>(null);
   const dragOverItemRef = useRef<{ id: string; index: number } | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  // 移动端长按菜单
+  const [mobileMenuListId, setMobileMenuListId] = useState<string | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggeredRef = useRef(false);
   
   // 标签显示模式: 'all' | 'non-empty' | 'hidden'
   const [tagDisplayMode, setTagDisplayMode] = useState<'all' | 'non-empty' | 'hidden'>('all');
@@ -706,6 +712,166 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
     dragOverItemRef.current = null;
   };
 
+  // 移动端长按处理
+  const handleListTouchStart = useCallback((e: React.TouchEvent, itemId: string) => {
+    longPressTriggeredRef.current = false;
+    const target = e.currentTarget as HTMLElement;
+    const touch = e.touches[0];
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      // 模拟右键菜单事件触发 Dropdown
+      const contextMenuEvent = new MouseEvent('contextmenu', {
+        bubbles: true,
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      });
+      target.dispatchEvent(contextMenuEvent);
+    }, 500);
+  }, []);
+
+  const handleListTouchMove = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  const handleListTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    if (longPressTriggeredRef.current) {
+      e.preventDefault();
+    }
+  }, []);
+
+  // 清单上移/下移
+  const handleMoveList = async (listId: string, direction: 'up' | 'down') => {
+    const item = lists.find(l => l.id === listId);
+    if (!item) return;
+    
+    const parentId = item.parent_id || null;
+    const siblings = lists.filter(l =>
+      (l.parent_id || null) === parentId && !l.is_archived
+    ).sort((a, b) => a.order - b.order);
+    
+    const currentIndex = siblings.findIndex(l => l.id === listId);
+    if (currentIndex < 0) return;
+    
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= siblings.length) return;
+    
+    // 交换位置
+    const newSiblings = [...siblings];
+    [newSiblings[currentIndex], newSiblings[targetIndex]] = [newSiblings[targetIndex], newSiblings[currentIndex]];
+    
+    const reorderItems = newSiblings.map((list, idx) => ({
+      id: list.id,
+      order: idx * 10
+    }));
+    
+    setLists(prev => prev.map(list => {
+      const updated = reorderItems.find(r => r.id === list.id);
+      return updated ? { ...list, order: updated.order } : list;
+    }));
+    
+    try {
+      await reorderLists(reorderItems);
+      loadLists();
+    } catch (e) {
+      message.error('排序更新失败');
+      loadLists();
+    }
+  };
+
+  // 获取移动端长按菜单项
+  const getMobileMenuItems = (item: TaskList, isArchived = false): MenuProps['items'] => {
+    const parentId = item.parent_id || null;
+    const siblings = lists.filter(l =>
+      (l.parent_id || null) === parentId && !l.is_archived
+    ).sort((a, b) => a.order - b.order);
+    const currentIndex = siblings.findIndex(l => l.id === item.id);
+    const isFirst = currentIndex <= 0;
+    const isLast = currentIndex >= siblings.length - 1;
+    const isFolder = item.type === 'folder';
+
+    const moveItems: MenuProps['items'] = !isArchived ? [
+      {
+        key: 'move-up',
+        icon: <ArrowUpOutlined />,
+        label: '上移',
+        disabled: isFirst,
+        onClick: () => handleMoveList(item.id, 'up')
+      },
+      {
+        key: 'move-down',
+        icon: <ArrowDownOutlined />,
+        label: '下移',
+        disabled: isLast,
+        onClick: () => handleMoveList(item.id, 'down')
+      },
+      { type: 'divider' as const },
+    ] : [];
+
+    const folderItems: MenuProps['items'] = isFolder && !isArchived ? [
+      {
+        key: 'add-list',
+        icon: <PlusOutlined />,
+        label: '添加清单',
+        onClick: () => {
+          setCreateType('list');
+          setNewListName('');
+          setNewListColor('#1677ff');
+          setCreateParentId(item.id);
+          setCreateModalVisible(true);
+        }
+      },
+    ] : [];
+
+    const archiveItem = isArchived ? {
+      key: 'unarchive',
+      icon: <ArchiveOutlined />,
+      label: '取消归档',
+      onClick: () => handleArchiveList(item.id, false)
+    } : {
+      key: 'archive',
+      icon: <ArchiveOutlined />,
+      label: '归档',
+      onClick: () => handleArchiveList(item.id, true)
+    };
+
+    return [
+      ...moveItems,
+      ...folderItems,
+      archiveItem,
+      {
+        key: 'delete',
+        icon: <DeleteOutlined />,
+        label: '删除',
+        danger: true,
+        onClick: () => {
+          Modal.confirm({
+            title: isFolder ? '删除文件夹' : '删除清单',
+            content: `确定删除「${item.name}」吗？`,
+            okText: '删除',
+            okType: 'danger',
+            cancelText: '取消',
+            onOk: async () => {
+              try {
+                await deleteList(item.id);
+                message.success('删除成功');
+                loadLists();
+              } catch (e) {
+                message.error('删除失败');
+              }
+            }
+          });
+        }
+      }
+    ];
+  };
+
   // 渲染清单项
   const renderListItem = (item: TaskList, level = 0, index = 0, parentId: string | null = null, isArchivedList = false) => {
     const children = lists.filter(l => l.parent_id === item.id && !l.is_archived);
@@ -726,13 +892,16 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         style={{ 
           paddingLeft: level > 0 ? 12 + level * 16 : 12,
           opacity: isDragging ? 0.5 : 1,
-          cursor: isDraggable ? 'move' : 'pointer'
+          cursor: isDraggable && supportsHover ? 'move' : 'pointer'
         }}
-        draggable={isDraggable}
+        draggable={isDraggable && supportsHover}
         onDragStart={(e) => handleDragStart(e, item, index, parentId)}
         onDragOver={(e) => handleDragOver(e, item, index)}
         onDrop={(e) => handleDrop(e, item, index)}
         onDragEnd={handleDragEnd}
+        onTouchStart={(e) => handleListTouchStart(e, item.id)}
+        onTouchMove={handleListTouchMove}
+        onTouchEnd={handleListTouchEnd}
         onMouseEnter={() => {
           if (supportsHover) {
             if (isFolder) {
@@ -761,8 +930,8 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           }
         }}
       >
-        {/* 拖拽手柄 */}
-        {isDraggable && (
+        {/* 拖拽手柄（仅桌面端显示） */}
+        {isDraggable && supportsHover && (
           <span 
             className="drag-handle"
             style={{ 
@@ -829,7 +998,14 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
 
     return (
       <div key={item.id}>
-        {isFolder ? (
+        {!supportsHover ? (
+          <Dropdown 
+            menu={{ items: getMobileMenuItems(item, isArchivedList) }} 
+            trigger={['contextMenu']}
+          >
+            {listItemContent}
+          </Dropdown>
+        ) : isFolder ? (
           <Dropdown menu={{ items: getFolderContextMenuItems(item.id) }} trigger={['contextMenu']}>
             {listItemContent}
           </Dropdown>
