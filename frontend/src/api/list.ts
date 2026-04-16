@@ -20,3 +20,8 @@ export const updateList = async (listId: string, data: TaskListUpdateRequest): P
 export const deleteList = async (listId: string): Promise<void> => {
   return api.delete(`/lists/${listId}`);
 };
+
+// 批量排序清单
+export const reorderLists = async (items: Array<{ id: string; order: number }>): Promise<void> => {
+  return api.post('/lists/reorder', items);
+};

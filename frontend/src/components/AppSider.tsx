@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   CheckSquareOutlined, 
   CalendarOutlined,
@@ -8,6 +8,7 @@ import {
   FolderOutlined,
   FolderOpenOutlined,
   MenuOutlined,
+  HolderOutlined,
   TagOutlined,
   CheckCircleOutlined,
   DeleteOutlined,
@@ -19,12 +20,13 @@ import {
   SettingOutlined,
   FilterOutlined,
   FileTextOutlined,
+  InboxOutlined as ArchiveOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Dropdown, Modal, Input, Select, message, Button, Radio, Checkbox, Tabs } from 'antd';
 import type { MenuProps, RadioChangeEvent } from 'antd';
 import { User, TaskList, Tag, Filter, FilterConditions } from '../types';
-import { getLists, createList, deleteList } from '../api/list';
+import { getLists, createList, deleteList, updateList, reorderLists } from '../api/list';
 import { getTags, createTag, updateTag, deleteTag } from '../api/tag';
 import { getFilters, createFilter, updateFilter, deleteFilter } from '../api/filter';
 
@@ -92,6 +94,11 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
   const [hoveredFolderId, setHoveredFolderId] = useState<string | null>(null); // hover 的文件夹 id
   const [hoveredListId, setHoveredListId] = useState<string | null>(null); // hover 的清单项 id
   const [hoveredTagId, setHoveredTagId] = useState<string | null>(null); // hover 的标签项 id
+  
+  // 拖拽排序相关 refs
+  const dragItemRef = useRef<{ id: string; parent_id: string | null; index: number } | null>(null);
+  const dragOverItemRef = useRef<{ id: string; index: number } | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   
   // 标签显示模式: 'all' | 'non-empty' | 'hidden'
   const [tagDisplayMode, setTagDisplayMode] = useState<'all' | 'non-empty' | 'hidden'>('all');
@@ -208,6 +215,24 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
     }
   ];
 
+  // 处理归档/取消归档
+  const handleArchiveList = async (listId: string, archive: boolean) => {
+    try {
+      // 归档/取消归档当前项
+      await updateList(listId, { is_archived: archive });
+      // 如果是文件夹，联动归档/取消归档所有子清单
+      const item = lists.find(l => l.id === listId);
+      if (item && item.type === 'folder') {
+        const children = lists.filter(l => l.parent_id === listId);
+        await Promise.all(children.map(child => updateList(child.id, { is_archived: archive })));
+      }
+      message.success(archive ? '清单已归档' : '清单已取消归档');
+      loadLists();
+    } catch (e) {
+      message.error(archive ? '归档失败' : '取消归档失败');
+    }
+  };
+
   // 文件夹"..."菜单项
   const getFolderMoreMenuItems = (folder: TaskList): MenuProps['items'] => {
     const childrenCount = lists.filter(l => l.parent_id === folder.id).length;
@@ -223,6 +248,12 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           setCreateParentId(folder.id);
           setCreateModalVisible(true);
         }
+      },
+      {
+        key: 'archive',
+        icon: <ArchiveOutlined />,
+        label: '归档',
+        onClick: () => handleArchiveList(folder.id, true)
       },
       {
         key: 'delete',
@@ -255,32 +286,74 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
   };
 
   // 清单"..."菜单项
-  const getListMoreMenuItems = (list: TaskList): MenuProps['items'] => [
-    {
-      key: 'delete',
-      icon: <DeleteOutlined />,
-      label: '删除',
-      danger: true,
-      onClick: () => {
-        Modal.confirm({
-          title: '删除清单',
-          content: `确定删除清单「${list.name}」吗？`,
-          okText: '删除',
-          okType: 'danger',
-          cancelText: '取消',
-          onOk: async () => {
-            try {
-              await deleteList(list.id);
-              message.success('清单已删除');
-              loadLists();
-            } catch (e) {
-              message.error('删除失败');
-            }
+  const getListMoreMenuItems = (list: TaskList, isArchived = false): MenuProps['items'] => {
+    if (isArchived) {
+      return [
+        {
+          key: 'unarchive',
+          icon: <ArchiveOutlined />,
+          label: '取消归档',
+          onClick: () => handleArchiveList(list.id, false)
+        },
+        {
+          key: 'delete',
+          icon: <DeleteOutlined />,
+          label: '删除',
+          danger: true,
+          onClick: () => {
+            Modal.confirm({
+              title: '删除清单',
+              content: `确定删除清单「${list.name}」吗？`,
+              okText: '删除',
+              okType: 'danger',
+              cancelText: '取消',
+              onOk: async () => {
+                try {
+                  await deleteList(list.id);
+                  message.success('清单已删除');
+                  loadLists();
+                } catch (e) {
+                  message.error('删除失败');
+                }
+              }
+            });
           }
-        });
-      }
+        }
+      ];
     }
-  ];
+    return [
+      {
+        key: 'archive',
+        icon: <ArchiveOutlined />,
+        label: '归档',
+        onClick: () => handleArchiveList(list.id, true)
+      },
+      {
+        key: 'delete',
+        icon: <DeleteOutlined />,
+        label: '删除',
+        danger: true,
+        onClick: () => {
+          Modal.confirm({
+            title: '删除清单',
+            content: `确定删除清单「${list.name}」吗？`,
+            okText: '删除',
+            okType: 'danger',
+            cancelText: '取消',
+            onOk: async () => {
+              try {
+                await deleteList(list.id);
+                message.success('清单已删除');
+                loadLists();
+              } catch (e) {
+                message.error('删除失败');
+              }
+            }
+          });
+        }
+      }
+    ];
+  };
 
   // 标签区域头部"..."菜单项
   const tagSectionMenuItems: MenuProps['items'] = [
@@ -519,8 +592,121 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
     }
   };
 
+  // 处理拖拽排序
+  const handleDragStart = (e: React.DragEvent, item: TaskList, index: number, parentId: string | null) => {
+    // 已归档清单不参与拖拽
+    if (item.is_archived) {
+      e.preventDefault();
+      return;
+    }
+    setDraggingId(item.id);
+    dragItemRef.current = { id: item.id, parent_id: parentId, index };
+    e.dataTransfer.effectAllowed = 'move';
+    // 设置拖拽图像（可选）
+    const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
+    dragImage.style.opacity = '0.8';
+    dragImage.style.position = 'absolute';
+    dragImage.style.top = '-9999px';
+    document.body.appendChild(dragImage);
+    e.dataTransfer.setDragImage(dragImage, 0, 20);
+    setTimeout(() => document.body.removeChild(dragImage), 0);
+  };
+
+  const handleDragOver = (e: React.DragEvent, item: TaskList, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    
+    if (!dragItemRef.current || item.is_archived) return;
+    
+    // 只允许同层级拖拽
+    const sourceParentId = dragItemRef.current.parent_id;
+    const targetParentId = item.parent_id || null;
+    
+    if (sourceParentId !== targetParentId) return;
+    
+    dragOverItemRef.current = { id: item.id, index };
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetItem: TaskList, targetIndex: number) => {
+    e.preventDefault();
+    setDraggingId(null);
+    
+    if (!dragItemRef.current) return;
+    
+    const sourceId = dragItemRef.current.id;
+    const sourceParentId = dragItemRef.current.parent_id;
+    const sourceIndex = dragItemRef.current.index;
+    const targetParentId = targetItem.parent_id || null;
+    
+    // 只允许同层级拖拽
+    if (sourceParentId !== targetParentId) {
+      dragItemRef.current = null;
+      dragOverItemRef.current = null;
+      return;
+    }
+    
+    // 同一位置不处理
+    if (sourceId === targetItem.id || sourceIndex === targetIndex) {
+      dragItemRef.current = null;
+      dragOverItemRef.current = null;
+      return;
+    }
+    
+    // 获取同层级的所有清单（不包括已归档）
+    const siblings = lists.filter(l => 
+      (l.parent_id || null) === sourceParentId && !l.is_archived
+    ).sort((a, b) => a.order - b.order);
+    
+    // 重新排序
+    const draggedItem = siblings.find(l => l.id === sourceId);
+    if (!draggedItem) {
+      dragItemRef.current = null;
+      dragOverItemRef.current = null;
+      return;
+    }
+    
+    // 从原位置移除
+    const newSiblings = siblings.filter(l => l.id !== sourceId);
+    // 插入到新位置
+    const insertIndex = targetIndex > sourceIndex ? targetIndex : targetIndex;
+    newSiblings.splice(insertIndex, 0, draggedItem);
+    
+    // 构建批量更新数据
+    const reorderItems = newSiblings.map((list, idx) => ({
+      id: list.id,
+      order: idx * 10 // 间隔为10，方便后续插入
+    }));
+    
+    // 乐观更新本地状态
+    setLists(prev => prev.map(list => {
+      const updated = reorderItems.find(item => item.id === list.id);
+      if (updated) {
+        return { ...list, order: updated.order };
+      }
+      return list;
+    }));
+    
+    // 调用 API 批量更新
+    try {
+      await reorderLists(reorderItems);
+    } catch (e) {
+      message.error('排序更新失败');
+      // 失败时重新加载
+      loadLists();
+    }
+    
+    dragItemRef.current = null;
+    dragOverItemRef.current = null;
+  };
+
+  const handleDragEnd = () => {
+    setDraggingId(null);
+    dragItemRef.current = null;
+    dragOverItemRef.current = null;
+  };
+
   // 渲染清单项
-  const renderListItem = (item: TaskList, level = 0) => {
+  const renderListItem = (item: TaskList, level = 0, index = 0, parentId: string | null = null, isArchivedList = false) => {
     const children = lists.filter(l => l.parent_id === item.id && !l.is_archived);
     const isFolder = item.type === 'folder';
     const isCollapsed = collapsedFolders[item.id];
@@ -528,11 +714,24 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
     const isFolderHovered = hoveredFolderId === item.id;
     const isListHovered = hoveredListId === item.id;
     const isHovered = isFolder ? isFolderHovered : isListHovered;
+    const isDragging = draggingId === item.id;
+
+    // 已归档清单不参与拖拽
+    const isDraggable = !item.is_archived;
 
     const listItemContent = (
       <div 
-        className={`list-item ${isSelected ? 'active' : ''}`}
-        style={{ paddingLeft: level > 0 ? 12 + level * 16 : 12 }}
+        className={`list-item ${isSelected ? 'active' : ''} ${isDragging ? 'dragging' : ''}`}
+        style={{ 
+          paddingLeft: level > 0 ? 12 + level * 16 : 12,
+          opacity: isDragging ? 0.5 : 1,
+          cursor: isDraggable ? 'move' : 'pointer'
+        }}
+        draggable={isDraggable}
+        onDragStart={(e) => handleDragStart(e, item, index, parentId)}
+        onDragOver={(e) => handleDragOver(e, item, index)}
+        onDrop={(e) => handleDrop(e, item, index)}
+        onDragEnd={handleDragEnd}
         onMouseEnter={() => {
           if (supportsHover) {
             if (isFolder) {
@@ -561,6 +760,22 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           }
         }}
       >
+        {/* 拖拽手柄 */}
+        {isDraggable && (
+          <span 
+            className="drag-handle"
+            style={{ 
+              marginRight: 4, 
+              cursor: 'grab',
+              opacity: 0.5,
+              display: 'inline-flex',
+              alignItems: 'center'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <HolderOutlined style={{ fontSize: 10 }} />
+          </span>
+        )}
         {isFolder ? (
           <>
             {isCollapsed ? <RightOutlined style={{ fontSize: 10, marginRight: 4 }} /> : <DownOutlined style={{ fontSize: 10, marginRight: 4 }} />}
@@ -593,7 +808,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         {/* 清单 hover 操作按钮 */}
         {!isFolder && isListHovered && (
           <Dropdown 
-            menu={{ items: getListMoreMenuItems(item) }} 
+            menu={{ items: getListMoreMenuItems(item, isArchivedList) }} 
             trigger={['click']}
           >
             <MoreOutlined
@@ -622,9 +837,9 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         ) : (
           listItemContent
         )}
-        {isFolder && !isCollapsed && children.length > 0 && (
+        {isFolder && !isCollapsed && !isArchivedList && children.length > 0 && (
           <div className="list-children">
-            {children.map(child => renderListItem(child, level + 1))}
+            {children.map((child, idx) => renderListItem(child, level + 1, idx, item.id, isArchivedList))}
           </div>
         )}
       </div>
@@ -786,27 +1001,31 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           
           {!collapsedFolders['_lists_'] && (
             <div className="lists-container">
-              {topLevelLists.map(item => renderListItem(item))}
+              {topLevelLists
+                .sort((a, b) => a.order - b.order)
+                .map((item, index) => renderListItem(item, 0, index, null, false))}
             </div>
           )}
 
-          {/* 已归档清单 */}
-          {archivedLists.length > 0 && (
-            <>
-              <div 
-                className="archived-header"
-                onClick={() => setShowArchived(!showArchived)}
-              >
-                {showArchived ? <DownOutlined style={{ fontSize: 10, marginRight: 4 }} /> : <RightOutlined style={{ fontSize: 10, marginRight: 4 }} />}
-                <FolderOutlined style={{ marginRight: 4 }} />
-                已归档的清单
-              </div>
-              {showArchived && (
-                <div className="lists-container">
-                  {archivedLists.map(item => renderListItem(item))}
-                </div>
+          {/* 已归档清单 - 始终显示 */}
+          <div 
+            className="archived-header"
+            onClick={() => setShowArchived(!showArchived)}
+          >
+            {showArchived ? <DownOutlined style={{ fontSize: 10, marginRight: 4 }} /> : <RightOutlined style={{ fontSize: 10, marginRight: 4 }} />}
+            <FolderOutlined style={{ marginRight: 4 }} />
+            已归档的清单
+          </div>
+          {showArchived && (
+            <div className="lists-container">
+              {archivedLists.length > 0 ? (
+                archivedLists
+                  .sort((a, b) => a.order - b.order)
+                  .map((item, index) => renderListItem(item, 0, index, null, true))
+              ) : (
+                <div style={{ padding: '8px 16px', color: 'var(--ant-color-text-quaternary)', fontSize: 13 }}>暂无归档清单</div>
               )}
-            </>
+            </div>
           )}
 
           {/* 标签区域 */}

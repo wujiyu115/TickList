@@ -83,7 +83,7 @@ class TaskListDAO:
         self,
         user_id: str,
         type: Optional[str] = None,
-        is_archived: bool = False,
+        is_archived: Optional[bool] = None,
         skip: int = 0,
         limit: int = 100
     ) -> List[Dict]:
@@ -91,9 +91,11 @@ class TaskListDAO:
         session = self._get_session()
         try:
             query = session.query(TaskListModel).filter(
-                TaskListModel.user_id == user_id,
-                TaskListModel.is_archived == is_archived
+                TaskListModel.user_id == user_id
             )
+            
+            if is_archived is not None:
+                query = query.filter(TaskListModel.is_archived == is_archived)
             
             if type:
                 query = query.filter(TaskListModel.type == type)
@@ -119,14 +121,15 @@ class TaskListDAO:
         finally:
             session.close()
     
-    def count_user_lists(self, user_id: str, type: Optional[str] = None, is_archived: bool = False) -> int:
+    def count_user_lists(self, user_id: str, type: Optional[str] = None, is_archived: Optional[bool] = None) -> int:
         """统计用户清单数量"""
         session = self._get_session()
         try:
             query = session.query(TaskListModel).filter(
-                TaskListModel.user_id == user_id,
-                TaskListModel.is_archived == is_archived
+                TaskListModel.user_id == user_id
             )
+            if is_archived is not None:
+                query = query.filter(TaskListModel.is_archived == is_archived)
             if type:
                 query = query.filter(TaskListModel.type == type)
             return query.count()

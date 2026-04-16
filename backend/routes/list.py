@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
 import uuid
@@ -28,6 +28,11 @@ class ListUpdate(BaseModel):
     color: Optional[str] = None
     order: Optional[int] = None
     is_archived: Optional[bool] = None
+
+
+class ReorderItem(BaseModel):
+    id: str
+    order: int
 
 
 @router.post('/lists')
@@ -60,7 +65,7 @@ async def create_list(
 @router.get('/lists')
 async def get_lists(
     type: Optional[str] = Query(None),
-    is_archived: bool = Query(False),
+    is_archived: Optional[bool] = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
     current_user_id: str = Depends(get_current_user)
@@ -159,3 +164,25 @@ async def delete_list(
     except Exception as e:
         logger.error(f"删除清单失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f'删除清单失败: {str(e)}')
+
+
+@router.post('/lists/reorder')
+async def reorder_lists(
+    items: List[ReorderItem],
+    current_user_id: str = Depends(get_current_user)
+):
+    """批量更新清单排序"""
+    try:
+        for item in items:
+            # 检查清单是否存在且属于当前用户
+            existing = list_dao.get_list_by_id(current_user_id, item.id)
+            if not existing:
+                raise HTTPException(status_code=404, detail=f'清单 {item.id} 不存在')
+            # 更新排序
+            list_dao.update_list(current_user_id, item.id, {'order': item.order})
+        return {'message': '排序已更新'}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"批量更新排序失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f'批量更新排序失败: {str(e)}')
