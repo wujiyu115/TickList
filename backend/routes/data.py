@@ -283,11 +283,53 @@ def _map_dida_status(status_str: str) -> str:
         return 'pending'
 
 
-def _clean_content(content: str) -> str:
-    """清理滴答清单的内容格式，将 ▫/▪ 替换为 -"""
+def _parse_dida_content(content: str) -> dict:
+    """解析滴答清单的内容字段
+    
+    内容可能无换行符，直接用 ▪/▫ 拼接，例如：
+      "描述内容▫未完成项▪已完成项"
+    解析规则：
+      - 第一个 ▪/▫ 之前的文本为 description
+      - ▪ 开头的段落 = 已完成检查事项
+      - ▫ 开头的段落 = 未完成检查事项
+    
+    返回: {"description": str, "content": str}
+    """
     if not content:
-        return ''
-    return content.replace('▫', '- ').replace('▪', '- ')
+        return {"description": "", "content": ""}
+    
+    import json
+    
+    # 用正则按 ▪/▫ 分割，保留分隔符
+    parts = re.split(r'([▪▫])', content)
+    
+    description = ''
+    checklist_items = []
+    
+    i = 0
+    # 第一段（在任何 ▪/▫ 之前）是描述
+    if i < len(parts) and parts[i] not in ('▪', '▫'):
+        description = parts[i].strip()
+        i += 1
+    
+    # 后续成对出现：分隔符 + 文本
+    while i + 1 < len(parts):
+        marker = parts[i]
+        text = parts[i + 1].strip()
+        if text:
+            checklist_items.append({
+                "text": text,
+                "checked": marker == '▪'
+            })
+        i += 2
+    
+    if checklist_items:
+        return {
+            "description": description,
+            "content": json.dumps(checklist_items, ensure_ascii=False)
+        }
+    else:
+        return {"description": content.strip(), "content": ""}
 
 
 @router.post('/import-dida')
@@ -503,11 +545,13 @@ async def import_dida_csv(
                 task_id = str(uuid.uuid4())
                 now = datetime.now().isoformat()
                 
+                parsed = _parse_dida_content(row.get('Content', ''))
                 task = TaskModel(
                     id=task_id,
                     user_id=current_user_id,
                     title=title,
-                    description=_clean_content(row.get('Content', '')),
+                    description=parsed['description'],
+                    content=parsed['content'],
                     status=_map_dida_status(row.get('Status', '0')),
                     priority=_map_dida_priority(row.get('Priority', '0')),
                     list_id=list_id,
@@ -578,11 +622,13 @@ async def import_dida_csv(
                 task_id = str(uuid.uuid4())
                 now = datetime.now().isoformat()
                 
+                parsed = _parse_dida_content(row.get('Content', ''))
                 task = TaskModel(
                     id=task_id,
                     user_id=current_user_id,
                     title=title,
-                    description=_clean_content(row.get('Content', '')),
+                    description=parsed['description'],
+                    content=parsed['content'],
                     status=_map_dida_status(row.get('Status', '0')),
                     priority=_map_dida_priority(row.get('Priority', '0')),
                     list_id=list_id,

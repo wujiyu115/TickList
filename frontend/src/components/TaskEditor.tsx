@@ -147,7 +147,7 @@ const TaskEditor: React.FC = () => {
       if (savedMode === 'checklist' || savedMode === 'detail') {
         setContentViewMode(savedMode);
       } else {
-        setContentViewMode('detail');
+        setContentViewMode('checklist');
       }
       setEditingCheckIdx(null);
       
@@ -902,7 +902,22 @@ const TaskEditor: React.FC = () => {
               </div>
             ))}
             {contentItems.length === 0 && (
-              <div style={{ color: '#999', padding: '8px 0', fontSize: 14 }}>暂无检查事项</div>
+              <div className="checklist-item checklist-placeholder">
+                <Checkbox disabled />
+                <Input
+                  className="checklist-edit-input"
+                  placeholder="回车添加下一项"
+                  variant="borderless"
+                  onFocus={() => {
+                    const newItems = [{ text: '', checked: false }];
+                    setContentItems(newItems);
+                    setContentText('');
+                    updateTaskData(selectedTask.id, { content: JSON.stringify(newItems) });
+                    setEditingCheckIdx(0);
+                    setEditingCheckText('');
+                  }}
+                />
+              </div>
             )}
           </div>
         )}
