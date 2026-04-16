@@ -667,8 +667,9 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
     
     // 从原位置移除
     const newSiblings = siblings.filter(l => l.id !== sourceId);
-    // 插入到新位置
-    const insertIndex = targetIndex > sourceIndex ? targetIndex : targetIndex;
+    // 找到目标项在新数组中的位置
+    const targetInNewArr = newSiblings.findIndex(l => l.id === targetItem.id);
+    const insertIndex = targetInNewArr >= 0 ? targetInNewArr : newSiblings.length;
     newSiblings.splice(insertIndex, 0, draggedItem);
     
     // 构建批量更新数据
@@ -689,9 +690,9 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
     // 调用 API 批量更新
     try {
       await reorderLists(reorderItems);
+      loadLists();
     } catch (e) {
       message.error('排序更新失败');
-      // 失败时重新加载
       loadLists();
     }
     
@@ -781,9 +782,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
             {isCollapsed ? <RightOutlined style={{ fontSize: 10, marginRight: 4 }} /> : <DownOutlined style={{ fontSize: 10, marginRight: 4 }} />}
             {isCollapsed ? <FolderOutlined /> : <FolderOpenOutlined />}
           </>
-        ) : (
-          <MenuOutlined />
-        )}
+        ) : null}
         <span className="list-name">{item.name}</span>
         {/* 文件夹 hover 操作按钮 - 只保留 "..." 菜单 */}
         {isFolder && isFolderHovered && (
