@@ -144,6 +144,28 @@
         white-space: nowrap;
       }
 
+      .task-list-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        color: var(--ant-color-text-tertiary);
+        cursor: pointer;
+        padding: 1px 0;
+        margin-top: 2px;
+
+        &:hover {
+          color: var(--ant-color-primary);
+        }
+
+        .task-list-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+      }
+
       .task-focus-info {
         display: flex;
         align-items: center;

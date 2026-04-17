@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Checkbox, Dropdown, Input } from 'antd';
 import { CaretDownOutlined, CaretRightOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { Task } from '../types';
+import { useNavigate } from 'react-router-dom';
+import { Task, TaskList as TaskListType } from '../types';
 import { useTaskContext } from '../contexts/TaskContext';
 import { useLongPress } from '../hooks/useLongPress';
 import TaskContextMenu from './TaskContextMenu';
@@ -13,10 +14,12 @@ interface TaskItemProps {
   allTasks: Task[];
   depth?: number;
   hideDetails?: boolean;
+  lists?: TaskListType[];
 }
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDetails }) => {
+const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDetails, lists }) => {
   const { updateTaskData, selectTask, selectedTask } = useTaskContext();
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(true);
   const [contextMenuVisible, setContextMenuVisible] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -182,6 +185,16 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
             {!hideDetails && task.description && (
               <div className="task-desc">{task.description}</div>
             )}
+            {lists && task.list_id && (() => {
+              const list = lists.find(l => l.id === task.list_id);
+              if (!list) return null;
+              return (
+                <span className="task-list-tag" onClick={(e) => { e.stopPropagation(); navigate(`/?list_id=${list.id}`); }}>
+                  <span className="task-list-dot" style={{ background: list.color }} />
+                  {list.name}
+                </span>
+              );
+            })()}
             {/* 专注数据显示 */}
             {(task.pomodoro_count && task.pomodoro_count > 0) || (task.focus_duration && task.focus_duration > 0) ? (
               <div className="task-focus-info">
@@ -215,7 +228,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
       {hasChildren && expanded && (
         <div className="task-children">
           {children.map((child) => (
-            <TaskItem key={child.id} task={child} allTasks={allTasks} depth={depth + 1} hideDetails={hideDetails} />
+            <TaskItem key={child.id} task={child} allTasks={allTasks} depth={depth + 1} hideDetails={hideDetails} lists={lists} />
           ))}
         </div>
       )}

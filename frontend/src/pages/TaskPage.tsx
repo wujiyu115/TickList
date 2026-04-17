@@ -591,6 +591,9 @@ const TaskPage: React.FC = () => {
         />
       );
     }
+    // 是否需要显示清单标签（今天/最近7天视图）
+    const showListTag = filter === 'today' || filter === 'week';
+
     return (
       <TaskList
         sortMode={sortMode}
@@ -601,6 +604,7 @@ const TaskPage: React.FC = () => {
         completedLoading={completedLoading}
         completedLoadingMore={completedLoadingMore}
         onLoadMoreCompleted={handleCompletedLoadMore}
+        lists={showListTag ? lists : undefined}
       />
     );
   };

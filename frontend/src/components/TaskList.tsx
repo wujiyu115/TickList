@@ -3,7 +3,7 @@ import { Input, Button, Spin, Empty } from 'antd';
 import { PlusOutlined, CaretDownOutlined, CaretRightOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
 import { useTaskContext } from '../contexts/TaskContext';
-import { Task } from '../types';
+import { Task, TaskList as TaskListType } from '../types';
 import TaskItem from './TaskItem';
 import './TaskList.less';
 
@@ -16,6 +16,7 @@ interface TaskGroupProps {
   tasks: Task[];
   allTasks: Task[];
   hideDetails?: boolean;
+  lists?: TaskListType[];
 }
 
 const TaskGroup: React.FC<TaskGroupProps> = ({ 
@@ -25,7 +26,8 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
   onToggle, 
   tasks,
   allTasks,
-  hideDetails
+  hideDetails,
+  lists
 }) => {
   if (tasks.length === 0 && title !== '进行中') {
     return null;
@@ -44,7 +46,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
         <div className="task-group-content">
           {tasks.length > 0 ? (
             tasks.map(task => (
-              <TaskItem key={task.id} task={task} allTasks={allTasks} depth={0} hideDetails={hideDetails} />
+              <TaskItem key={task.id} task={task} allTasks={allTasks} depth={0} hideDetails={hideDetails} lists={lists} />
             ))
           ) : (
             <div className="empty-group">暂无任务</div>
@@ -64,6 +66,7 @@ interface TaskListProps {
   completedLoading?: boolean;
   completedLoadingMore?: boolean;
   onLoadMoreCompleted?: () => void;
+  lists?: TaskListType[];
 }
 
 const sortTasks = (taskList: Task[], mode: string): Task[] => {
@@ -100,6 +103,7 @@ const TaskList: React.FC<TaskListProps> = ({
   completedLoading = false,
   completedLoadingMore = false,
   onLoadMoreCompleted,
+  lists,
 }) => {
   const { tasks, loading, addTask } = useTaskContext();
   const [searchParams] = useSearchParams();
@@ -191,6 +195,7 @@ const TaskList: React.FC<TaskListProps> = ({
           tasks={pendingTasks}
           allTasks={allTasksForLookup}
           hideDetails={hideDetails}
+          lists={lists}
         />
 
         {/* 进行中 */}
@@ -202,6 +207,7 @@ const TaskList: React.FC<TaskListProps> = ({
           tasks={inProgressTasks}
           allTasks={allTasksForLookup}
           hideDetails={hideDetails}
+          lists={lists}
         />
 
         {/* 已完成 */}
@@ -215,6 +221,7 @@ const TaskList: React.FC<TaskListProps> = ({
               tasks={completedTasks}
               allTasks={allTasksForLookup}
               hideDetails={hideDetails}
+              lists={lists}
             />
             {hasExternalCompleted && !collapsedGroups['completed'] && completedTasks.length < completedTotal && (
               <div style={{ textAlign: 'center', padding: '12px 0' }}>
