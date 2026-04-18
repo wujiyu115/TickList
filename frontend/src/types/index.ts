@@ -282,3 +282,50 @@ export interface PushChannelConfig {
   enabled: boolean;
   config: BarkConfig | CustomHttpConfig;
 }
+
+// 计数器相关类型
+export interface Counter {
+  id: string;
+  user_id: string;
+  title: string;
+  initial_value: number;
+  current_value: number;
+  step: number;
+  target_value: number | null;
+  is_completed: boolean;
+  is_pinned: boolean;
+  color: string;
+  note: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CounterCreateRequest {
+  title: string;
+  initial_value?: number;
+  step?: number;
+  target_value?: number | null;
+  is_pinned?: boolean;
+  color?: string;
+  note?: string;
+}
+
+export interface CounterUpdateRequest {
+  title?: string;
+  step?: number;
+  target_value?: number | null;
+  is_pinned?: boolean;
+  color?: string;
+  note?: string;
+}
+
+export interface CounterHistory {
+  id: string;
+  counter_id: string;
+  user_id: string;
+  action: 'increment' | 'decrement';
+  change_value: number;
+  before_value: number;
+  after_value: number;
+  created_at: string;
+}

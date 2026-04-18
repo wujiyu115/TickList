@@ -1,0 +1,274 @@
+.counter-detail-page {
+  height: 100%;
+
+  .detail-container {
+    height: 100%;
+
+    .ant-card-body {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  .loading-state {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    color: #999;
+  }
+
+  .detail-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0f0f0;
+
+    .back-btn {
+      color: #666;
+    }
+
+    .detail-title {
+      flex: 1;
+    }
+  }
+
+  .detail-body {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .counter-section {
+    max-width: 500px;
+    margin: 0 auto 32px;
+    text-align: center;
+
+    .value-area {
+      padding: 24px 0;
+
+      .big-value {
+        font-size: 64px;
+        font-weight: 700;
+        color: #1890ff;
+        line-height: 1;
+      }
+
+      .big-target {
+        font-size: 28px;
+        font-weight: 400;
+        color: #8c8c8c;
+        margin-left: 8px;
+      }
+
+      &.value-completed {
+        .big-value {
+          color: #52c41a;
+        }
+      }
+    }
+
+    .progress-area {
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+
+      .progress-text {
+        font-size: 14px;
+      }
+    }
+
+    .action-area {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-bottom: 24px;
+
+      .increment-btn,
+      .decrement-btn {
+        min-width: 120px;
+        height: 48px;
+        font-size: 16px;
+        border-radius: 24px;
+      }
+
+      .decrement-btn {
+        color: #ff4d4f;
+        border-color: #ff4d4f;
+
+        &:hover:not(:disabled) {
+          color: #ff7875;
+          border-color: #ff7875;
+        }
+      }
+    }
+
+    .completed-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+
+      .completed-text {
+        display: flex;
+        align-items: center;
+      }
+    }
+
+    .info-area {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      padding: 16px;
+      background: #fafafa;
+      border-radius: 8px;
+      margin-bottom: 16px;
+
+      .info-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+    }
+
+    .note-area {
+      padding: 12px 16px;
+      background: #fafafa;
+      border-radius: 8px;
+      text-align: left;
+    }
+  }
+
+  .history-section {
+    max-width: 600px;
+    margin: 0 auto;
+
+    .history-item {
+      .history-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+
+        .history-left {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .history-time {
+          font-size: 12px;
+          white-space: nowrap;
+        }
+      }
+    }
+
+    .load-more {
+      text-align: center;
+      padding: 16px 0;
+    }
+  }
+
+  // 颜色选择器
+  .color-picker {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    .color-option {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: scale(1.1);
+      }
+
+      &.selected {
+        border-color: #333;
+        box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+      }
+    }
+  }
+}
+
+// 响应式适配
+@media (max-width: 768px) {
+  .counter-detail-page {
+    .detail-header {
+      flex-wrap: wrap;
+      gap: 8px;
+
+      .detail-title {
+        order: -1;
+        flex-basis: 100%;
+      }
+    }
+
+    .counter-section {
+      .value-area {
+        .big-value {
+          font-size: 48px;
+        }
+
+        .big-target {
+          font-size: 22px;
+        }
+      }
+
+      .action-area {
+        gap: 16px;
+
+        .increment-btn,
+        .decrement-btn {
+          min-width: 100px;
+          height: 44px;
+          font-size: 14px;
+        }
+      }
+
+      .info-area {
+        gap: 16px;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .counter-detail-page {
+    .counter-section {
+      .value-area {
+        padding: 16px 0;
+
+        .big-value {
+          font-size: 36px;
+        }
+
+        .big-target {
+          font-size: 18px;
+        }
+      }
+
+      .action-area {
+        gap: 12px;
+
+        .increment-btn,
+        .decrement-btn {
+          min-width: 90px;
+          height: 40px;
+          font-size: 13px;
+          border-radius: 20px;
+        }
+      }
+    }
+  }
+}

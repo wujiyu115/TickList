@@ -286,3 +286,42 @@ class WebAuthnCredentialModel(Base):
     __table_args__ = (
         Index('idx_webauthn_credentials_user', 'user_id'),
     )
+
+class CounterModel(Base):
+    """计数器表"""
+    __tablename__ = 'counters'
+    
+    id = Column(String(36), primary_key=True)
+    user_id = Column(String(36), nullable=False, index=True)
+    title = Column(String(200), nullable=False)
+    initial_value = Column(Integer, default=0)
+    current_value = Column(Integer, default=0)
+    step = Column(Integer, default=1)
+    target_value = Column(Integer, nullable=True, default=None)
+    is_completed = Column(Boolean, default=False)
+    is_pinned = Column(Boolean, default=False)
+    color = Column(String(50), default='')
+    note = Column(Text)
+    created_at = Column(String(50))
+    updated_at = Column(String(50))
+    
+    __table_args__ = (
+        Index('idx_counters_user', 'user_id'),
+    )
+
+class CounterHistoryModel(Base):
+    """计数器操作历史表"""
+    __tablename__ = 'counter_histories'
+    
+    id = Column(String(36), primary_key=True)
+    counter_id = Column(String(36), nullable=False, index=True)
+    user_id = Column(String(36), nullable=False)
+    action = Column(String(20), nullable=False)  # increment / decrement
+    change_value = Column(Integer, nullable=False)
+    before_value = Column(Integer, nullable=False)
+    after_value = Column(Integer, nullable=False)
+    created_at = Column(String(50))
+    
+    __table_args__ = (
+        Index('idx_counter_histories_counter', 'counter_id'),
+    )

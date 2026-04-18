@@ -1,0 +1,308 @@
+.counter-page {
+  height: 100%;
+
+  .counter-container {
+    height: 100%;
+    
+    .ant-card-body {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0f0f0;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .page-icon {
+        font-size: 24px;
+        color: #1890ff;
+      }
+    }
+  }
+
+  .counter-content {
+    flex: 1;
+    overflow-y: auto;
+
+    .loading-state {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+      color: #999;
+    }
+  }
+
+  .counter-card {
+    border-radius: 12px;
+    border-left: 4px solid #1890ff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: visible;
+    cursor: pointer;
+
+    &:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      transform: translateY(-2px);
+    }
+
+    &.pinned {
+      background: linear-gradient(135deg, #fffbe6 0%, #fff 50%);
+      border-left-color: #faad14;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #faad14, #ffc53d);
+        border-radius: 12px 12px 0 0;
+      }
+    }
+
+    &.completed {
+      opacity: 0.85;
+      background: linear-gradient(135deg, #f6ffed 0%, #fff 50%);
+      border-left-color: #52c41a;
+    }
+
+    .pin-badge {
+      position: absolute;
+      top: -8px;
+      right: 12px;
+      color: #faad14;
+      font-size: 16px;
+      transform: rotate(45deg);
+      z-index: 1;
+    }
+
+    .completed-badge {
+      position: absolute;
+      top: -8px;
+      left: 12px;
+      color: #52c41a;
+      font-size: 16px;
+      z-index: 1;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+
+      .card-title {
+        margin: 0;
+        flex: 1;
+        font-size: 16px;
+        line-height: 1.4;
+        max-width: calc(100% - 32px);
+      }
+    }
+
+    .value-display {
+      text-align: center;
+      padding: 16px 0;
+      margin-bottom: 12px;
+
+      .current-value {
+        font-size: 42px;
+        font-weight: 700;
+        color: #1890ff;
+        line-height: 1;
+      }
+
+      .target-value {
+        font-size: 20px;
+        font-weight: 400;
+        color: #8c8c8c;
+        margin-left: 4px;
+      }
+
+      &.value-completed {
+        .current-value {
+          color: #52c41a;
+        }
+      }
+    }
+
+    .counter-progress {
+      margin-bottom: 12px;
+    }
+
+    .no-target-hint {
+      text-align: center;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+
+    .card-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 8px;
+      border-top: 1px dashed #f0f0f0;
+
+      .action-btn {
+        font-size: 22px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+      }
+
+      .increment-btn {
+        color: #52c41a;
+
+        &:hover {
+          background: #f6ffed;
+          color: #389e0d;
+        }
+      }
+
+      .decrement-btn {
+        color: #ff4d4f;
+
+        &:hover {
+          background: #fff2f0;
+          color: #cf1322;
+        }
+      }
+
+      .step-hint {
+        font-size: 12px;
+      }
+    }
+
+    .completed-hint {
+      text-align: center;
+      padding-top: 8px;
+      border-top: 1px dashed #f0f0f0;
+      font-size: 14px;
+    }
+  }
+
+  // 颜色选择器
+  .color-picker {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    .color-option {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: scale(1.1);
+      }
+
+      &.selected {
+        border-color: #333;
+        box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+      }
+    }
+  }
+}
+
+// 响应式适配
+@media (max-width: 768px) {
+  .counter-page {
+    .page-header {
+      flex-direction: column;
+      gap: 16px;
+      align-items: stretch;
+
+      .header-right {
+        display: flex;
+        justify-content: flex-end;
+      }
+    }
+
+    .counter-card {
+      .value-display {
+        .current-value {
+          font-size: 32px;
+        }
+
+        .target-value {
+          font-size: 16px;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .counter-page {
+    .page-header {
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+
+      .header-left {
+        gap: 8px;
+
+        .page-icon {
+          font-size: 20px;
+        }
+      }
+    }
+
+    .counter-card {
+      padding: 12px;
+      border-radius: 10px;
+
+      .card-header {
+        margin-bottom: 12px;
+
+        .card-title {
+          font-size: 14px;
+        }
+      }
+
+      .value-display {
+        padding: 12px 0;
+        margin-bottom: 8px;
+
+        .current-value {
+          font-size: 28px;
+        }
+
+        .target-value {
+          font-size: 14px;
+        }
+      }
+
+      .card-actions .action-btn {
+        font-size: 18px;
+        width: 34px;
+        height: 34px;
+      }
+    }
+
+    .color-picker .color-option {
+      width: 24px;
+      height: 24px;
+    }
+  }
+}

@@ -9,6 +9,8 @@ const StatisticsPage = lazy(() => import('../pages/StatisticsPage'));
 const CalendarPage = lazy(() => import('../pages/CalendarPage'));
 const PomodoroPage = lazy(() => import('../pages/PomodoroPage'));
 const CountdownPage = lazy(() => import('../pages/CountdownPage'));
+const CounterPage = lazy(() => import('../pages/CounterPage'));
+const CounterDetailPage = lazy(() => import('../pages/CounterDetailPage'));
 const SummaryPage = lazy(() => import('../pages/SummaryPage'));
 const SettingsPage = lazy(() => import('../pages/SettingsPage'));
 const AdminPage = lazy(() => import('../pages/admin/AdminPage'));
@@ -92,6 +94,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
               <Route path="/" element={<TaskPage />} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/countdown" element={<CountdownPage />} />
+              <Route path="/counter" element={<CounterPage />} />
+              <Route path="/counter/:id" element={<CounterDetailPage />} />
               <Route path="/pomodoro" element={<PomodoroPage />} />
               <Route path="/statistics" element={<StatisticsPage />} />
               <Route path="/summary" element={<SummaryPage />} />

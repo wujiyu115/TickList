@@ -25,6 +25,7 @@ from routes.task import router as task_router
 from routes.statistics import router as statistics_router
 from routes.calendar import router as calendar_router
 from routes.countdown import router as countdown_router
+from routes.counter import router as counter_router
 from routes.list import router as list_router
 from routes.tag import router as tag_router
 from routes.data import router as data_router
@@ -92,6 +93,7 @@ def create_app():
     app.include_router(statistics_router)
     app.include_router(calendar_router)
     app.include_router(countdown_router)
+    app.include_router(counter_router)
     app.include_router(list_router)
     app.include_router(tag_router)
     app.include_router(data_router)

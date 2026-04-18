@@ -5,6 +5,7 @@ import {
   BarChartOutlined,
   ClockCircleOutlined,
   HourglassOutlined,
+  NumberOutlined,
   FolderOutlined,
   FolderOpenOutlined,
   MenuOutlined,
@@ -70,6 +71,7 @@ const navItems = [
   { key: 'calendar', icon: CalendarOutlined, path: '/calendar', tooltip: '日历' },
   { key: 'pomodoro', icon: ClockCircleOutlined, path: '/pomodoro', tooltip: '番茄时钟' },
   { key: 'countdown', icon: HourglassOutlined, path: '/countdown', tooltip: '倒数日' },
+  { key: 'counter', icon: NumberOutlined, path: '/counter', tooltip: '计数器' },
   { key: 'statistics', icon: BarChartOutlined, path: '/statistics', tooltip: '统计' },
 ];
 

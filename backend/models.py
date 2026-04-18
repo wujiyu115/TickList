@@ -464,3 +464,93 @@ class UserSettings:
     def get_default_settings(user_id: str) -> Dict:
         """获取默认设置字典"""
         return UserSettings(user_id=user_id).to_dict()
+
+class Counter:
+    """计数器模型"""
+    def __init__(
+        self,
+        id: str,
+        title: str,
+        user_id: str,
+        initial_value: int = 0,
+        current_value: int = 0,
+        step: int = 1,
+        target_value: Optional[int] = None,
+        is_completed: bool = False,
+        is_pinned: bool = False,
+        color: str = '',
+        note: str = '',
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None
+    ):
+        self.id = id
+        self.title = title
+        self.user_id = user_id
+        self.initial_value = initial_value
+        self.current_value = current_value
+        self.step = step
+        self.target_value = target_value
+        self.is_completed = is_completed
+        self.is_pinned = is_pinned
+        self.color = color
+        self.note = note
+        self.created_at = created_at or datetime.now()
+        self.updated_at = updated_at or datetime.now()
+    
+    def to_dict(self) -> Dict:
+        return {
+            'id': self.id,
+            'title': self.title,
+            'user_id': self.user_id,
+            'initial_value': self.initial_value,
+            'current_value': self.current_value,
+            'step': self.step,
+            'target_value': self.target_value,
+            'is_completed': self.is_completed,
+            'is_pinned': self.is_pinned,
+            'color': self.color,
+            'note': self.note,
+            'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else self.created_at,
+            'updated_at': self.updated_at.isoformat() if isinstance(self.updated_at, datetime) else self.updated_at,
+        }
+
+    def update(self, **kwargs):
+        """更新计数器属性"""
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+        self.updated_at = datetime.now()
+
+class CounterHistory:
+    """计数器操作历史模型"""
+    def __init__(
+        self,
+        id: str,
+        counter_id: str,
+        user_id: str,
+        action: str,
+        change_value: int,
+        before_value: int,
+        after_value: int,
+        created_at: Optional[datetime] = None
+    ):
+        self.id = id
+        self.counter_id = counter_id
+        self.user_id = user_id
+        self.action = action
+        self.change_value = change_value
+        self.before_value = before_value
+        self.after_value = after_value
+        self.created_at = created_at or datetime.now()
+    
+    def to_dict(self) -> Dict:
+        return {
+            'id': self.id,
+            'counter_id': self.counter_id,
+            'user_id': self.user_id,
+            'action': self.action,
+            'change_value': self.change_value,
+            'before_value': self.before_value,
+            'after_value': self.after_value,
+            'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else self.created_at,
+        }
