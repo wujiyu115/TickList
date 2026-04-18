@@ -456,7 +456,7 @@ const CounterPage: React.FC = () => {
             <Switch />
           </Form.Item>
 
-          <Form.Item name="color" label="颜色">
+          <Form.Item label="颜色">
             <div className="color-picker">
               {PRESET_COLORS.map((c) => (
                 <div
@@ -470,6 +470,9 @@ const CounterPage: React.FC = () => {
                 />
               ))}
             </div>
+          </Form.Item>
+          <Form.Item name="color" hidden>
+            <Input />
           </Form.Item>
 
           <Form.Item name="note" label="备注">
