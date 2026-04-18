@@ -21,31 +21,22 @@ class TaskDAO:
         """获取数据库会话"""
         return db_connection.get_session()
     
+    # 需要特殊处理默认值的字段（值为 None 时用默认值替代）
+    _DEFAULT_VALUES = {
+        'content': '',
+        'pomodoro_count': 0,
+        'focus_duration': 0,
+    }
+
     def _task_to_dict(self, task_model: TaskModel, session: Session) -> Dict:
-        """将 TaskModel + 关系数据组装为 Dict"""
-        result = {
-            'id': task_model.id,
-            'title': task_model.title,
-            'description': task_model.description,
-            'content': task_model.content or '',
-            'status': task_model.status,
-            'priority': task_model.priority,
-            'user_id': task_model.user_id,
-            'list_id': task_model.list_id,
-            'start_time': task_model.start_time,
-            'due_date': task_model.due_date,
-            'reminder_time': task_model.reminder_time,
-            'is_pinned': task_model.is_pinned,
-            'order': task_model.order,
-            'push_due_notify': task_model.push_due_notify,
-            'push_notified_date': task_model.push_notified_date,
-            'pomodoro_count': task_model.pomodoro_count or 0,
-            'focus_duration': task_model.focus_duration or 0,
-            'created_at': task_model.created_at,
-            'updated_at': task_model.updated_at,
-            'completed_at': task_model.completed_at,
-            'deleted_at': task_model.deleted_at,
-        }
+        """将 TaskModel + 关系数据组装为 Dict（通过反射自动导出所有列字段）"""
+        result = {}
+        for col in task_model.__table__.columns:
+            value = getattr(task_model, col.name)
+            # 对特定字段应用默认值
+            if value is None and col.name in self._DEFAULT_VALUES:
+                value = self._DEFAULT_VALUES[col.name]
+            result[col.name] = value
         # 从关系表查询 child_ids
         children = session.query(TaskChildModel.child_id).filter(
             TaskChildModel.parent_id == task_model.id

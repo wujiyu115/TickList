@@ -14,6 +14,9 @@ from database.dao.task_dao import task_dao
 from database.dao.list_dao import list_dao
 from database.dao.tag_dao import tag_dao
 from database.dao.countdown_dao import countdown_dao
+from database.dao.focus_dao import focus_dao
+from database.dao.filter_dao import filter_dao
+from database.dao.settings_dao import settings_dao
 
 router = APIRouter(prefix="/api/data", tags=["data"])
 
@@ -46,15 +49,33 @@ async def export_data(current_user_id: str = Depends(get_current_user)):
         # 4. 获取用户所有倒数日
         countdowns = countdown_dao.get_user_countdowns(current_user_id, limit=10000)
         
-        # 5. 构造导出数据
+        # 5. 获取用户所有专注记录
+        focus_result = focus_dao.get_sessions(user_id=current_user_id, page=1, page_size=1000000)
+        focus_sessions = focus_result.get('sessions', [])
+        # 移除导出时不需要的 task_title（运行时关联字段）
+        for session_item in focus_sessions:
+            session_item.pop('task_title', None)
+        
+        # 6. 获取用户所有过滤器
+        filters = filter_dao.get_user_filters(current_user_id)
+        
+        # 7. 获取用户设置
+        settings = settings_dao.get_settings(current_user_id)
+        # 移除内部字段
+        settings.pop('id', None)
+        
+        # 8. 构造导出数据
         export = {
-            "version": "1.0",
+            "version": "1.1",
             "exported_at": datetime.now().isoformat(),
             "data": {
                 "tasks": tasks,
                 "lists": lists,
                 "tags": tags,
-                "countdowns": countdowns
+                "countdowns": countdowns,
+                "focus_sessions": focus_sessions,
+                "filters": filters,
+                "settings": settings
             }
         }
         
@@ -76,11 +97,11 @@ async def import_data(
     所有数据的 ID 会被重新生成，关联关系会被正确映射。
     """
     from database.connection import db_connection
-    from database.models import TagModel, TaskListModel, TaskModel, CountdownModel, TaskTagModel, TaskChildModel
+    from database.models import TagModel, TaskListModel, TaskModel, CountdownModel, TaskTagModel, TaskChildModel, FocusSessionModel, FilterModel
     
     try:
         data = import_data.data
-        stats = {"tasks": 0, "lists": 0, "tags": 0, "countdowns": 0}
+        stats = {"tasks": 0, "lists": 0, "tags": 0, "countdowns": 0, "focus_sessions": 0, "filters": 0, "settings": 0}
         
         # ID 映射表（旧ID -> 新ID），用于恢复关联关系
         id_map = {}
@@ -173,6 +194,7 @@ async def import_data(
                     user_id=current_user_id,
                     title=task_data.get('title', ''),
                     description=task_data.get('description', ''),
+                    content=task_data.get('content', ''),
                     status=task_data.get('status', 'pending'),
                     priority=task_data.get('priority', 0),
                     list_id=list_id,
@@ -181,7 +203,12 @@ async def import_data(
                     reminder_time=task_data.get('reminder_time'),
                     is_pinned=task_data.get('is_pinned', False),
                     order=task_data.get('order', 0),
+                    push_due_notify=task_data.get('push_due_notify', False),
+                    push_notified_date=task_data.get('push_notified_date'),
+                    pomodoro_count=task_data.get('pomodoro_count', 0),
+                    focus_duration=task_data.get('focus_duration', 0),
                     completed_at=task_data.get('completed_at'),
+                    deleted_at=task_data.get('deleted_at'),
                     created_at=task_data.get('created_at', datetime.now().isoformat()),
                     updated_at=datetime.now().isoformat()
                 )
@@ -220,11 +247,69 @@ async def import_data(
                     color=cd_data.get('color', '#1677ff'),
                     repeat_annually=cd_data.get('repeat_annually', False),
                     note=cd_data.get('note', ''),
+                    push_due_notify=cd_data.get('push_due_notify', False),
+                    push_notified_date=cd_data.get('push_notified_date'),
                     created_at=datetime.now().isoformat(),
                     updated_at=datetime.now().isoformat()
                 )
                 session.add(new_countdown)
                 stats["countdowns"] += 1
+            
+            # 5. 导入专注记录（task_id 需要映射）
+            for fs_data in data.get('focus_sessions', []):
+                new_id = str(uuid.uuid4())
+                
+                # 映射 task_id
+                task_id = None
+                if fs_data.get('task_id') and fs_data['task_id'] in id_map:
+                    task_id = id_map[fs_data['task_id']]
+                
+                new_focus = FocusSessionModel(
+                    id=new_id,
+                    user_id=current_user_id,
+                    task_id=task_id,
+                    type=fs_data.get('type', 'pomodoro'),
+                    duration=fs_data.get('duration', 0),
+                    started_at=fs_data.get('started_at', ''),
+                    ended_at=fs_data.get('ended_at', ''),
+                    created_at=fs_data.get('created_at', datetime.now().isoformat())
+                )
+                session.add(new_focus)
+                stats["focus_sessions"] += 1
+            
+            # 6. 导入过滤器
+            for f_data in data.get('filters', []):
+                new_id = str(uuid.uuid4())
+                
+                # conditions 需要序列化为 JSON 字符串
+                import json
+                conditions = f_data.get('conditions', {})
+                if isinstance(conditions, dict):
+                    conditions = json.dumps(conditions)
+                
+                new_filter = FilterModel(
+                    id=new_id,
+                    user_id=current_user_id,
+                    name=f_data.get('name', ''),
+                    conditions=conditions,
+                    created_at=datetime.now().isoformat(),
+                    updated_at=datetime.now().isoformat()
+                )
+                session.add(new_filter)
+                stats["filters"] += 1
+            
+            # 7. 导入用户设置（合并到现有设置）
+            settings_data = data.get('settings')
+            if settings_data and isinstance(settings_data, dict):
+                # 移除不应导入的字段
+                settings_data.pop('id', None)
+                settings_data.pop('user_id', None)
+                settings_data.pop('created_at', None)
+                settings_data.pop('updated_at', None)
+                
+                if settings_data:
+                    settings_dao.update_settings(current_user_id, settings_data)
+                    stats["settings"] = 1
             
             session.commit()
         except Exception as e:
