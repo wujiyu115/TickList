@@ -65,6 +65,7 @@ const CounterPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCounter, setEditingCounter] = useState<Counter | null>(null);
+  const [selectedColor, setSelectedColor] = useState('#1890ff');
   const [form] = Form.useForm();
 
   const fetchCounters = useCallback(async () => {
@@ -92,21 +93,24 @@ const CounterPage: React.FC = () => {
       is_pinned: false,
       color: '#1890ff',
     });
+    setSelectedColor('#1890ff');
     setModalVisible(true);
   };
 
   const handleEdit = (counter: Counter, event: React.MouseEvent) => {
     event.stopPropagation();
     setEditingCounter(counter);
+    const color = counter.color || '#1890ff';
     form.setFieldsValue({
       title: counter.title,
       initial_value: counter.initial_value,
       step: counter.step,
       target_value: counter.target_value,
       is_pinned: counter.is_pinned,
-      color: counter.color || '#1890ff',
+      color,
       note: counter.note,
     });
+    setSelectedColor(color);
     setModalVisible(true);
   };
 
@@ -454,14 +458,15 @@ const CounterPage: React.FC = () => {
 
           <Form.Item name="color" label="颜色">
             <div className="color-picker">
-              {PRESET_COLORS.map((color) => (
+              {PRESET_COLORS.map((c) => (
                 <div
-                  key={color}
-                  className={`color-option ${
-                    form.getFieldValue('color') === color ? 'selected' : ''
-                  }`}
-                  style={{ backgroundColor: color }}
-                  onClick={() => form.setFieldsValue({ color })}
+                  key={c}
+                  className={`color-option ${selectedColor === c ? 'selected' : ''}`}
+                  style={{ backgroundColor: c }}
+                  onClick={() => {
+                    setSelectedColor(c);
+                    form.setFieldsValue({ color: c });
+                  }}
                 />
               ))}
             </div>
