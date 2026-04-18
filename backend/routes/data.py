@@ -14,6 +14,7 @@ from database.dao.task_dao import task_dao
 from database.dao.list_dao import list_dao
 from database.dao.tag_dao import tag_dao
 from database.dao.countdown_dao import countdown_dao
+from database.dao.counter_dao import counter_dao
 from database.dao.focus_dao import focus_dao
 from database.dao.filter_dao import filter_dao
 from database.dao.settings_dao import settings_dao
@@ -49,30 +50,45 @@ async def export_data(current_user_id: str = Depends(get_current_user)):
         # 4. 获取用户所有倒数日
         countdowns = countdown_dao.get_user_countdowns(current_user_id, limit=10000)
         
-        # 5. 获取用户所有专注记录
+        # 5. 获取用户所有计数器
+        counters = counter_dao.get_user_counters(current_user_id, limit=10000)
+        
+        # 6. 获取用户所有计数器历史记录
+        counter_histories = []
+        for c in counters:
+            histories = counter_dao.get_counter_histories(
+                user_id=current_user_id,
+                counter_id=c['id'],
+                limit=100000
+            )
+            counter_histories.extend(histories)
+        
+        # 7. 获取用户所有专注记录
         focus_result = focus_dao.get_sessions(user_id=current_user_id, page=1, page_size=1000000)
         focus_sessions = focus_result.get('sessions', [])
         # 移除导出时不需要的 task_title（运行时关联字段）
         for session_item in focus_sessions:
             session_item.pop('task_title', None)
         
-        # 6. 获取用户所有过滤器
+        # 8. 获取用户所有过滤器
         filters = filter_dao.get_user_filters(current_user_id)
         
-        # 7. 获取用户设置
+        # 9. 获取用户设置
         settings = settings_dao.get_settings(current_user_id)
         # 移除内部字段
         settings.pop('id', None)
         
-        # 8. 构造导出数据
+        # 10. 构造导出数据
         export = {
-            "version": "1.1",
+            "version": "1.2",
             "exported_at": datetime.now().isoformat(),
             "data": {
                 "tasks": tasks,
                 "lists": lists,
                 "tags": tags,
                 "countdowns": countdowns,
+                "counters": counters,
+                "counter_histories": counter_histories,
                 "focus_sessions": focus_sessions,
                 "filters": filters,
                 "settings": settings
@@ -97,11 +113,11 @@ async def import_data(
     所有数据的 ID 会被重新生成，关联关系会被正确映射。
     """
     from database.connection import db_connection
-    from database.models import TagModel, TaskListModel, TaskModel, CountdownModel, TaskTagModel, TaskChildModel, FocusSessionModel, FilterModel
+    from database.models import TagModel, TaskListModel, TaskModel, CountdownModel, CounterModel, CounterHistoryModel, TaskTagModel, TaskChildModel, FocusSessionModel, FilterModel
     
     try:
         data = import_data.data
-        stats = {"tasks": 0, "lists": 0, "tags": 0, "countdowns": 0, "focus_sessions": 0, "filters": 0, "settings": 0}
+        stats = {"tasks": 0, "lists": 0, "tags": 0, "countdowns": 0, "counters": 0, "counter_histories": 0, "focus_sessions": 0, "filters": 0, "settings": 0}
         
         # ID 映射表（旧ID -> 新ID），用于恢复关联关系
         id_map = {}
@@ -255,7 +271,56 @@ async def import_data(
                 session.add(new_countdown)
                 stats["countdowns"] += 1
             
-            # 5. 导入专注记录（task_id 需要映射）
+            # 5. 导入计数器
+            counter_id_map = {}  # 旧counter_id -> 新counter_id
+            for ct_data in data.get('counters', []):
+                old_id = ct_data.get('id')
+                new_id = str(uuid.uuid4())
+                counter_id_map[old_id] = new_id
+                
+                new_counter = CounterModel(
+                    id=new_id,
+                    user_id=current_user_id,
+                    title=ct_data.get('title', ''),
+                    initial_value=ct_data.get('initial_value', 0),
+                    current_value=ct_data.get('current_value', 0),
+                    step=ct_data.get('step', 1),
+                    target_value=ct_data.get('target_value'),
+                    is_completed=ct_data.get('is_completed', False),
+                    is_pinned=ct_data.get('is_pinned', False),
+                    color=ct_data.get('color', '#1890ff'),
+                    note=ct_data.get('note', ''),
+                    created_at=ct_data.get('created_at', datetime.now().isoformat()),
+                    updated_at=datetime.now().isoformat()
+                )
+                session.add(new_counter)
+                stats["counters"] += 1
+            
+            # 6. 导入计数器历史记录（counter_id 需要映射）
+            for ch_data in data.get('counter_histories', []):
+                new_id = str(uuid.uuid4())
+                
+                counter_id = None
+                if ch_data.get('counter_id') and ch_data['counter_id'] in counter_id_map:
+                    counter_id = counter_id_map[ch_data['counter_id']]
+                
+                if not counter_id:
+                    continue
+                
+                new_history = CounterHistoryModel(
+                    id=new_id,
+                    counter_id=counter_id,
+                    user_id=current_user_id,
+                    action=ch_data.get('action', 'increment'),
+                    change_value=ch_data.get('change_value', 0),
+                    before_value=ch_data.get('before_value', 0),
+                    after_value=ch_data.get('after_value', 0),
+                    created_at=ch_data.get('created_at', datetime.now().isoformat())
+                )
+                session.add(new_history)
+                stats["counter_histories"] += 1
+            
+            # 7. 导入专注记录（task_id 需要映射）
             for fs_data in data.get('focus_sessions', []):
                 new_id = str(uuid.uuid4())
                 

@@ -45,6 +45,15 @@
 ### 倒数日
 - ✅ 创建 / 编辑 / 删除倒数日事件
 
+### 计数器
+- ✅ 创建 / 编辑 / 删除计数器
+- ✅ 自定义初始值、步长、目标值（可选）
+- ✅ 快捷增减计数（卡片 + 详情页）
+- ✅ 目标值进度条（自动判断方向）
+- ✅ 达标提示（锁定完成或继续计数）
+- ✅ 操作历史记录（按时间倒序）
+- ✅ 置顶 / 颜色标记 / 备注
+
 ### 统计分析
 - ✅ 任务统计概览
 - ✅ 每日统计
@@ -346,11 +355,11 @@ ticklist/
 ├── backend/                 # 后端代码
 │   ├── config/             # 配置模块
 │   ├── database/           # 数据库层
-│   │   ├── dao/            # 数据访问对象（task/list/tag/filter/focus/countdown 等）
+│   │   ├── dao/            # 数据访问对象（task/list/tag/filter/focus/countdown/counter 等）
 │   │   ├── connection.py   # 数据库连接（含自动迁移）
 │   │   └── models.py       # SQLAlchemy 模型
 │   ├── middleware/          # 中间件（JWT、日志）
-│   ├── routes/             # API 路由（auth/task/calendar/focus/countdown/data 等）
+│   ├── routes/             # API 路由（auth/task/calendar/focus/countdown/counter/data 等）
 │   ├── services/           # 后台服务（到期提醒调度）
 │   ├── utils/              # 工具函数
 │   ├── app.py              # 应用入口
@@ -360,12 +369,12 @@ ticklist/
 │
 ├── frontend/                # 前端代码
 │   └── src/
-│       ├── api/            # API 调用（auth/task/calendar/focus/countdown/data 等）
+│       ├── api/            # API 调用（auth/task/calendar/focus/countdown/counter/data 等）
 │       ├── components/     # 组件（TaskList/KanbanView/CalendarView/PomodoroTimer 等）
 │       ├── contexts/       # 全局状态（TaskContext/FocusContext）
 │       ├── hooks/          # 自定义 Hook（useTimer）
 │       ├── layouts/        # 布局
-│       └── pages/          # 页面（Task/Calendar/Pomodoro/Countdown/Statistics/Settings）
+│       └── pages/          # 页面（Task/Calendar/Pomodoro/Countdown/Counter/Statistics/Settings）
 │
 ├── Dockerfile              # Docker 构建（多阶段、跨架构优化）
 └── start_dev.sh            # 一键开发启动脚本
@@ -407,7 +416,7 @@ cd frontend && bun run test:ui
 
 - **框架**：pytest + httpx TestClient + SQLite 内存数据库
 - **测试文件**：`backend/tests/`
-- **覆盖模块**：认证、任务管理、清单、标签、日历、统计、倒数日、专注、设置、过滤器、数据导入导出
+- **覆盖模块**：认证、任务管理、清单、标签、日历、统计、倒数日、计数器、专注、设置、过滤器、数据导入导出
 
 #### 前端测试
 
