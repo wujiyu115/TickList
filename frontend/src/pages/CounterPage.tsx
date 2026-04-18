@@ -456,24 +456,33 @@ const CounterPage: React.FC = () => {
             <Switch />
           </Form.Item>
 
-          <Form.Item label="颜色">
-            <div className="color-picker">
-              {PRESET_COLORS.map((c) => (
-                <div
-                  key={c}
-                  className={`color-option ${selectedColor === c ? 'selected' : ''}`}
-                  style={{ backgroundColor: c }}
-                  onClick={() => {
-                    setSelectedColor(c);
-                    form.setFieldsValue({ color: c });
-                  }}
-                />
-              ))}
-            </div>
+          <Form.Item name="color" label="颜色">
+            <Input type="hidden" />
           </Form.Item>
-          <Form.Item name="color" hidden>
-            <Input />
-          </Form.Item>
+          <div className="color-picker" style={{ marginTop: -16, marginBottom: 24 }}>
+            {PRESET_COLORS.map((c) => (
+              <span
+                key={c}
+                className={`color-option ${selectedColor === c ? 'selected' : ''}`}
+                style={{
+                  display: 'inline-block',
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  backgroundColor: c,
+                  cursor: 'pointer',
+                  marginRight: 8,
+                  border: selectedColor === c ? '2px solid #333' : '2px solid transparent',
+                  boxShadow: selectedColor === c ? '0 0 0 2px rgba(0,0,0,0.1)' : 'none',
+                  transition: 'all 0.2s ease',
+                }}
+                onClick={() => {
+                  setSelectedColor(c);
+                  form.setFieldsValue({ color: c });
+                }}
+              />
+            ))}
+          </div>
 
           <Form.Item name="note" label="备注">
             <TextArea rows={3} placeholder="添加备注（可选）" maxLength={200} />
