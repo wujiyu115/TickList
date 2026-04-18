@@ -424,11 +424,16 @@
     .checklist-view {
       .checklist-item {
         display: flex;
-        align-items: center;
-        gap: 8px;
+        flex-direction: column;
         padding: 10px 0;
         border-bottom: 1px solid var(--ant-color-bg-text-hover);
         font-size: 14px;
+
+        .checklist-item-main {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
 
         .checklist-text {
           flex: 1;
@@ -516,6 +521,13 @@
           .checklist-drag {
             opacity: 1;
           }
+        }
+
+        .checklist-completed-time {
+          font-size: 12px;
+          color: #bbb;
+          margin-left: 30px;
+          margin-top: 2px;
         }
 
         &.checked {

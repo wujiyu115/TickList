@@ -100,7 +100,7 @@ const TaskEditor: React.FC = () => {
   const [addingSubtask, setAddingSubtask] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
-  const [contentItems, setContentItems] = useState<Array<{text: string, checked: boolean}>>([]);
+  const [contentItems, setContentItems] = useState<Array<{text: string, checked: boolean, completedAt?: string}>>([]);
   const [contentViewMode, setContentViewMode] = useState<'detail' | 'checklist'>('detail');
   const [editingCheckIdx, setEditingCheckIdx] = useState<number | null>(null);
   const [editingCheckText, setEditingCheckText] = useState('');
@@ -347,9 +347,15 @@ const TaskEditor: React.FC = () => {
 
   // 检查事项模式切换 checked
   const handleCheckToggle = (index: number) => {
-    const newItems = contentItems.map((item, idx) =>
-      idx === index ? { ...item, checked: !item.checked } : item
-    );
+    const newItems = contentItems.map((item, idx) => {
+      if (idx !== index) return item;
+      const nowChecked = !item.checked;
+      return {
+        ...item,
+        checked: nowChecked,
+        completedAt: nowChecked ? new Date().toISOString() : undefined,
+      };
+    });
     setContentItems(newItems);
     setContentText(newItems.map(item => item.text).join('\n'));
     updateTaskData(selectedTask.id, { content: JSON.stringify(newItems) });
@@ -891,6 +897,7 @@ const TaskEditor: React.FC = () => {
                 onDragOver={(e) => handleDragOver(e, idx)}
                 onDrop={applyDragReorder}
               >
+                <div className="checklist-item-main">
                 <Checkbox
                   checked={item.checked}
                   onChange={() => handleCheckToggle(idx)}
@@ -931,6 +938,12 @@ const TaskEditor: React.FC = () => {
                   className="checklist-delete"
                   onClick={() => handleDeleteContentItem(idx)}
                 />
+                </div>
+                {item.checked && item.completedAt && (
+                  <div className="checklist-completed-time">
+                    {new Date(item.completedAt).toLocaleString('zh-CN', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                )}
               </div>
             ))}
             {contentItems.length === 0 && (
