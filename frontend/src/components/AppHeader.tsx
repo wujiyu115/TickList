@@ -1,6 +1,6 @@
-import React from 'react';
-import { Layout, Avatar, Dropdown, Space, Button } from 'antd';
-import { UserOutlined, LogoutOutlined, LockOutlined, KeyOutlined, CrownOutlined, MenuOutlined } from '@ant-design/icons';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Layout, Avatar, Dropdown, Space, Button, message } from 'antd';
+import { UserOutlined, LogoutOutlined, LockOutlined, KeyOutlined, CrownOutlined, MenuOutlined, FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { MenuProps } from 'antd';
 import { User } from '../types';
@@ -15,6 +15,27 @@ interface AppHeaderProps {
 
 const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onMenuClick }) => {
   const navigate = useNavigate();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch {
+      message.info('当前浏览器不支持全屏，请尝试"添加到主屏幕"实现全屏体验');
+    }
+  }, []);
 
   const items: MenuProps['items'] = [
     {
@@ -66,12 +87,21 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onMenuClick }) =>
         className="mobile-menu-btn"
         style={{ fontSize: 18, width: 40, height: 40 }}
       />
-      <Dropdown menu={{ items }} placement="bottomRight">
-        <Space style={{ cursor: 'pointer', marginLeft: 'auto' }}>
-          <Avatar icon={<UserOutlined />} />
-          <span>{user.username}</span>
-        </Space>
-      </Dropdown>
+      <Space style={{ marginLeft: 'auto', alignItems: 'center' }}>
+        <Button
+          type="text"
+          icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+          onClick={toggleFullscreen}
+          style={{ fontSize: 18, width: 40, height: 40 }}
+          title={isFullscreen ? '退出全屏' : '全屏'}
+        />
+        <Dropdown menu={{ items }} placement="bottomRight">
+          <Space style={{ cursor: 'pointer' }}>
+            <Avatar icon={<UserOutlined />} />
+            <span>{user.username}</span>
+          </Space>
+        </Dropdown>
+      </Space>
     </Header>
   );
 };
