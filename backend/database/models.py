@@ -325,3 +325,40 @@ class CounterHistoryModel(Base):
     __table_args__ = (
         Index('idx_counter_histories_counter', 'counter_id'),
     )
+
+class NoteFolderModel(Base):
+    """笔记文件夹表"""
+    __tablename__ = 'note_folders'
+    
+    id = Column(String(36), primary_key=True)
+    name = Column(String(200), nullable=False)
+    user_id = Column(String(36), nullable=False, index=True)
+    parent_id = Column(String(36), nullable=True)  # 支持多层嵌套
+    color = Column(String(50), default='#1677ff')
+    order = Column(Integer, default=0)
+    created_at = Column(String(50))
+    updated_at = Column(String(50))
+    
+    __table_args__ = (
+        Index('idx_note_folders_user', 'user_id'),
+    )
+
+class NoteModel(Base):
+    """笔记表"""
+    __tablename__ = 'notes'
+    
+    id = Column(String(36), primary_key=True)
+    title = Column(String(500), nullable=False)
+    content = Column(Text, default='')  # Markdown 内容
+    user_id = Column(String(36), nullable=False, index=True)
+    folder_id = Column(String(36), nullable=True)  # 所属文件夹
+    is_pinned = Column(Boolean, default=False)
+    color = Column(String(50), default='')
+    order = Column(Integer, default=0)
+    created_at = Column(String(50))
+    updated_at = Column(String(50))
+    
+    __table_args__ = (
+        Index('idx_notes_user', 'user_id'),
+        Index('idx_notes_user_folder', 'user_id', 'folder_id'),
+    )

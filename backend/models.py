@@ -554,3 +554,91 @@ class CounterHistory:
             'after_value': self.after_value,
             'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else self.created_at,
         }
+
+class NoteFolder:
+    """笔记文件夹模型"""
+    def __init__(
+        self,
+        id: str,
+        name: str,
+        user_id: str,
+        parent_id: Optional[str] = None,
+        color: str = '#1677ff',
+        order: int = 0,
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None
+    ):
+        self.id = id
+        self.name = name
+        self.user_id = user_id
+        self.parent_id = parent_id
+        self.color = color
+        self.order = order
+        self.created_at = created_at or datetime.now()
+        self.updated_at = updated_at or datetime.now()
+    
+    def to_dict(self) -> Dict:
+        return {
+            'id': self.id,
+            'name': self.name,
+            'user_id': self.user_id,
+            'parent_id': self.parent_id,
+            'color': self.color,
+            'order': self.order,
+            'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else self.created_at,
+            'updated_at': self.updated_at.isoformat() if isinstance(self.updated_at, datetime) else self.updated_at,
+        }
+
+    def update(self, **kwargs):
+        """更新文件夹属性"""
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+        self.updated_at = datetime.now()
+
+class Note:
+    """笔记模型"""
+    def __init__(
+        self,
+        id: str,
+        title: str,
+        user_id: str,
+        content: str = '',
+        folder_id: Optional[str] = None,
+        is_pinned: bool = False,
+        color: str = '',
+        order: int = 0,
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None
+    ):
+        self.id = id
+        self.title = title
+        self.content = content
+        self.user_id = user_id
+        self.folder_id = folder_id
+        self.is_pinned = is_pinned
+        self.color = color
+        self.order = order
+        self.created_at = created_at or datetime.now()
+        self.updated_at = updated_at or datetime.now()
+    
+    def to_dict(self) -> Dict:
+        return {
+            'id': self.id,
+            'title': self.title,
+            'content': self.content,
+            'user_id': self.user_id,
+            'folder_id': self.folder_id,
+            'is_pinned': self.is_pinned,
+            'color': self.color,
+            'order': self.order,
+            'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else self.created_at,
+            'updated_at': self.updated_at.isoformat() if isinstance(self.updated_at, datetime) else self.updated_at,
+        }
+
+    def update(self, **kwargs):
+        """更新笔记属性"""
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+        self.updated_at = datetime.now()

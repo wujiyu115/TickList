@@ -18,6 +18,8 @@ from database.dao.counter_dao import counter_dao
 from database.dao.focus_dao import focus_dao
 from database.dao.filter_dao import filter_dao
 from database.dao.settings_dao import settings_dao
+from database.dao.note_folder_dao import note_folder_dao
+from database.dao.note_dao import note_dao
 
 router = APIRouter(prefix="/api/data", tags=["data"])
 
@@ -78,9 +80,15 @@ async def export_data(current_user_id: str = Depends(get_current_user)):
         # 移除内部字段
         settings.pop('id', None)
         
-        # 10. 构造导出数据
+        # 10. 获取用户所有笔记文件夹
+        note_folders = note_folder_dao.get_user_folders(current_user_id, limit=10000)
+        
+        # 11. 获取用户所有笔记
+        notes = note_dao.get_user_notes(current_user_id, limit=100000)
+        
+        # 12. 构造导出数据
         export = {
-            "version": "1.2",
+            "version": "1.3",
             "exported_at": datetime.now().isoformat(),
             "data": {
                 "tasks": tasks,
@@ -91,7 +99,9 @@ async def export_data(current_user_id: str = Depends(get_current_user)):
                 "counter_histories": counter_histories,
                 "focus_sessions": focus_sessions,
                 "filters": filters,
-                "settings": settings
+                "settings": settings,
+                "note_folders": note_folders,
+                "notes": notes
             }
         }
         
@@ -113,11 +123,11 @@ async def import_data(
     所有数据的 ID 会被重新生成，关联关系会被正确映射。
     """
     from database.connection import db_connection
-    from database.models import TagModel, TaskListModel, TaskModel, CountdownModel, CounterModel, CounterHistoryModel, TaskTagModel, TaskChildModel, FocusSessionModel, FilterModel
+    from database.models import TagModel, TaskListModel, TaskModel, CountdownModel, CounterModel, CounterHistoryModel, TaskTagModel, TaskChildModel, FocusSessionModel, FilterModel, NoteFolderModel, NoteModel
     
     try:
         data = import_data.data
-        stats = {"tasks": 0, "lists": 0, "tags": 0, "countdowns": 0, "counters": 0, "counter_histories": 0, "focus_sessions": 0, "filters": 0, "settings": 0}
+        stats = {"tasks": 0, "lists": 0, "tags": 0, "countdowns": 0, "counters": 0, "counter_histories": 0, "focus_sessions": 0, "filters": 0, "settings": 0, "note_folders": 0, "notes": 0}
         
         # ID 映射表（旧ID -> 新ID），用于恢复关联关系
         id_map = {}
@@ -363,7 +373,62 @@ async def import_data(
                 session.add(new_filter)
                 stats["filters"] += 1
             
-            # 7. 导入用户设置（合并到现有设置）
+            # 8. 导入笔记文件夹（parent_id 需要映射）
+            note_folder_id_map = {}  # 旧folder_id -> 新folder_id
+            # 先建立所有文件夹的 ID 映射
+            for nf_data in data.get('note_folders', []):
+                old_id = nf_data.get('id')
+                new_id = str(uuid.uuid4())
+                note_folder_id_map[old_id] = new_id
+            
+            # 再创建文件夹（此时所有文件夹 ID 映射已建立）
+            for nf_data in data.get('note_folders', []):
+                old_id = nf_data.get('id')
+                new_id = note_folder_id_map[old_id]
+                
+                # 映射 parent_id
+                parent_id = None
+                if nf_data.get('parent_id') and nf_data['parent_id'] in note_folder_id_map:
+                    parent_id = note_folder_id_map[nf_data['parent_id']]
+                
+                new_folder = NoteFolderModel(
+                    id=new_id,
+                    user_id=current_user_id,
+                    name=nf_data.get('name', ''),
+                    parent_id=parent_id,
+                    color=nf_data.get('color', '#1677ff'),
+                    order=nf_data.get('order', 0),
+                    created_at=datetime.now().isoformat(),
+                    updated_at=datetime.now().isoformat()
+                )
+                session.add(new_folder)
+                stats["note_folders"] += 1
+            
+            # 9. 导入笔记（folder_id 需要映射）
+            for n_data in data.get('notes', []):
+                new_id = str(uuid.uuid4())
+                
+                # 映射 folder_id
+                folder_id = None
+                if n_data.get('folder_id') and n_data['folder_id'] in note_folder_id_map:
+                    folder_id = note_folder_id_map[n_data['folder_id']]
+                
+                new_note = NoteModel(
+                    id=new_id,
+                    user_id=current_user_id,
+                    title=n_data.get('title', ''),
+                    content=n_data.get('content', ''),
+                    folder_id=folder_id,
+                    is_pinned=n_data.get('is_pinned', False),
+                    color=n_data.get('color', ''),
+                    order=n_data.get('order', 0),
+                    created_at=n_data.get('created_at', datetime.now().isoformat()),
+                    updated_at=datetime.now().isoformat()
+                )
+                session.add(new_note)
+                stats["notes"] += 1
+            
+            # 10. 导入用户设置（合并到现有设置）
             settings_data = data.get('settings')
             if settings_data and isinstance(settings_data, dict):
                 # 移除不应导入的字段

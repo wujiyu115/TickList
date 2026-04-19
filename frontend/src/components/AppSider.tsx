@@ -28,10 +28,12 @@ import {
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Dropdown, Modal, Input, Select, message, Button, Radio, Checkbox, Tabs } from 'antd';
 import type { MenuProps, RadioChangeEvent } from 'antd';
-import { User, TaskList, Tag, Filter, FilterConditions } from '../types';
+import { User, TaskList, Tag, Filter, FilterConditions, NoteFolder, Note } from '../types';
 import { getLists, createList, deleteList, updateList, reorderLists } from '../api/list';
 import { getTags, createTag, updateTag, deleteTag } from '../api/tag';
 import { getFilters, createFilter, updateFilter, deleteFilter } from '../api/filter';
+import { getNoteFolders, createNoteFolder, deleteNoteFolder, updateNoteFolder } from '../api/note';
+import { getNotes, createNote } from '../api/note';
 
 interface AppSiderProps {
   user: User;
@@ -72,6 +74,7 @@ const navItems = [
   { key: 'pomodoro', icon: ClockCircleOutlined, path: '/pomodoro', tooltip: '番茄时钟' },
   { key: 'countdown', icon: HourglassOutlined, path: '/countdown', tooltip: '倒数日' },
   { key: 'counter', icon: NumberOutlined, path: '/counter', tooltip: '计数器' },
+  { key: 'notes', icon: FileTextOutlined, path: '/notes', tooltip: '笔记' },
   { key: 'statistics', icon: BarChartOutlined, path: '/statistics', tooltip: '统计' },
 ];
 
@@ -130,12 +133,34 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
   const [hoveredFilterId, setHoveredFilterId] = useState<string | null>(null);
   const [prioritySelectAll, setPrioritySelectAll] = useState(true);
 
+  // 笔记相关数据
+  const [noteFolders, setNoteFolders] = useState<NoteFolder[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [noteCollapsedFolders, setNoteCollapsedFolders] = useState<Record<string, boolean>>({});
+  const [createNoteFolderModalVisible, setCreateNoteFolderModalVisible] = useState(false);
+  const [newNoteFolderName, setNewNoteFolderName] = useState('');
+  const [newNoteFolderColor, setNewNoteFolderColor] = useState('#1677ff');
+  const [createNoteFolderLoading, setCreateNoteFolderLoading] = useState(false);
+  const [hoveredNoteFolderId, setHoveredNoteFolderId] = useState<string | null>(null);
+
+  // 判断是否是笔记视图
+  const isNoteView = location.pathname === '/notes';
+
   // 加载清单、标签和过滤器数据
   useEffect(() => {
     loadLists();
     loadTags();
     loadFilters();
   }, []);
+  
+  // 加载笔记数据（仅在笔记视图时）
+  useEffect(() => {
+    if (isNoteView) {
+      loadNoteFolders();
+      loadNotes();
+    }
+  }, [isNoteView]);
 
   const loadLists = async () => {
     try {
@@ -164,18 +189,158 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
     }
   };
 
+  const loadNoteFolders = async () => {
+    try {
+      const data = await getNoteFolders();
+      setNoteFolders(data.folders || []);
+    } catch (e) {
+      console.error('Failed to load note folders:', e);
+    }
+  };
+
+  const loadNotes = async () => {
+    try {
+      const folderId = searchParams.get('folder_id');
+      const data = await getNotes(folderId ? { folder_id: folderId } : undefined);
+      setNotes(data.notes || []);
+    } catch (e) {
+      console.error('Failed to load notes:', e);
+    }
+  };
+
   // 判断是否是任务视图
   const isTaskView = location.pathname === '/';
-
+  
   // 获取当前高亮的图标
   const getActiveIcon = () => {
     if (location.pathname === '/') return 'tasks';
     if (location.pathname === '/calendar') return 'calendar';
     if (location.pathname === '/pomodoro') return 'pomodoro';
     if (location.pathname === '/countdown') return 'countdown';
+    if (location.pathname === '/counter') return 'counter';
+    if (location.pathname === '/notes') return 'notes';
     if (location.pathname === '/statistics') return 'statistics';
     return '';
   };
+  
+  // 创建笔记
+  const handleCreateNote = async () => {
+    try {
+      const folderId = searchParams.get('folder_id');
+      const newNote = await createNote({
+        title: '新建笔记',
+        content: '',
+        folder_id: folderId || null,
+        is_pinned: false,
+        color: '#1677ff'
+      });
+      message.success('笔记创建成功');
+      loadNotes();
+      navigate(`/notes?note_id=${newNote.id}`);
+      onNavigate?.();
+    } catch (e) {
+      message.error('创建笔记失败');
+    }
+  };
+  
+  // 创建笔记文件夹
+  const handleCreateNoteFolder = async () => {
+    if (!newNoteFolderName.trim()) {
+      message.warning('请输入文件夹名称');
+      return;
+    }
+    setCreateNoteFolderLoading(true);
+    try {
+      await createNoteFolder({
+        name: newNoteFolderName.trim(),
+        color: newNoteFolderColor,
+        parent_id: null,
+        order: 0
+      });
+      message.success('文件夹创建成功');
+      setCreateNoteFolderModalVisible(false);
+      setNewNoteFolderName('');
+      setNewNoteFolderColor('#1677ff');
+      loadNoteFolders();
+    } catch (e) {
+      message.error('创建文件夹失败');
+    } finally {
+      setCreateNoteFolderLoading(false);
+    }
+  };
+  
+  // 删除笔记文件夹
+  const handleDeleteNoteFolder = async (folderId: string) => {
+    Modal.confirm({
+      title: '删除文件夹',
+      content: '确定删除该文件夹吗？文件夹下的笔记不会被删除。',
+      okText: '删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await deleteNoteFolder(folderId);
+          message.success('文件夹已删除');
+          loadNoteFolders();
+          // 如果当前选中的是被删除的文件夹，则清空选择
+          const currentFolderId = searchParams.get('folder_id');
+          if (currentFolderId === folderId) {
+            navigate('/notes');
+            onNavigate?.();
+          }
+        } catch (e) {
+          message.error('删除失败');
+        }
+      }
+    });
+  };
+  
+  // 重命名笔记文件夹
+  const handleRenameNoteFolder = async (folder: NoteFolder) => {
+    Modal.confirm({
+      title: '重命名文件夹',
+      content: (
+        <Input
+          defaultValue={folder.name}
+          placeholder="请输入文件夹名称"
+          autoFocus
+          onPressEnter={(e) => {
+            const input = e.target as HTMLInputElement;
+            if (input.value.trim()) {
+              updateNoteFolder(folder.id, { name: input.value.trim() })
+                .then(() => {
+                  message.success('重命名成功');
+                  loadNoteFolders();
+                })
+                .catch(() => {
+                  message.error('重命名失败');
+                });
+            }
+          }}
+        />
+      ),
+      okText: '确定',
+      cancelText: '取消',
+      onOk: () => {
+        // 这里由于 Modal.confirm 的 content 是 Input，实际操作在 onPressEnter 中处理
+      }
+    });
+  };
+  
+  // 笔记文件夹右键菜单
+  const getNoteFolderContextMenuItems = (folder: NoteFolder): MenuProps['items'] => [
+    {
+      key: 'rename',
+      label: '重命名',
+      onClick: () => handleRenameNoteFolder(folder)
+    },
+    {
+      key: 'delete',
+      label: '删除',
+      danger: true,
+      onClick: () => handleDeleteNoteFolder(folder.id)
+    }
+  ];
 
   // 获取当前选中的筛选/清单/标签
   const getSelectedKey = () => {
@@ -1343,6 +1508,109 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         </div>
       )}
 
+      {/* 笔记视图面板 */}
+      {isNoteView && (
+        <div className="secondary-panel">
+          <div className="panel-title">笔记</div>
+          
+          {/* 全部笔记快速筛选 */}
+          <div 
+            className={`filter-item ${!searchParams.get('folder_id') ? 'active' : ''}`}
+            onClick={(e) => { e.stopPropagation(); navigate('/notes'); onNavigate?.(); }}
+          >
+            <FileTextOutlined />
+            <span>全部笔记</span>
+          </div>
+
+          {/* 文件夹区域 */}
+          <div className="section-header">
+            <span>文件夹</span>
+            <PlusOutlined style={{ cursor: 'pointer' }} onClick={() => setCreateNoteFolderModalVisible(true)} />
+          </div>
+          
+          <div className="lists-container">
+            {noteFolders.length > 0 ? (
+              noteFolders
+                .sort((a, b) => a.order - b.order)
+                .map(folder => {
+                  const isSelected = searchParams.get('folder_id') === folder.id;
+                  const isHovered = hoveredNoteFolderId === folder.id;
+                  return (
+                    <div 
+                      key={folder.id}
+                      className={`list-item ${isSelected ? 'active' : ''}`}
+                      onClick={(e) => { e.stopPropagation(); navigate(`/notes?folder_id=${folder.id}`); onNavigate?.(); }}
+                      onMouseEnter={() => { if (supportsHover) setHoveredNoteFolderId(folder.id); }}
+                      onMouseLeave={() => { if (supportsHover) setHoveredNoteFolderId(null); }}
+                    >
+                      <FolderOutlined />
+                      <span className="list-name">{folder.name}</span>
+                      {isHovered ? (
+                        <Dropdown 
+                          menu={{ items: getNoteFolderContextMenuItems(folder) }} 
+                          trigger={['click']}
+                        >
+                          <MoreOutlined
+                            style={{ 
+                              marginLeft: 'auto',
+                              fontSize: 14,
+                              color: 'var(--ant-color-text-tertiary)',
+                              cursor: 'pointer'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </Dropdown>
+                      ) : (
+                        <span className="list-dot" style={{ background: folder.color }} />
+                      )}
+                    </div>
+                  );
+                })
+            ) : (
+              <div style={{ padding: '8px 16px', color: 'var(--ant-color-text-quaternary)', fontSize: 13 }}>暂无文件夹</div>
+            )}
+          </div>
+
+          {/* 笔记列表区域 */}
+          <div className="section-header">
+            <span>笔记</span>
+          </div>
+          
+          <div className="lists-container">
+            {notes.length > 0 ? (
+              notes
+                .sort((a, b) => a.order - b.order)
+                .map(note => {
+                  const isSelected = searchParams.get('note_id') === note.id;
+                  return (
+                    <div 
+                      key={note.id}
+                      className={`list-item ${isSelected ? 'active' : ''}`}
+                      onClick={(e) => { e.stopPropagation(); navigate(`/notes?note_id=${note.id}`); onNavigate?.(); }}
+                    >
+                      <FileTextOutlined />
+                      <span className="list-name">{note.title}</span>
+                    </div>
+                  );
+                })
+            ) : (
+              <div style={{ padding: '8px 16px', color: 'var(--ant-color-text-quaternary)', fontSize: 13 }}>暂无笔记</div>
+            )}
+          </div>
+
+          {/* 新建笔记按钮 */}
+          <div className="bottom-items">
+            <div 
+              className="filter-item"
+              onClick={(e) => { e.stopPropagation(); handleCreateNote(); }}
+            >
+              <PlusOutlined />
+              <span>新建笔记</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 新建清单/文件夹 Modal */}
       <Modal
         title={
@@ -1452,6 +1720,51 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
               ...tags.filter(t => t.id !== editingTag?.id).map(t => ({ value: t.id, label: t.name }))
             ]}
             disabled // 目前标签没有 parent_id，暂时禁用
+          />
+        </div>
+      </Modal>
+
+      {/* 新建笔记文件夹 Modal */}
+      <Modal
+        title="新建文件夹"
+        open={createNoteFolderModalVisible}
+        onOk={handleCreateNoteFolder}
+        onCancel={() => {
+          setCreateNoteFolderModalVisible(false);
+          setNewNoteFolderName('');
+          setNewNoteFolderColor('#1677ff');
+        }}
+        confirmLoading={createNoteFolderLoading}
+        okText="创建"
+        cancelText="取消"
+      >
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8 }}>名称</div>
+          <Input 
+            placeholder="请输入文件夹名称"
+            value={newNoteFolderName}
+            onChange={e => setNewNoteFolderName(e.target.value)}
+            onPressEnter={handleCreateNoteFolder}
+          />
+        </div>
+        <div>
+          <div style={{ marginBottom: 8 }}>颜色</div>
+          <Select
+            value={newNoteFolderColor}
+            onChange={setNewNoteFolderColor}
+            style={{ width: '100%' }}
+            options={colorOptions}
+            optionRender={(option) => (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ 
+                  width: 16, 
+                  height: 16, 
+                  borderRadius: 4, 
+                  background: option.value as string 
+                }} />
+                {option.label}
+              </div>
+            )}
           />
         </div>
       </Modal>

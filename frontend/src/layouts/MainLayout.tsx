@@ -11,6 +11,7 @@ const PomodoroPage = lazy(() => import('../pages/PomodoroPage'));
 const CountdownPage = lazy(() => import('../pages/CountdownPage'));
 const CounterPage = lazy(() => import('../pages/CounterPage'));
 const CounterDetailPage = lazy(() => import('../pages/CounterDetailPage'));
+const NotePage = lazy(() => import('../pages/NotePage'));
 const SummaryPage = lazy(() => import('../pages/SummaryPage'));
 const SettingsPage = lazy(() => import('../pages/SettingsPage'));
 const AdminPage = lazy(() => import('../pages/admin/AdminPage'));
@@ -34,6 +35,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
 
   // 判断当前是否在任务页面（与 AppSider 的 isTaskView 逻辑一致）
   const isTaskPage = location.pathname === '/';
+  const isNotePage = location.pathname === '/notes';
+  const showSiderPanel = isTaskPage || isNotePage;
   const [siderCollapsed, setSiderCollapsed] = useState(() => {
     return localStorage.getItem('siderPanelCollapsed') === 'true';
   });
@@ -96,6 +99,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
               <Route path="/countdown" element={<CountdownPage />} />
               <Route path="/counter" element={<CounterPage />} />
               <Route path="/counter/:id" element={<CounterDetailPage />} />
+              <Route path="/notes" element={<NotePage />} />
               <Route path="/pomodoro" element={<PomodoroPage />} />
               <Route path="/statistics" element={<StatisticsPage />} />
               <Route path="/summary" element={<SummaryPage />} />
@@ -117,10 +121,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
         {isMobile && (
           <Drawer
             placement="left"
-            width={isTaskPage ? 280 : 'fit-content'}
+            width={showSiderPanel ? 280 : 'fit-content'}
             open={drawerVisible}
             onClose={() => setDrawerVisible(false)}
-            className={`mobile-sider-drawer${isTaskPage ? '' : ' icon-only'}`}
+            className={`mobile-sider-drawer${showSiderPanel ? '' : ' icon-only'}`}
             styles={{ body: { padding: 0 } }}
           >
             <AppSider user={user} onNavigate={handleDrawerNavigate} />

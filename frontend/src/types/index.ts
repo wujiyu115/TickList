@@ -329,3 +329,61 @@ export interface CounterHistory {
   after_value: number;
   created_at: string;
 }
+
+// 笔记文件夹类型
+export interface NoteFolder {
+  id: string;
+  name: string;
+  user_id: string;
+  parent_id: string | null;
+  color: string;
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NoteFolderCreateRequest {
+  name: string;
+  parent_id?: string | null;
+  color?: string;
+  order?: number;
+}
+
+export interface NoteFolderUpdateRequest {
+  name?: string;
+  parent_id?: string | null;
+  color?: string;
+  order?: number;
+}
+
+// 笔记类型
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  user_id: string;
+  folder_id: string | null;
+  is_pinned: boolean;
+  color: string;
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NoteCreateRequest {
+  title: string;
+  content?: string;
+  folder_id?: string | null;
+  is_pinned?: boolean;
+  color?: string;
+  order?: number;
+}
+
+export interface NoteUpdateRequest {
+  title?: string;
+  content?: string;
+  folder_id?: string | null;
+  is_pinned?: boolean;
+  color?: string;
+  order?: number;
+}

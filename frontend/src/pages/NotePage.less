@@ -1,0 +1,209 @@
+.note-page {
+  height: 100%;
+
+  .note-container {
+    height: 100%;
+    
+    .ant-card-body {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+  }
+
+  // 工具栏样式
+  .note-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+
+    .color-picker {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+
+      .color-option {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.2s ease;
+
+        &:hover {
+          transform: scale(1.15);
+        }
+
+        &.selected {
+          border-color: #333;
+          box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+        }
+      }
+    }
+
+    .pin-active {
+      color: #faad14;
+    }
+  }
+
+  // 标题输入框样式
+  .note-title-wrapper {
+    margin-bottom: 16px;
+
+    .note-title-input {
+      font-size: 24px;
+      font-weight: 600;
+      color: #262626;
+      
+      &:hover {
+        background-color: #fafafa;
+      }
+
+      &:focus {
+        background-color: #fff;
+      }
+
+      &::placeholder {
+        color: #bfbfbf;
+      }
+    }
+  }
+
+  // 编辑器区域样式
+  .note-editor-wrapper {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+
+    .w-md-editor {
+      height: 100% !important;
+      border: none;
+      border-radius: 8px;
+      color: #262626;
+
+      .wmde-markdown {
+        background-color: #fff;
+      }
+
+      .w-md-editor-text-container,
+      .w-md-editor-text,
+      .w-md-editor-text-pre {
+        background-color: #fff !important;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .w-md-editor-text-input {
+        background-color: transparent !important;
+        color: #262626 !important;
+        font-size: 14px;
+        line-height: 1.6;
+        -webkit-text-fill-color: #262626 !important;
+      }
+
+      .w-md-editor-text-pre {
+        color: #262626 !important;
+
+        .token {
+          color: inherit;
+        }
+      }
+
+      .w-md-editor-toolbar {
+        background-color: #fafafa;
+        border-bottom: 1px solid #f0f0f0;
+        border-radius: 8px 8px 0 0;
+      }
+
+      .w-md-editor-preview {
+        background-color: #fff;
+      }
+    }
+  }
+}
+
+// 响应式适配 - 平板
+@media (max-width: 768px) {
+  .note-page {
+    .note-container {
+      .ant-card-body {
+        padding: 16px;
+      }
+    }
+
+    .note-toolbar {
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+
+      .color-picker .color-option {
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    .note-title-wrapper {
+      margin-bottom: 12px;
+
+      .note-title-input {
+        font-size: 20px;
+      }
+    }
+  }
+}
+
+// 响应式适配 - 手机
+@media (max-width: 480px) {
+  .note-page {
+    .note-container {
+      .ant-card-body {
+        padding: 12px;
+      }
+    }
+
+    .note-toolbar {
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+
+      .color-picker {
+        gap: 4px;
+
+        .color-option {
+          width: 16px;
+          height: 16px;
+        }
+      }
+
+      .ant-select {
+        width: 120px !important;
+      }
+    }
+
+    .note-title-wrapper {
+      margin-bottom: 10px;
+
+      .note-title-input {
+        font-size: 18px;
+      }
+    }
+
+    .note-editor-wrapper {
+      border-radius: 6px;
+
+      .w-md-editor {
+        border-radius: 6px;
+
+        .w-md-editor-toolbar {
+          border-radius: 6px 6px 0 0;
+        }
+      }
+    }
+  }
+}

@@ -25,6 +25,8 @@ FOCUS_SESSIONS = "focus_sessions"
 WEBAUTHN_CREDENTIALS = "webauthn_credentials"
 COUNTERS = "counters"
 COUNTER_HISTORIES = "counter_histories"
+NOTE_FOLDERS = "note_folders"
+NOTES = "notes"
 
 # 兼容旧代码（别名）
 SETTINGS = USER_SETTINGS
