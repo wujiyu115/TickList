@@ -41,7 +41,7 @@ export default defineConfig({
       js: process.env.NODE_ENV === 'development' ? 'eval-source-map' : false,
       css: false,
     },
-    overrideBrowserslist: ['chrome >= 60'],
+    overrideBrowserslist: ['chrome >= 60', 'safari >= 14', 'ios_saf >= 14'],
   },
 
   server: {
