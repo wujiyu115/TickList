@@ -81,48 +81,33 @@
     border: 1px solid #f0f0f0;
     border-radius: 8px;
 
-    .w-md-editor {
+    .bytemd {
       height: 100% !important;
       border: none;
       border-radius: 8px;
       color: #262626;
 
-      .wmde-markdown {
-        background-color: #fff;
-      }
-
-      .w-md-editor-text-container,
-      .w-md-editor-text,
-      .w-md-editor-text-pre {
-        background-color: #fff !important;
-        font-size: 14px;
-        line-height: 1.6;
-      }
-
-      .w-md-editor-text-input {
-        background-color: transparent !important;
-        color: #262626 !important;
-        font-size: 14px;
-        line-height: 1.6;
-        -webkit-text-fill-color: #262626 !important;
-      }
-
-      .w-md-editor-text-pre {
-        color: #262626 !important;
-
-        .token {
-          color: inherit;
-        }
-      }
-
-      .w-md-editor-toolbar {
+      .bytemd-toolbar {
         background-color: #fafafa;
         border-bottom: 1px solid #f0f0f0;
         border-radius: 8px 8px 0 0;
       }
 
-      .w-md-editor-preview {
+      .bytemd-body {
         background-color: #fff;
+      }
+
+      .CodeMirror {
+        background-color: #fff;
+        color: #262626;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .bytemd-preview {
+        background-color: #fff;
+        font-size: 14px;
+        line-height: 1.6;
       }
     }
   }
@@ -197,10 +182,10 @@
     .note-editor-wrapper {
       border-radius: 6px;
 
-      .w-md-editor {
+      .bytemd {
         border-radius: 6px;
 
-        .w-md-editor-toolbar {
+        .bytemd-toolbar {
           border-radius: 6px 6px 0 0;
         }
       }

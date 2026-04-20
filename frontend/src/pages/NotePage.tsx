@@ -16,7 +16,11 @@ import {
   PushpinFilled,
   DeleteOutlined,
 } from '@ant-design/icons';
-import MDEditor from '@uiw/react-md-editor';
+import { Editor } from '@bytemd/react';
+import gfm from '@bytemd/plugin-gfm';
+import highlight from '@bytemd/plugin-highlight';
+import breaks from '@bytemd/plugin-breaks';
+import 'bytemd/dist/index.css';
 import { Note, NoteFolder } from '../types';
 import { getNote, updateNote, deleteNote } from '../api/note';
 import { getNoteFolders } from '../api/note';
@@ -36,6 +40,8 @@ const PRESET_COLORS = [
   '#fa8c16',
   '#8c8c8c',
 ];
+
+const bytemdPlugins = [gfm(), highlight(), breaks()];
 
 const NotePage: React.FC = () => {
   const [note, setNote] = useState<Note | null>(null);
@@ -261,13 +267,10 @@ const NotePage: React.FC = () => {
 
         {/* Markdown 编辑器 */}
         <div className="note-editor-wrapper">
-          <MDEditor
-            value={content}
+          <Editor
+            value={content || ''}
+            plugins={bytemdPlugins}
             onChange={(val) => setContent(val)}
-            height="100%"
-            preview="edit"
-            hideToolbar={false}
-            visibleDragBar={false}
           />
         </div>
       </Card>
