@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Checkbox, Dropdown, Input } from 'antd';
 import { CaretDownOutlined, CaretRightOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Task, TaskList as TaskListType } from '../types';
 import { useTaskContext } from '../contexts/TaskContext';
 import { useLongPress } from '../hooks/useLongPress';
+import { reorderTasks } from '../api/task';
 import TaskContextMenu from './TaskContextMenu';
 import './TaskItem.less';
 
@@ -22,7 +23,7 @@ interface TaskItemProps {
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDetails, lists, onMoveUp, onMoveDown, canMoveUp, canMoveDown }) => {
-  const { updateTaskData, selectTask, selectedTask } = useTaskContext();
+  const { updateTaskData, selectTask, selectedTask, refreshTasks } = useTaskContext();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(true);
   const [contextMenuVisible, setContextMenuVisible] = useState(false);
@@ -42,12 +43,24 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
     }
   };
 
-  // 找到子任务（通过 child_ids 查找）
-  const children = (task.child_ids || [])
+  // 找到子任务（通过 child_ids 查找，按 order 排序）
+  const children = ((task.child_ids || [])
     .map(id => allTasks.find(t => t.id === id))
-    .filter(Boolean) as Task[];
+    .filter(Boolean) as Task[])
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const completedChildren = children.filter(t => t.status === 'completed');
   const hasChildren = children.length > 0;
+
+  // 子任务排序
+  const handleChildReorder = useCallback(async (childIndex: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? childIndex - 1 : childIndex + 1;
+    if (targetIndex < 0 || targetIndex >= children.length) return;
+    const reordered = [...children];
+    [reordered[childIndex], reordered[targetIndex]] = [reordered[targetIndex], reordered[childIndex]];
+    const items = reordered.map((t, i) => ({ id: t.id, order: (i + 1) * 10 }));
+    await reorderTasks(items);
+    await refreshTasks();
+  }, [children, refreshTasks]);
 
   const isSelected = selectedTask?.id === task.id;
   const isCompleted = task.status === 'completed';
@@ -235,8 +248,19 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
       {/* 递归渲染子任务 */}
       {hasChildren && expanded && (
         <div className="task-children">
-          {children.map((child) => (
-            <TaskItem key={child.id} task={child} allTasks={allTasks} depth={depth + 1} hideDetails={hideDetails} lists={lists} />
+          {children.map((child, childIdx) => (
+            <TaskItem
+              key={child.id}
+              task={child}
+              allTasks={allTasks}
+              depth={depth + 1}
+              hideDetails={hideDetails}
+              lists={lists}
+              onMoveUp={() => handleChildReorder(childIdx, 'up')}
+              onMoveDown={() => handleChildReorder(childIdx, 'down')}
+              canMoveUp={childIdx > 0}
+              canMoveDown={childIdx < children.length - 1}
+            />
           ))}
         </div>
       )}
