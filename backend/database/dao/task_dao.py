@@ -350,15 +350,17 @@ class TaskDAO:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         skip: int = 0,
-        limit: int = 100
+        limit: int = 100,
+        include_deleted: bool = False
     ) -> List[Dict]:
         """获取用户任务列表（筛选匹配的任务，并自动展开子任务树）"""
         session = self._get_session()
         try:
             query = session.query(TaskModel).filter(
                 TaskModel.user_id == user_id,
-                TaskModel.deleted_at == None
             )
+            if not include_deleted:
+                query = query.filter(TaskModel.deleted_at == None)
             
             if status:
                 query = query.filter(TaskModel.status == status)

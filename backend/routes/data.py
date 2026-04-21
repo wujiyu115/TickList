@@ -20,6 +20,7 @@ from database.dao.filter_dao import filter_dao
 from database.dao.settings_dao import settings_dao
 from database.dao.note_folder_dao import note_folder_dao
 from database.dao.note_dao import note_dao
+from database.dao.statistics_dao import statistics_dao
 
 router = APIRouter(prefix="/api/data", tags=["data"])
 
@@ -39,7 +40,7 @@ async def export_data(current_user_id: str = Depends(get_current_user)):
     """
     try:
         # 1. 获取用户所有任务（不筛选，limit 设大）
-        tasks = task_dao.get_user_tasks(user_id=current_user_id, limit=100000)
+        tasks = task_dao.get_user_tasks(user_id=current_user_id, limit=100000, include_deleted=True)
         
         # 2. 获取用户所有清单（包括已归档的）
         lists_active = list_dao.get_user_lists(current_user_id, is_archived=False, limit=10000)
@@ -85,10 +86,13 @@ async def export_data(current_user_id: str = Depends(get_current_user)):
         
         # 11. 获取用户所有笔记
         notes = note_dao.get_user_notes(current_user_id, limit=100000)
-        
-        # 12. 构造导出数据
+
+        # 12. 获取用户所有每日统计
+        task_statistics = statistics_dao.get_all_statistics(current_user_id)
+
+        # 13. 构造导出数据
         export = {
-            "version": "1.3",
+            "version": "1.4",
             "exported_at": datetime.now().isoformat(),
             "data": {
                 "tasks": tasks,
@@ -101,7 +105,8 @@ async def export_data(current_user_id: str = Depends(get_current_user)):
                 "filters": filters,
                 "settings": settings,
                 "note_folders": note_folders,
-                "notes": notes
+                "notes": notes,
+                "task_statistics": task_statistics
             }
         }
         
@@ -123,11 +128,11 @@ async def import_data(
     所有数据的 ID 会被重新生成，关联关系会被正确映射。
     """
     from database.connection import db_connection
-    from database.models import TagModel, TaskListModel, TaskModel, CountdownModel, CounterModel, CounterHistoryModel, TaskTagModel, TaskChildModel, FocusSessionModel, FilterModel, NoteFolderModel, NoteModel
-    
+    from database.models import TagModel, TaskListModel, TaskModel, CountdownModel, CounterModel, CounterHistoryModel, TaskTagModel, TaskChildModel, FocusSessionModel, FilterModel, NoteFolderModel, NoteModel, TaskStatisticsModel
+
     try:
         data = import_data.data
-        stats = {"tasks": 0, "lists": 0, "tags": 0, "countdowns": 0, "counters": 0, "counter_histories": 0, "focus_sessions": 0, "filters": 0, "settings": 0, "note_folders": 0, "notes": 0}
+        stats = {"tasks": 0, "lists": 0, "tags": 0, "countdowns": 0, "counters": 0, "counter_histories": 0, "focus_sessions": 0, "filters": 0, "settings": 0, "note_folders": 0, "notes": 0, "task_statistics": 0}
         
         # ID 映射表（旧ID -> 新ID），用于恢复关联关系
         id_map = {}
@@ -212,9 +217,9 @@ async def import_data(
                 if task_data.get('child_ids'):
                     child_ids = [id_map.get(cid, cid) for cid in task_data['child_ids']]
                 
-                # 映射 tags (JSON 格式)
-                tags = task_data.get('tags', [])
-                
+                # 映射 tags (JSON 格式) — 需要通过 id_map 重映射
+                tags = [id_map.get(t, t) for t in task_data.get('tags', [])]
+
                 new_task = TaskModel(
                     id=new_id,
                     user_id=current_user_id,
@@ -440,6 +445,39 @@ async def import_data(
                 if settings_data:
                     settings_dao.update_settings(current_user_id, settings_data)
                     stats["settings"] = 1
+
+            # 11. 导入每日统计（按 user_id+date 去重）
+            for ts_data in data.get('task_statistics', []):
+                date_str = ts_data.get('date')
+                if not date_str:
+                    continue
+
+                existing = session.query(TaskStatisticsModel).filter(
+                    TaskStatisticsModel.user_id == current_user_id,
+                    TaskStatisticsModel.date == date_str
+                ).first()
+
+                if existing:
+                    existing.total_tasks = ts_data.get('total_tasks', 0)
+                    existing.completed_tasks = ts_data.get('completed_tasks', 0)
+                    existing.pending_tasks = ts_data.get('pending_tasks', 0)
+                    existing.in_progress_tasks = ts_data.get('in_progress_tasks', 0)
+                    existing.completion_rate = ts_data.get('completion_rate', 0)
+                    existing.updated_at = datetime.now().isoformat()
+                else:
+                    new_stat = TaskStatisticsModel(
+                        user_id=current_user_id,
+                        date=date_str,
+                        total_tasks=ts_data.get('total_tasks', 0),
+                        completed_tasks=ts_data.get('completed_tasks', 0),
+                        pending_tasks=ts_data.get('pending_tasks', 0),
+                        in_progress_tasks=ts_data.get('in_progress_tasks', 0),
+                        completion_rate=ts_data.get('completion_rate', 0),
+                        created_at=ts_data.get('created_at', datetime.now().isoformat()),
+                        updated_at=datetime.now().isoformat()
+                    )
+                    session.add(new_stat)
+                stats["task_statistics"] += 1
             
             session.commit()
         except Exception as e:

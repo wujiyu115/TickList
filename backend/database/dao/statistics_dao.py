@@ -100,6 +100,20 @@ class StatisticsDAO:
         finally:
             session.close()
     
+    def get_all_statistics(self, user_id: str) -> List[Dict]:
+        """获取用户所有每日统计记录（用于导出）"""
+        session = self._get_session()
+        try:
+            stats = session.query(TaskStatisticsModel).filter(
+                TaskStatisticsModel.user_id == user_id
+            ).order_by(TaskStatisticsModel.date).all()
+            return [self._model_to_dict(s) for s in stats]
+        except Exception as e:
+            logger.error(f"Failed to get all statistics for user {user_id}: {e}")
+            return []
+        finally:
+            session.close()
+
     def get_statistics_by_date(self, user_id: str, target_date: date) -> Optional[Dict]:
         """获取指定日期的统计"""
         session = self._get_session()
