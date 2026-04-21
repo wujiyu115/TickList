@@ -94,7 +94,7 @@ const formatFocusDuration = (seconds: number): string => {
 };
 
 const TaskEditor: React.FC = () => {
-  const { selectedTask, updateTaskData, selectTask, addTask, tasks, refreshTasks } = useTaskContext();
+  const { selectedTask, updateTaskData, selectTask, addTask, tasks, refreshTasks, deleteTaskData } = useTaskContext();
   const [editingTitle, setEditingTitle] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -273,6 +273,22 @@ const TaskEditor: React.FC = () => {
         list_id: selectedTask.list_id,
       });
       if (result && result.id) {
+        // 插入到当前子任务下方而非末尾
+        const currentIndex = childTasks.findIndex(c => c.id === subtask.id);
+        if (currentIndex !== -1 && currentIndex < childTasks.length - 1) {
+          const reorderItems: { id: string; order: number }[] = [];
+          let order = 10;
+          for (let i = 0; i < childTasks.length; i++) {
+            reorderItems.push({ id: childTasks[i].id, order });
+            order += 10;
+            if (childTasks[i].id === subtask.id) {
+              reorderItems.push({ id: result.id, order });
+              order += 10;
+            }
+          }
+          await reorderTasks(reorderItems);
+          await refreshTasks();
+        }
         setEditingSubtaskId(result.id);
         setEditingSubtaskTitle('');
       }
@@ -1101,6 +1117,10 @@ const TaskEditor: React.FC = () => {
                 />
               </span>
             )}
+            <DeleteOutlined
+              className="subtask-delete"
+              onClick={(e) => { e.stopPropagation(); deleteTaskData(subtask.id); }}
+            />
           </div>
         ))}
 

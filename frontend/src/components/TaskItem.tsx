@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Checkbox, Dropdown, Input } from 'antd';
 import { CaretDownOutlined, CaretRightOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -20,15 +20,33 @@ interface TaskItemProps {
   onMoveDown?: () => void;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
+  onEnterAdd?: () => void;
+  initialEditing?: boolean;
 }
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDetails, lists, onMoveUp, onMoveDown, canMoveUp, canMoveDown }) => {
-  const { updateTaskData, selectTask, selectedTask, refreshTasks } = useTaskContext();
+const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDetails, lists, onMoveUp, onMoveDown, canMoveUp, canMoveDown, onEnterAdd, initialEditing }) => {
+  const { updateTaskData, selectTask, selectedTask, refreshTasks, addTask } = useTaskContext();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(true);
   const [contextMenuVisible, setContextMenuVisible] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(initialEditing || false);
   const [editTitle, setEditTitle] = useState(task.title);
+  const [enterEditChildId, setEnterEditChildId] = useState<string | null>(null);
+  const enterAddRef = useRef(false);
+
+  useEffect(() => {
+    if (initialEditing) {
+      setEditing(true);
+      setEditTitle(task.title);
+    }
+  }, [initialEditing]);
+
+  useEffect(() => {
+    if (enterEditChildId) {
+      const timer = setTimeout(() => setEnterEditChildId(null), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [enterEditChildId]);
 
   // 格式化专注时长
   const formatFocusDuration = (seconds: number): string => {
@@ -61,6 +79,34 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
     await reorderTasks(items);
     await refreshTasks();
   }, [children, refreshTasks]);
+
+  const handleChildEnterAdd = useCallback(async (childIndex: number) => {
+    const currentChild = children[childIndex];
+    if (!currentChild) return;
+
+    const result = await addTask({
+      title: '',
+      parent_task_id: task.id,
+      tags: task.tags || [],
+      list_id: task.list_id,
+    });
+
+    if (result && result.id) {
+      const reorderItems: { id: string; order: number }[] = [];
+      let order = 10;
+      for (let i = 0; i < children.length; i++) {
+        reorderItems.push({ id: children[i].id, order });
+        order += 10;
+        if (children[i].id === currentChild.id) {
+          reorderItems.push({ id: result.id, order });
+          order += 10;
+        }
+      }
+      await reorderTasks(reorderItems);
+      await refreshTasks();
+      setEnterEditChildId(result.id);
+    }
+  }, [children, task, addTask, refreshTasks]);
 
   const isSelected = selectedTask?.id === task.id;
   const isCompleted = task.status === 'completed';
@@ -98,12 +144,28 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
   };
 
   const handleSaveTitle = () => {
+    if (enterAddRef.current) return;
     setEditing(false);
     const trimmed = editTitle.trim();
     if (trimmed && trimmed !== task.title) {
       updateTaskData(task.id, { title: trimmed });
     } else {
       setEditTitle(task.title); // 恢复原值
+    }
+  };
+
+  const handleEnterKey = () => {
+    if (onEnterAdd) {
+      enterAddRef.current = true;
+      const trimmed = editTitle.trim();
+      if (trimmed && trimmed !== task.title) {
+        updateTaskData(task.id, { title: trimmed });
+      }
+      setEditing(false);
+      onEnterAdd();
+      setTimeout(() => { enterAddRef.current = false; }, 100);
+    } else {
+      handleSaveTitle();
     }
   };
 
@@ -181,7 +243,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
                 <Input
                   value={editTitle}
                   onChange={e => setEditTitle(e.target.value)}
-                  onPressEnter={handleSaveTitle}
+                  onPressEnter={(e) => { e.preventDefault(); handleEnterKey(); }}
                   onBlur={handleSaveTitle}
                   onKeyDown={handleKeyDown}
                   autoFocus
@@ -260,6 +322,8 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
               onMoveDown={() => handleChildReorder(childIdx, 'down')}
               canMoveUp={childIdx > 0}
               canMoveDown={childIdx < children.length - 1}
+              onEnterAdd={() => handleChildEnterAdd(childIdx)}
+              initialEditing={child.id === enterEditChildId}
             />
           ))}
         </div>

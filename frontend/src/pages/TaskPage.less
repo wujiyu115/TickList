@@ -381,6 +381,21 @@
         }
       }
 
+      .subtask-delete {
+        font-size: 14px;
+        color: #ccc;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.2s;
+        &:hover {
+          color: #ff4d4f;
+        }
+      }
+
+      &:hover .subtask-delete {
+        opacity: 1;
+      }
+
       &.completed {
         .subtask-title {
           text-decoration: line-through;
@@ -587,6 +602,11 @@
 @media (hover: none) {
   .checklist-item {
     .checklist-delete {
+      opacity: 1 !important;
+    }
+  }
+  .subtask-item {
+    .subtask-delete {
       opacity: 1 !important;
     }
   }
