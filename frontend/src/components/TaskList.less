@@ -68,6 +68,32 @@
     }
 
     .task-group-content {
+      .task-drag-wrapper {
+        display: flex;
+        align-items: center;
+        position: relative;
+
+        .task-drag-handle {
+          position: absolute;
+          left: 4px;
+          color: #ccc;
+          cursor: grab;
+          font-size: 12px;
+          opacity: 0;
+          transition: opacity 0.2s;
+          z-index: 1;
+        }
+
+        &:hover .task-drag-handle {
+          opacity: 1;
+        }
+
+        > .task-item-wrapper {
+          flex: 1;
+          min-width: 0;
+        }
+      }
+
       .empty-group {
         padding: 16px 20px 16px 40px;
         color: #ccc;

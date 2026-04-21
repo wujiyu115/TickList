@@ -93,6 +93,17 @@ def test_get_children(app_client, auth_headers):
     assert body["count"] == 2
 
 
+def test_subtask_order_auto_increment(app_client, auth_headers):
+    """子任务创建时 order 应自动递增，新子任务追加到最后"""
+    parent = _create_task(app_client, auth_headers, title="Order Parent")
+    child1 = _create_task(app_client, auth_headers, title="Child 1", parent_task_id=parent["id"])
+    child2 = _create_task(app_client, auth_headers, title="Child 2", parent_task_id=parent["id"])
+    child3 = _create_task(app_client, auth_headers, title="Child 3", parent_task_id=parent["id"])
+    # 每个子任务的 order 应该递增
+    assert child1["order"] < child2["order"]
+    assert child2["order"] < child3["order"]
+
+
 # ------------------------------------------------------------------
 # 移动 / 复制
 # ------------------------------------------------------------------

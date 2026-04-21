@@ -3,6 +3,7 @@ import { Input, Checkbox, Button, Popover, DatePicker, TimePicker, Switch, Segme
 import { CalendarOutlined, MinusOutlined, CloseOutlined, PlusOutlined, ClockCircleOutlined, CheckOutlined, SendOutlined, EllipsisOutlined, DeleteOutlined, HolderOutlined, UnorderedListOutlined, FileTextOutlined, ExpandOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import TaskContextMenu from './TaskContextMenu';
 import { useTaskContext } from '../contexts/TaskContext';
+import { reorderTasks } from '../api/task';
 import { Task } from '../types';
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/zh-cn';
@@ -104,6 +105,9 @@ const TaskEditor: React.FC = () => {
   const [contentViewMode, setContentViewMode] = useState<'detail' | 'checklist'>('detail');
   const [editingCheckIdx, setEditingCheckIdx] = useState<number | null>(null);
   const [editingCheckText, setEditingCheckText] = useState('');
+  const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
+  const [editingSubtaskTitle, setEditingSubtaskTitle] = useState('');
+  const subtaskEnterRef = useRef(false);
   const [descFullscreen, setDescFullscreen] = useState(false);
   const [fullscreenDesc, setFullscreenDesc] = useState('');
   const [contentText, setContentText] = useState('');
@@ -195,9 +199,10 @@ const TaskEditor: React.FC = () => {
   if (!selectedTask) return null;
 
   // 找到子任务（通过 child_ids 查找）
-  const childTasks = (selectedTask.child_ids || [])
+  const childTasks = ((selectedTask.child_ids || [])
     .map(id => tasks.find(t => t.id === id))
-    .filter(Boolean) as Task[];
+    .filter(Boolean) as Task[])
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
   // 标题失焦时保存
   const handleTitleBlur = () => {
@@ -231,13 +236,49 @@ const TaskEditor: React.FC = () => {
     });
     setNewSubtaskTitle('');
     setAddingSubtask(false);
-    refreshTasks();
   };
 
   // 子任务状态切换
   const handleSubtaskToggle = (subtask: Task) => {
     const newStatus = subtask.status === 'completed' ? 'pending' : 'completed';
     updateTaskData(subtask.id, { status: newStatus });
+  };
+
+  // 子任务内联编辑
+  const handleSubtaskEdit = (subtask: Task) => {
+    setEditingSubtaskId(subtask.id);
+    setEditingSubtaskTitle(subtask.title);
+  };
+
+  const handleSubtaskTitleSave = (subtask: Task) => {
+    if (subtaskEnterRef.current) return;
+    if (editingSubtaskTitle.trim() && editingSubtaskTitle !== subtask.title) {
+      updateTaskData(subtask.id, { title: editingSubtaskTitle.trim() });
+    }
+    setEditingSubtaskId(null);
+  };
+
+  // 子任务编辑中回车：保存当前子任务并在下方新增子任务
+  const handleSubtaskEnter = async (subtask: Task) => {
+    subtaskEnterRef.current = true;
+    try {
+      if (editingSubtaskTitle.trim() && editingSubtaskTitle !== subtask.title) {
+        updateTaskData(subtask.id, { title: editingSubtaskTitle.trim() });
+      }
+      setEditingSubtaskId(null);
+      const result = await addTask({
+        title: '',
+        parent_task_id: selectedTask.id,
+        tags: selectedTask.tags || [],
+        list_id: selectedTask.list_id,
+      });
+      if (result && result.id) {
+        setEditingSubtaskId(result.id);
+        setEditingSubtaskTitle('');
+      }
+    } finally {
+      subtaskEnterRef.current = false;
+    }
   };
 
   // 全天开关切换
@@ -482,6 +523,51 @@ const TaskEditor: React.FC = () => {
       setEditingCheckIdx(index);
     }
   }, [contentItems, selectedTask?.id, updateTaskData, editingCheckIdx]);
+
+  // 子任务拖拽排序
+  const subtaskDragIndexRef = useRef<number | null>(null);
+  const subtaskDragOverIndexRef = useRef<number | null>(null);
+
+  const handleSubtaskDragStart = useCallback((index: number) => {
+    subtaskDragIndexRef.current = index;
+  }, []);
+
+  const handleSubtaskDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    subtaskDragOverIndexRef.current = index;
+  }, []);
+
+  const handleSubtaskDrop = useCallback(() => {
+    const from = subtaskDragIndexRef.current;
+    const to = subtaskDragOverIndexRef.current;
+    if (from === null || to === null || from === to) {
+      subtaskDragIndexRef.current = null;
+      subtaskDragOverIndexRef.current = null;
+      return;
+    }
+    const reordered = [...childTasks];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moved);
+    subtaskDragIndexRef.current = null;
+    subtaskDragOverIndexRef.current = null;
+    // Update order values
+    const items = reordered.map((t, i) => ({ id: t.id, order: (i + 1) * 10 }));
+    reorderTasks(items).then(() => refreshTasks());
+  }, [childTasks, refreshTasks]);
+
+  const handleSubtaskDragEnd = useCallback(() => {
+    subtaskDragIndexRef.current = null;
+    subtaskDragOverIndexRef.current = null;
+  }, []);
+
+  const handleMoveSubtask = useCallback((index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= childTasks.length) return;
+    const reordered = [...childTasks];
+    [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+    const items = reordered.map((t, i) => ({ id: t.id, order: (i + 1) * 10 }));
+    reorderTasks(items).then(() => refreshTasks());
+  }, [childTasks, refreshTasks]);
 
   // 切换视图模式
   const handleToggleViewMode = () => {
@@ -970,15 +1056,51 @@ const TaskEditor: React.FC = () => {
 
       {/* 子任务列表 */}
       <div className="editor-subtasks">
-        {childTasks.map(subtask => (
-          <div key={subtask.id} className={`subtask-item ${subtask.status === 'completed' ? 'completed' : ''}`}>
+        {childTasks.map((subtask, idx) => (
+          <div
+            key={subtask.id}
+            className={`subtask-item ${subtask.status === 'completed' ? 'completed' : ''}`}
+            style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+            draggable={supportsHover && editingSubtaskId !== subtask.id}
+            onDragStart={() => handleSubtaskDragStart(idx)}
+            onDragOver={(e) => handleSubtaskDragOver(e, idx)}
+            onDrop={handleSubtaskDrop}
+            onDragEnd={handleSubtaskDragEnd}
+          >
             <Checkbox
               checked={subtask.status === 'completed'}
               onChange={() => handleSubtaskToggle(subtask)}
             />
-            <span className="subtask-title" onClick={() => selectTask(subtask)}>
-              {subtask.title}
-            </span>
+            {editingSubtaskId === subtask.id ? (
+              <Input
+                className="subtask-edit-input"
+                value={editingSubtaskTitle}
+                onChange={e => setEditingSubtaskTitle(e.target.value)}
+                onBlur={() => handleSubtaskTitleSave(subtask)}
+                onPressEnter={(e) => { e.preventDefault(); handleSubtaskEnter(subtask); }}
+                autoFocus
+                variant="borderless"
+                placeholder="输入子任务标题"
+              />
+            ) : (
+              <span className="subtask-title" onClick={() => handleSubtaskEdit(subtask)}>
+                {subtask.title || <span style={{ color: '#bbb' }}>未命名子任务</span>}
+              </span>
+            )}
+            {supportsHover ? (
+              <HolderOutlined className="subtask-drag-handle" />
+            ) : (
+              <span className="subtask-move-btns">
+                <ArrowUpOutlined
+                  className={`subtask-move-btn ${idx === 0 ? 'disabled' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); handleMoveSubtask(idx, 'up'); }}
+                />
+                <ArrowDownOutlined
+                  className={`subtask-move-btn ${idx === childTasks.length - 1 ? 'disabled' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); handleMoveSubtask(idx, 'down'); }}
+                />
+              </span>
+            )}
           </div>
         ))}
 

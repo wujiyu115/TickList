@@ -51,6 +51,10 @@ class BatchUpdateStatus(BaseModel):
     task_ids: List[str]
     status: str
 
+class TaskReorderItem(BaseModel):
+    id: str
+    order: int
+
 @router.get('/api/tasks/trash')
 async def get_trash_tasks(
     page: int = 1,
@@ -78,6 +82,19 @@ async def search_tasks(
         return {'tasks': tasks, 'count': len(tasks)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'搜索任务失败: {str(e)}')
+
+@router.post('/api/tasks/reorder')
+async def reorder_tasks(
+    items: List[TaskReorderItem],
+    current_user_id: str = Depends(get_current_user)
+):
+    """批量更新任务排序"""
+    try:
+        for item in items:
+            task_dao.update_task_order(item.id, current_user_id, item.order)
+        return {'message': 'ok'}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'批量排序失败: {str(e)}')
 
 @router.post('/api/tasks/batch-update')
 async def batch_update_tasks(
@@ -124,6 +141,13 @@ async def create_task(
             except:
                 pass
         
+        # 如果是子任务，自动计算 order 为当前兄弟子任务中最大值 + 1
+        if task_data.parent_task_id:
+            max_order = task_dao.get_max_child_order(task_data.parent_task_id, current_user_id)
+            task_order = max_order + 1
+        else:
+            task_order = task_data.order
+        
         # 创建任务对象
         task = Task(
             id=str(uuid.uuid4()),
@@ -139,7 +163,7 @@ async def create_task(
             reminder_time=reminder_time,
             is_pinned=task_data.is_pinned,
             tags=task_data.tags,
-            order=task_data.order,
+            order=task_order,
             push_due_notify=task_data.push_due_notify
         )
         

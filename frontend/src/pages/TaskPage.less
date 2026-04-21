@@ -355,6 +355,32 @@
         }
       }
       
+      .subtask-drag-handle {
+        color: #ccc;
+        cursor: grab;
+        font-size: 12px;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+
+      &:hover .subtask-drag-handle {
+        opacity: 1;
+      }
+
+      .subtask-move-btns {
+        display: flex;
+        gap: 8px;
+        .subtask-move-btn {
+          font-size: 14px;
+          color: #666;
+          cursor: pointer;
+          &.disabled {
+            color: #ddd;
+            cursor: not-allowed;
+          }
+        }
+      }
+
       &.completed {
         .subtask-title {
           text-decoration: line-through;

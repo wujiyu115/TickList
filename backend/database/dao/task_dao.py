@@ -2,7 +2,7 @@
 
 from typing import List, Optional, Dict
 from datetime import datetime
-from sqlalchemy import and_, or_, desc, asc
+from sqlalchemy import and_, or_, desc, asc, func
 from sqlalchemy.orm import Session
 from database.connection import db_connection
 from database.models import TaskModel, TaskChildModel, TaskTagModel
@@ -49,6 +49,23 @@ class TaskDAO:
         result['tags'] = [t[0] for t in tags]
         return result
     
+    def get_max_child_order(self, parent_id: str, user_id: str) -> int:
+        """获取指定父任务下子任务的最大 order 值"""
+        session = self._get_session()
+        try:
+            child_ids = session.query(TaskChildModel.child_id).filter(
+                TaskChildModel.parent_id == parent_id
+            ).all()
+            if not child_ids:
+                return 0
+            max_order = session.query(func.max(TaskModel.order)).filter(
+                TaskModel.id.in_([c[0] for c in child_ids]),
+                TaskModel.user_id == user_id
+            ).scalar()
+            return max_order if max_order is not None else 0
+        finally:
+            session.close()
+
     def create_task(self, task: Task) -> Dict:
         """创建任务"""
         session = self._get_session()
@@ -452,16 +469,12 @@ class TaskDAO:
                 return []
             
             child_ids = [c[0] for c in children]
-            result = []
-            for child_id in child_ids:
-                child = session.query(TaskModel).filter(
-                    TaskModel.id == child_id,
-                    TaskModel.user_id == user_id,
-                    TaskModel.deleted_at == None
-                ).first()
-                if child:
-                    result.append(self._task_to_dict(child, session))
-            return result
+            child_tasks = session.query(TaskModel).filter(
+                TaskModel.id.in_(child_ids),
+                TaskModel.user_id == user_id,
+                TaskModel.deleted_at == None
+            ).order_by(asc(TaskModel.order)).all()
+            return [self._task_to_dict(t, session) for t in child_tasks]
         finally:
             session.close()
     

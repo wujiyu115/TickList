@@ -15,9 +15,13 @@ interface TaskItemProps {
   depth?: number;
   hideDetails?: boolean;
   lists?: TaskListType[];
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 }
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDetails, lists }) => {
+const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDetails, lists, onMoveUp, onMoveDown, canMoveUp, canMoveDown }) => {
   const { updateTaskData, selectTask, selectedTask } = useTaskContext();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(true);
@@ -106,6 +110,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
           <TaskContextMenu
             task={task}
             onClose={() => setContextMenuVisible(false)}
+            onMoveUp={onMoveUp}
+            onMoveDown={onMoveDown}
+            canMoveUp={canMoveUp}
+            canMoveDown={canMoveDown}
           />
         )}
         trigger={['contextMenu']}

@@ -81,3 +81,8 @@ export const permanentDeleteTask = async (taskId: string): Promise<any> => {
 export const emptyTrash = async (): Promise<any> => {
   return api.delete('/tasks/trash/empty');
 };
+
+// 批量更新任务排序
+export const reorderTasks = (items: { id: string; order: number }[]): Promise<any> => {
+  return api.post('/tasks/reorder', items);
+};

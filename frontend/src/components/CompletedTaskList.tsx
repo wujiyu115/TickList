@@ -175,9 +175,17 @@ const CompletedTaskList: React.FC<CompletedTaskListProps> = ({
     return list ? list.name : '所有清单';
   }, [listFilter, lists]);
 
-  // 筛选任务（props 传入的已经是已完成任务，只做日期和清单筛选）
+  // 构建子任务 ID 集合，用于树形过滤
+  const childIdSet = useMemo(() => {
+    return new Set<string>(
+      tasks.reduce<string[]>((acc, t) => acc.concat(t.child_ids || []), [])
+    );
+  }, [tasks]);
+
+  // 筛选任务（props 传入的已经是已完成任务，只做日期和清单筛选，并排除子任务）
   const filteredTasks = useMemo(() => {
-    let result = tasks;
+    // 先过滤掉子任务，只保留顶层任务
+    let result = tasks.filter(t => !childIdSet.has(t.id));
 
     // 日期筛选
     if (dateFilter !== 'all') {
@@ -224,7 +232,7 @@ const CompletedTaskList: React.FC<CompletedTaskListProps> = ({
     }
 
     return result;
-  }, [tasks, dateFilter, listFilter]);
+  }, [tasks, dateFilter, listFilter, childIdSet]);
 
   // 按完成日期分组
   const groupedTasks = useMemo(() => {

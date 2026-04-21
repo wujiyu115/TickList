@@ -18,6 +18,8 @@ import {
   UnorderedListOutlined,
   CheckOutlined,
   UndoOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { useNavigate } from 'react-router-dom';
@@ -31,9 +33,13 @@ interface TaskContextMenuProps {
   task: Task;
   onClose: () => void;
   isTrashView?: boolean;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 }
 
-const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTrashView }) => {
+const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTrashView, onMoveUp, onMoveDown, canMoveUp, canMoveDown }) => {
   const { updateTaskData, deleteTaskData, refreshTasks, addTask, selectTask } = useTaskContext();
   const navigate = useNavigate();
   
@@ -440,6 +446,14 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
           message.success('链接已复制');
           break;
 
+        case 'move-up':
+          onMoveUp?.();
+          break;
+
+        case 'move-down':
+          onMoveDown?.();
+          break;
+
         case 'delete':
           await deleteTaskData(task.id);
           break;
@@ -549,6 +563,21 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
       label: '复制链接',
     },
     { type: 'divider' },
+    ...(onMoveUp || onMoveDown ? [
+      {
+        key: 'move-up',
+        icon: <ArrowUpOutlined />,
+        label: '上移',
+        disabled: !canMoveUp,
+      },
+      {
+        key: 'move-down',
+        icon: <ArrowDownOutlined />,
+        label: '下移',
+        disabled: !canMoveDown,
+      },
+      { type: 'divider' as const },
+    ] : []),
     {
       key: 'delete',
       icon: <DeleteOutlined />,

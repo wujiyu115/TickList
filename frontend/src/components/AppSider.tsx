@@ -327,8 +327,32 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
     });
   };
   
+  // 在指定文件夹下创建笔记
+  const handleCreateNoteInFolder = async (folderId: string) => {
+    try {
+      const newNote = await createNote({
+        title: '新建笔记',
+        content: '',
+        folder_id: folderId,
+        is_pinned: false,
+        color: '#1677ff'
+      });
+      message.success('笔记创建成功');
+      loadNotes();
+      navigate(`/notes?note_id=${newNote.id}`);
+      onNavigate?.();
+    } catch (e) {
+      message.error('创建笔记失败');
+    }
+  };
+
   // 笔记文件夹右键菜单
   const getNoteFolderContextMenuItems = (folder: NoteFolder): MenuProps['items'] => [
+    {
+      key: 'create-note',
+      label: '新建笔记',
+      onClick: () => handleCreateNoteInFolder(folder.id)
+    },
     {
       key: 'rename',
       label: '重命名',
