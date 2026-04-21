@@ -54,6 +54,7 @@ class TaskModel(Base):
     __table_args__ = (
         Index('idx_tasks_user_status', 'user_id', 'status'),
         Index('idx_tasks_user_list', 'user_id', 'list_id'),
+        Index('idx_tasks_user_completed_at', 'user_id', 'completed_at'),
     )
 
 

@@ -411,12 +411,18 @@ class TaskDAO:
                     )
                 )
             
-            # 排序
-            query = query.order_by(
-                desc(TaskModel.is_pinned),
-                asc(TaskModel.order),
-                desc(TaskModel.created_at)
-            )
+            # 排序：已完成任务按完成时间从新到旧，其他任务按置顶、排序、创建时间
+            if status == 'completed':
+                query = query.order_by(
+                    desc(TaskModel.completed_at),
+                    desc(TaskModel.created_at)
+                )
+            else:
+                query = query.order_by(
+                    desc(TaskModel.is_pinned),
+                    asc(TaskModel.order),
+                    desc(TaskModel.created_at)
+                )
             
             # 分页
             query = query.offset(skip).limit(limit)

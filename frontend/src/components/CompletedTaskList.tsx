@@ -247,11 +247,16 @@ const CompletedTaskList: React.FC<CompletedTaskListProps> = ({
       groups[dateKey].push(task);
     });
 
-    // 按日期降序排序
+    // 按日期降序排序（组间）
     const sortedKeys = Object.keys(groups).sort((a, b) => b.localeCompare(a));
     return sortedKeys.map(key => ({
       dateKey: key,
-      tasks: groups[key],
+      // 组内按完成时间从新到旧排序
+      tasks: groups[key].sort((a, b) => {
+        const timeA = a.completed_at ? dayjs(a.completed_at).valueOf() : 0;
+        const timeB = b.completed_at ? dayjs(b.completed_at).valueOf() : 0;
+        return timeB - timeA;
+      }),
     }));
   }, [filteredTasks]);
 
