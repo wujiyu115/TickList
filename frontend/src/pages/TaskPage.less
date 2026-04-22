@@ -581,6 +581,13 @@
         &.checklist-placeholder {
           border-bottom: none;
           opacity: 0.6;
+          flex-direction: row;
+          align-items: center;
+          gap: 8px;
+
+          .ant-checkbox-wrapper {
+            flex-shrink: 0;
+          }
 
           .ant-checkbox-disabled .ant-checkbox-inner {
             background: transparent;
