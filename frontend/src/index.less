@@ -61,3 +61,19 @@ html[data-theme='dark'] {
     scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
   }
 }
+
+// 防止 iOS Safari 输入框聚焦时自动放大页面（font-size < 16px 触发）
+input, textarea, select,
+.ant-input, .ant-input-number, .ant-select-selection-search-input,
+.ant-picker-input > input {
+  font-size: 16px !important;
+}
+
+@media (min-width: 769px) {
+  // 大屏恢复原始字号，iOS 自动放大仅在移动端触发
+  input, textarea, select,
+  .ant-input, .ant-input-number, .ant-select-selection-search-input,
+  .ant-picker-input > input {
+    font-size: inherit !important;
+  }
+}
