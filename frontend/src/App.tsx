@@ -13,22 +13,39 @@ import { getSettings } from './api/settings';
 import { User, UserSettings } from './types';
 
 // 配色方案映射
-const THEME_COLORS: Record<string, { color: string; isDark: boolean }> = {
+interface ThemeConfig {
+  color: string;
+  isDark: boolean;
+  token?: Record<string, string>;
+}
+
+const THEME_COLORS: Record<string, ThemeConfig> = {
   default: { color: '#1677ff', isDark: false },
   green: { color: '#52c41a', isDark: false },
   purple: { color: '#722ed1', isDark: false },
   orange: { color: '#fa8c16', isDark: false },
   rose: { color: '#eb2f96', isDark: false },
   minimal: { color: '#8c8c8c', isDark: false },
-  dark: { color: '#141414', isDark: true },
-  midnight: { color: '#001529', isDark: true },
+  dark: { color: '#1677ff', isDark: true },
+  midnight: {
+    color: '#4096ff',
+    isDark: true,
+    token: {
+      colorBgContainer: '#0a1628',
+      colorBgElevated: '#0f1d30',
+      colorBgLayout: '#020d1a',
+      colorBgSpotlight: '#112a45',
+      colorBorderSecondary: '#1a3050',
+      colorBorder: '#1d3b5a',
+    },
+  },
 };
 
 // 主题 Context
 export const ThemeContext = createContext<{
   primaryColor: string;
   isDark: boolean;
-  setTheme: (color: string, isDark: boolean) => void;
+  setTheme: (themeKey: string) => void;
 } | null>(null);
 
 // 根据 default_view 获取跳转路径
@@ -53,6 +70,7 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [primaryColor, setPrimaryColor] = useState('#1677ff');
   const [isDark, setIsDark] = useState(false);
+  const [extraToken, setExtraToken] = useState<Record<string, string> | undefined>(undefined);
   const [defaultViewPath, setDefaultViewPath] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,6 +90,7 @@ const App: React.FC = () => {
             const themeConfig = THEME_COLORS[settings.theme];
             setPrimaryColor(themeConfig.color);
             setIsDark(themeConfig.isDark);
+            setExtraToken(themeConfig.token);
           }
           // 设置默认视图路径，仅在首次加载时使用
           if (settings.default_view) {
@@ -89,9 +108,13 @@ const App: React.FC = () => {
     }
   };
 
-  const setTheme = (color: string, dark: boolean) => {
-    setPrimaryColor(color);
-    setIsDark(dark);
+  const setTheme = (themeKey: string) => {
+    const config = THEME_COLORS[themeKey];
+    if (config) {
+      setPrimaryColor(config.color);
+      setIsDark(config.isDark);
+      setExtraToken(config.token);
+    }
   };
 
   const handleLogin = async (userData: User, token: string) => {
@@ -105,6 +128,7 @@ const App: React.FC = () => {
         const themeConfig = THEME_COLORS[settings.theme];
         setPrimaryColor(themeConfig.color);
         setIsDark(themeConfig.isDark);
+        setExtraToken(themeConfig.token);
       }
       // 登录成功后立即跳转到默认视图
       const targetPath = getDefaultViewPath(settings.default_view || 'tasks');
@@ -121,6 +145,10 @@ const App: React.FC = () => {
     message.success('已退出登录');
   };
 
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -131,6 +159,7 @@ const App: React.FC = () => {
         cssVar: true,
         token: {
           colorPrimary: primaryColor,
+          ...extraToken,
         },
         algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
       }}

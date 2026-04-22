@@ -47,8 +47,8 @@ const THEME_OPTIONS = [
   { key: 'orange', name: '活力橙', color: '#fa8c16', isDark: false },
   { key: 'rose', name: '玫瑰红', color: '#eb2f96', isDark: false },
   { key: 'minimal', name: '极简灰', color: '#8c8c8c', isDark: false },
-  { key: 'dark', name: '暗夜黑', color: '#141414', isDark: true },
-  { key: 'midnight', name: '午夜蓝', color: '#001529', isDark: true },
+  { key: 'dark', name: '暗夜黑', color: '#1677ff', isDark: true },
+  { key: 'midnight', name: '午夜蓝', color: '#4096ff', isDark: true },
 ];
 
 // 语言选项
@@ -184,7 +184,7 @@ const SettingsPage: React.FC = () => {
       if (key === 'theme' && themeContext) {
         const themeOption = THEME_OPTIONS.find(t => t.key === value);
         if (themeOption) {
-          themeContext.setTheme(themeOption.color, themeOption.isDark);
+          themeContext.setTheme(themeOption.key);
         }
       }
     } catch (e) {
