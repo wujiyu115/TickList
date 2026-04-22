@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { Button, Spin, Dropdown, Checkbox } from 'antd';
 import {
   CalendarOutlined,
@@ -14,6 +14,7 @@ import { Task, CalendarTasksByDate } from '../../types';
 import { getCalendarTasks } from '../../api/calendar';
 import { getSettings } from '../../api/settings';
 import { useTaskContext } from '../../contexts/TaskContext';
+import { ThemeContext } from '../../App';
 import TaskPopover from './TaskPopover';
 import WeekView from './WeekView';
 import DayView from './DayView';
@@ -27,8 +28,8 @@ interface CalendarViewProps {
 // 视图模式类型
 export type ViewMode = 'month' | 'week' | 'day' | 'year';
 
-// 任务颜色数组
-export const TASK_COLORS = [
+// 任务颜色数组 - 浅色模式
+const TASK_COLORS_LIGHT = [
   '#FFE4E6', // 浅粉
   '#DBEAFE', // 浅蓝
   '#D1FAE5', // 浅绿
@@ -39,13 +40,29 @@ export const TASK_COLORS = [
   '#E0E7FF', // 浅靛蓝
 ];
 
+// 任务颜色数组 - 暗色模式
+const TASK_COLORS_DARK = [
+  'rgba(255, 228, 230, 0.15)', // 粉色调
+  'rgba(219, 234, 254, 0.15)', // 蓝色调
+  'rgba(209, 250, 229, 0.15)', // 绿色调
+  'rgba(254, 249, 195, 0.15)', // 黄色调
+  'rgba(237, 233, 254, 0.15)', // 紫色调
+  'rgba(207, 250, 254, 0.15)', // 青色调
+  'rgba(254, 215, 170, 0.15)', // 橙色调
+  'rgba(224, 231, 255, 0.15)', // 靛蓝调
+];
+
+// 兼容旧引用
+export const TASK_COLORS = TASK_COLORS_LIGHT;
+
 // 根据任务 id 的 hash 值稳定分配颜色
-export const getTaskColor = (taskId: string): string => {
+export const getTaskColor = (taskId: string, isDark: boolean = false): string => {
   let hash = 0;
   for (let i = 0; i < taskId.length; i++) {
     hash = taskId.charCodeAt(i) + ((hash << 5) - hash);
   }
-  return TASK_COLORS[Math.abs(hash) % TASK_COLORS.length];
+  const colors = isDark ? TASK_COLORS_DARK : TASK_COLORS_LIGHT;
+  return colors[Math.abs(hash) % colors.length];
 };
 
 // 计算日历显示的42天（6行7列），支持 weekStartDay
@@ -105,6 +122,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onTaskClick }) => {
   
   // 使用 TaskContext 获取全局任务列表和更新方法
   const { tasks: allTasks, updateTaskData } = useTaskContext();
+  const themeCtx = useContext(ThemeContext);
+  const isDark = themeCtx?.isDark ?? false;
 
   // 加载用户设置中的周起始日
   useEffect(() => {
@@ -377,7 +396,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onTaskClick }) => {
                         >
                           <div
                             className={`task-bar ${isCompleted ? 'task-bar-completed' : ''}`}
-                            style={{ background: getTaskColor(task.id) }}
+                            style={{ background: getTaskColor(task.id, isDark) }}
                           >
                             <Checkbox
                               checked={isCompleted}

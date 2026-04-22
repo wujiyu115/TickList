@@ -7,11 +7,11 @@
     display: flex;
     align-items: center;
     padding: 12px 20px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--ant-color-border);
     gap: 8px;
 
     .add-icon {
-      color: #999;
+      color: var(--ant-color-text-tertiary);
       font-size: 14px;
     }
 
@@ -20,7 +20,7 @@
       font-size: 14px;
       
       &::placeholder {
-        color: #bbb;
+        color: var(--ant-color-text-tertiary);
       }
     }
   }
@@ -41,12 +41,12 @@
       transition: background-color 0.2s;
 
       &:hover {
-        background-color: #f9f9f9;
+        background-color: var(--ant-color-bg-text-hover);
       }
 
       .expand-icon {
         width: 16px;
-        color: #999;
+        color: var(--ant-color-text-tertiary);
         font-size: 10px;
         display: flex;
         align-items: center;
@@ -56,13 +56,13 @@
       .group-title {
         font-size: 13px;
         font-weight: 500;
-        color: #666;
+        color: var(--ant-color-text-secondary);
         margin-left: 4px;
       }
 
       .group-count {
         font-size: 12px;
-        color: #999;
+        color: var(--ant-color-text-tertiary);
         margin-left: 6px;
       }
     }
@@ -76,7 +76,7 @@
         .task-drag-handle {
           position: absolute;
           left: 4px;
-          color: #ccc;
+          color: var(--ant-color-text-quaternary);
           cursor: grab;
           font-size: 12px;
           opacity: 0;
@@ -96,7 +96,7 @@
 
       .empty-group {
         padding: 16px 20px 16px 40px;
-        color: #ccc;
+        color: var(--ant-color-text-quaternary);
         font-size: 13px;
       }
     }

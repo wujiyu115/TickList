@@ -107,7 +107,7 @@
       background: var(--ant-color-bg-layout);
 
       .date-number {
-        color: #bbb;
+        color: var(--ant-color-text-quaternary);
       }
     }
 
@@ -519,12 +519,12 @@
   font-size: 12px;
   overflow: hidden;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 2px var(--ant-color-border);
   transition: transform 0.2s, box-shadow 0.2s;
 
   &:hover {
     transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 6px var(--ant-color-border);
   }
   
   &.task-block-completed {
@@ -564,7 +564,7 @@
 
   .task-block-time {
     font-size: 11px;
-    color: rgba(0, 0, 0, 0.5);
+    color: var(--ant-color-text-secondary);
     margin-top: 2px;
   }
 }
@@ -646,6 +646,17 @@
         &.has-many-tasks {
           background: #93C5FD;
           color: var(--ant-color-bg-container);
+        }
+
+        html[data-theme='dark'] & {
+          &.has-tasks {
+            background: rgba(59, 130, 246, 0.25);
+            color: #93C5FD;
+          }
+          &.has-many-tasks {
+            background: rgba(59, 130, 246, 0.4);
+            color: var(--ant-color-text);
+          }
         }
 
         &.today {

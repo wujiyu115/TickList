@@ -2,7 +2,7 @@
   display: flex;
   height: 100%;
   min-height: calc(100vh - 112px);
-  background: #fff;
+  background: var(--ant-color-bg-container);
 }
 
 // 左侧计时器区域
@@ -11,7 +11,7 @@
   display: flex;
   flex-direction: column;
   padding: 24px 32px;
-  border-right: 1px solid #f0f0f0;
+  border-right: 1px solid var(--ant-color-border);
   
   .pomodoro-toolbar {
     display: flex;
@@ -23,7 +23,7 @@
       font-size: 20px;
       font-weight: 600;
       margin: 0;
-      color: #1a1a1a;
+      color: var(--ant-color-text);
     }
     
     .toolbar-center {
@@ -37,11 +37,11 @@
       
       .toolbar-icon {
         font-size: 16px;
-        color: #666;
+        color: var(--ant-color-text-secondary);
         cursor: pointer;
         
         &:hover {
-          color: #1677ff;
+          color: var(--ant-color-primary);
         }
       }
       
@@ -63,7 +63,7 @@
       display: flex;
       align-items: center;
       gap: 4px;
-      color: #999;
+      color: var(--ant-color-text-tertiary);
       font-size: 14px;
       margin-bottom: 40px;
       cursor: pointer;
@@ -73,7 +73,7 @@
       white-space: nowrap;
       
       &:hover {
-        color: #666;
+        color: var(--ant-color-text-secondary);
       }
     }
   }
@@ -84,13 +84,13 @@
   width: 380px;
   min-width: 320px;
   padding: 24px;
-  background: #fafafa;
+  background: var(--ant-color-bg-layout);
   overflow-y: auto;
   
   .panel-title {
     font-size: 18px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--ant-color-text);
     margin: 0 0 16px 0;
   }
   
@@ -112,22 +112,32 @@
         background: linear-gradient(135deg, #e6f4ff 0%, #d6ebff 100%);
       }
       
+      html[data-theme='dark'] & {
+        &.stat-card-purple {
+          background: linear-gradient(135deg, rgba(114, 46, 209, 0.2) 0%, rgba(114, 46, 209, 0.1) 100%);
+        }
+        
+        &.stat-card-blue {
+          background: linear-gradient(135deg, rgba(22, 119, 255, 0.2) 0%, rgba(22, 119, 255, 0.1) 100%);
+        }
+      }
+      
       .stat-label {
         display: block;
         font-size: 12px;
-        color: #666;
+        color: var(--ant-color-text-secondary);
         margin-bottom: 8px;
       }
       
       .stat-number {
         font-size: 28px;
         font-weight: 700;
-        color: #1a1a1a;
+        color: var(--ant-color-text);
         
         .stat-suffix {
           font-size: 14px;
           font-weight: 400;
-          color: #999;
+          color: var(--ant-color-text-tertiary);
           margin-left: 2px;
         }
       }
@@ -147,11 +157,11 @@
       
       .add-record-btn {
         font-size: 16px;
-        color: #999;
+        color: var(--ant-color-text-tertiary);
         cursor: pointer;
         
         &:hover {
-          color: #1677ff;
+          color: var(--ant-color-primary);
         }
       }
     }
@@ -170,7 +180,7 @@
         .date-label {
           font-size: 14px;
           font-weight: 600;
-          color: #1677ff;
+          color: var(--ant-color-primary);
           margin-bottom: 12px;
         }
         
@@ -192,14 +202,14 @@
               flex-shrink: 0;
               
               &.icon-pomodoro {
-                background: #1677ff;
-                color: white;
+                background: var(--ant-color-primary);
+                color: #fff;
                 font-size: 13px;
               }
               
               &.icon-stopwatch {
-                background: #1677ff;
-                color: white;
+                background: var(--ant-color-primary);
+                color: #fff;
                 font-size: 13px;
               }
             }
@@ -207,12 +217,12 @@
             .record-time-range {
               flex: 1;
               font-size: 14px;
-              color: #666;
+              color: var(--ant-color-text-secondary);
             }
             
             .record-duration {
               font-size: 14px;
-              color: #999;
+              color: var(--ant-color-text-tertiary);
               text-align: right;
               min-width: 50px;
             }
@@ -227,12 +237,12 @@
             
             .task-dot {
               font-size: 12px;
-              color: #1677ff;
+              color: var(--ant-color-primary);
             }
             
             .task-name {
               font-size: 13px;
-              color: #333;
+              color: var(--ant-color-text);
               max-width: 260px;
               overflow: hidden;
               text-overflow: ellipsis;
@@ -261,13 +271,13 @@
       font-size: 52px;
       font-weight: 300;
       font-family: -apple-system, 'Helvetica Neue', sans-serif;
-      color: #333;
+      color: var(--ant-color-text);
       letter-spacing: 2px;
     }
     
     .paused-label {
       font-size: 14px;
-      color: #999;
+      color: var(--ant-color-text-tertiary);
       margin-top: 8px;
     }
   }
@@ -321,7 +331,7 @@
 
 // 任务选择弹窗样式
 .selected-task {
-  background-color: #f0f5ff;
+  background-color: var(--ant-color-primary-bg);
 }
 
 // 移动端适配
@@ -334,7 +344,7 @@
 
   .pomodoro-left {
     border-right: none;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--ant-color-border);
     padding: 16px;
 
     .pomodoro-toolbar {

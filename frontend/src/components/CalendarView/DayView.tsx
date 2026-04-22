@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Checkbox } from 'antd';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { Task, CalendarTasksByDate } from '../../types';
 import { getTaskColor } from './CalendarView';
+import { ThemeContext } from '../../App';
 import TaskPopover from './TaskPopover';
 
 interface DayViewProps {
@@ -57,6 +58,8 @@ const DayView: React.FC<DayViewProps> = ({
   const dayOfWeek = currentDate.day();
   const dateKey = currentDate.format('YYYY-MM-DD');
   const tasks = tasksByDate[dateKey] || [];
+  const themeCtx = useContext(ThemeContext);
+  const isDark = themeCtx?.isDark ?? false;
 
   return (
     <div className="day-view">
@@ -95,7 +98,7 @@ const DayView: React.FC<DayViewProps> = ({
           <div className={`day-column ${isToday ? 'today-column' : ''}`}>
             {tasks.map((task) => {
               const { top, height } = getTaskPosition(task);
-              const backgroundColor = getTaskColor(task.id);
+              const backgroundColor = getTaskColor(task.id, isDark);
               const time = task.due_date
                 ? dayjs(task.due_date).format('HH:mm')
                 : '';

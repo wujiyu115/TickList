@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Checkbox } from 'antd';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { Task, CalendarTasksByDate } from '../../types';
 import { getTaskColor } from './CalendarView';
+import { ThemeContext } from '../../App';
 import TaskPopover from './TaskPopover';
 
 interface WeekViewProps {
@@ -75,6 +76,8 @@ const WeekView: React.FC<WeekViewProps> = ({
   const weekDays = getWeekDays(currentDate, weekStartDay);
   const today = dayjs();
   const orderedWeekdayNames = getOrderedWeekdayNames(weekStartDay);
+  const themeCtx = useContext(ThemeContext);
+  const isDark = themeCtx?.isDark ?? false;
 
   // 获取指定日期的任务
   const getTasksForDay = (day: Dayjs): Task[] => {
@@ -133,7 +136,7 @@ const WeekView: React.FC<WeekViewProps> = ({
                 >
                   {tasks.map((task) => {
                     const { top, height } = getTaskPosition(task);
-                    const backgroundColor = getTaskColor(task.id);
+                    const backgroundColor = getTaskColor(task.id, isDark);
                     const time = task.due_date
                       ? dayjs(task.due_date).format('HH:mm')
                       : '';
