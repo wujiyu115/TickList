@@ -117,6 +117,12 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
     });
   };
 
+  const formatCompletedTime = (iso: string) => {
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  };
+
   const formatDate = (dateStr: string) => {
     const date = dayjs(dateStr);
     const today = dayjs().startOf('day');
@@ -267,6 +273,11 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
             </div>
             {!hideDetails && task.description && (
               <div className="task-desc">{task.description}</div>
+            )}
+            {isCompleted && task.completed_at && (
+              <div className="task-completed-time">
+                {formatCompletedTime(task.completed_at)}
+              </div>
             )}
             {lists && task.list_id && (() => {
               const list = lists.find(l => l.id === task.list_id);
