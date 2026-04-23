@@ -1398,9 +1398,9 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
                 setTagDisplayMode('all');
               }
             }}>
-              {tagDisplayMode === 'hidden' 
-                ? <RightOutlined style={{ fontSize: 10, marginRight: 4 }} /> 
-                : <DownOutlined style={{ fontSize: 10, marginRight: 4 }} />
+              {tagDisplayMode === 'hidden'
+                ? <span style={{ fontSize: 10, marginRight: 4 }}>·</span>
+                : <span style={{ fontSize: 10, marginRight: 4 }}>◦</span>
               }
               标签
             </span>
