@@ -1544,15 +1544,6 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         <div className="secondary-panel">
           <div className="panel-title">笔记</div>
 
-          {/* 全部笔记快速筛选 */}
-          <div
-            className={`filter-item ${!searchParams.get('folder_id') ? 'active' : ''}`}
-            onClick={(e) => { e.stopPropagation(); navigate('/notes'); onNavigate?.(); }}
-          >
-            <FileTextOutlined />
-            <span>全部笔记</span>
-          </div>
-
           {/* 文件夹区域 - 树形结构 */}
           <div className="section-header">
             <span>文件夹</span>
