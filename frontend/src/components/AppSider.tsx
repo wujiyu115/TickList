@@ -1594,11 +1594,10 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
                         return (
                           <div
                             key={note.id}
-                            className={`list-item ${noteSelected ? 'active' : ''}`}
-                            style={{ paddingLeft: 36 }}
+                            className={`list-item note-child-item ${noteSelected ? 'active' : ''}`}
                             onClick={(e) => { e.stopPropagation(); navigate(`/notes?note_id=${note.id}`); onNavigate?.(); }}
                           >
-                            <FileTextOutlined style={{ fontSize: 14 }} />
+                            <FileTextOutlined style={{ fontSize: 12 }} />
                             <span className="list-name">{note.title}</span>
                           </div>
                         );
@@ -1635,10 +1634,10 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
                       return (
                         <div
                           key={note.id}
-                          className={`list-item ${noteSelected ? 'active' : ''}`}
+                          className={`list-item note-child-item ${noteSelected ? 'active' : ''}`}
                           onClick={(e) => { e.stopPropagation(); navigate(`/notes?note_id=${note.id}`); onNavigate?.(); }}
                         >
-                          <FileTextOutlined style={{ fontSize: 14 }} />
+                          <FileTextOutlined style={{ fontSize: 12 }} />
                           <span className="list-name">{note.title}</span>
                         </div>
                       );
@@ -1672,36 +1671,56 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           </div>
           {tagDisplayMode !== 'hidden' && (
             <div className="tags-container">
-              {tags.map(tag => (
-                <div
-                  key={tag.id}
-                  className={`tag-item ${searchParams.get('tag') === tag.id ? 'active' : ''}`}
-                  onClick={(e) => { e.stopPropagation(); navigate(`/notes?tag=${tag.id}`); onNavigate?.(); }}
-                  onMouseEnter={() => { if (supportsHover) setHoveredTagId(tag.id); }}
-                  onMouseLeave={() => { if (supportsHover) setHoveredTagId(null); }}
-                >
-                  <TagOutlined style={{ color: tag.color }} />
-                  <span>{tag.name}</span>
-                  {hoveredTagId === tag.id ? (
-                    <Dropdown
-                      menu={{ items: getTagMoreMenuItems(tag) }}
-                      trigger={['click']}
+              {tags.map(tag => {
+                const isExpanded = noteCollapsedFolders[`tag-${tag.id}`];
+                const tagNotes = notes.filter(n => n.tags && n.tags.includes(tag.id)).sort((a, b) => a.order - b.order);
+                return (
+                  <div key={tag.id}>
+                    <div
+                      className={`tag-item ${searchParams.get('tag') === tag.id ? 'active' : ''}`}
+                      onClick={(e) => { e.stopPropagation(); setNoteCollapsedFolders(prev => ({ ...prev, [`tag-${tag.id}`]: !prev[`tag-${tag.id}`] })); }}
+                      onMouseEnter={() => { if (supportsHover) setHoveredTagId(tag.id); }}
+                      onMouseLeave={() => { if (supportsHover) setHoveredTagId(null); }}
                     >
-                      <MoreOutlined
-                        style={{
-                          marginLeft: 'auto',
-                          fontSize: 14,
-                          color: 'var(--ant-color-text-tertiary)',
-                          cursor: 'pointer'
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </Dropdown>
-                  ) : (
-                    <span className="tag-dot" style={{ background: tag.color }} />
-                  )}
-                </div>
-              ))}
+                      {isExpanded ? <DownOutlined style={{ fontSize: 10 }} /> : <RightOutlined style={{ fontSize: 10 }} />}
+                      <TagOutlined style={{ color: tag.color }} />
+                      <span>{tag.name}</span>
+                      {hoveredTagId === tag.id ? (
+                        <Dropdown
+                          menu={{ items: getTagMoreMenuItems(tag) }}
+                          trigger={['click']}
+                        >
+                          <MoreOutlined
+                            style={{
+                              marginLeft: 'auto',
+                              fontSize: 14,
+                              color: 'var(--ant-color-text-tertiary)',
+                              cursor: 'pointer'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </Dropdown>
+                      ) : (
+                        <span className="tag-dot" style={{ background: tag.color }} />
+                      )}
+                    </div>
+                    {/* 标签下的笔记 */}
+                    {!isExpanded && tagNotes.map(note => {
+                      const noteSelected = searchParams.get('note_id') === note.id;
+                      return (
+                        <div
+                          key={note.id}
+                          className={`list-item note-child-item ${noteSelected ? 'active' : ''}`}
+                          onClick={(e) => { e.stopPropagation(); navigate(`/notes?note_id=${note.id}`); onNavigate?.(); }}
+                        >
+                          <FileTextOutlined style={{ fontSize: 12 }} />
+                          <span className="list-name">{note.title}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
             </div>
           )}
 

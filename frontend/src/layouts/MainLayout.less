@@ -152,16 +152,22 @@
     font-size: 14px;
     color: var(--ant-color-text);
     transition: all 0.2s;
-    
+
     &:hover {
       background: var(--ant-color-bg-text-hover);
     }
-    
+
     &.active {
       background: var(--ant-color-primary-bg);
       color: var(--ant-color-primary);
     }
-    
+
+    &.note-child-item {
+      padding-left: 36px;
+      font-size: 13px;
+      color: var(--ant-color-text-secondary);
+    }
+
     .list-name {
       flex: 1;
       overflow: hidden;
