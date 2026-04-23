@@ -1672,7 +1672,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           {tagDisplayMode !== 'hidden' && (
             <div className="tags-container">
               {tags.map(tag => {
-                const isExpanded = noteCollapsedFolders[`tag-${tag.id}`];
+                const isExpanded = !noteCollapsedFolders[`tag-${tag.id}`];
                 const tagNotes = notes.filter(n => n.tags && n.tags.includes(tag.id)).sort((a, b) => a.order - b.order);
                 return (
                   <div key={tag.id}>
@@ -1705,7 +1705,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
                       )}
                     </div>
                     {/* 标签下的笔记 */}
-                    {!isExpanded && tagNotes.map(note => {
+                    {isExpanded && tagNotes.map(note => {
                       const noteSelected = searchParams.get('note_id') === note.id;
                       return (
                         <div
