@@ -32,16 +32,16 @@ class NoteCreate(BaseModel):
     content: str = ''
     folder_id: Optional[str] = None
     is_pinned: bool = False
-    color: str = ''
     order: int = 0
+    tags: List[str] = []
 
 class NoteUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
     folder_id: Optional[str] = None
     is_pinned: Optional[bool] = None
-    color: Optional[str] = None
     order: Optional[int] = None
+    tags: Optional[List[str]] = None
 
 class NoteMoveRequest(BaseModel):
     folder_id: Optional[str] = None
@@ -179,8 +179,8 @@ async def create_note(
             user_id=current_user_id,
             folder_id=data.folder_id,
             is_pinned=data.is_pinned,
-            color=data.color,
-            order=data.order
+            order=data.order,
+            tags=data.tags
         )
         result = note_dao.create_note(note)
         return result
@@ -193,15 +193,21 @@ async def create_note(
 @router.get('/notes')
 async def get_notes(
     folder_id: Optional[str] = Query(None),
+    tags: Optional[str] = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     current_user_id: str = Depends(get_current_user)
 ):
     """获取笔记列表"""
     try:
+        tag_list = None
+        if tags:
+            tag_list = [t.strip() for t in tags.split(',') if t.strip()]
+
         notes = note_dao.get_user_notes(
             user_id=current_user_id,
             folder_id=folder_id,
+            tags=tag_list,
             skip=skip,
             limit=limit
         )

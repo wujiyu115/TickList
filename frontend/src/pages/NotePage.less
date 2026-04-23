@@ -21,30 +21,6 @@
     padding-bottom: 12px;
     border-bottom: 1px solid #f0f0f0;
 
-    .color-picker {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-
-      .color-option {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        cursor: pointer;
-        border: 2px solid transparent;
-        transition: all 0.2s ease;
-
-        &:hover {
-          transform: scale(1.15);
-        }
-
-        &.selected {
-          border-color: #333;
-          box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
-        }
-      }
-    }
-
     .pin-active {
       color: #faad14;
     }
@@ -135,11 +111,6 @@
       padding-bottom: 10px;
       flex-wrap: wrap;
       gap: 8px;
-
-      .color-picker .color-option {
-        width: 18px;
-        height: 18px;
-      }
     }
 
     .note-title-wrapper {
@@ -164,15 +135,6 @@
     .note-toolbar {
       margin-bottom: 10px;
       padding-bottom: 8px;
-
-      .color-picker {
-        gap: 4px;
-
-        .color-option {
-          width: 16px;
-          height: 16px;
-        }
-      }
 
       .ant-select {
         width: 120px !important;

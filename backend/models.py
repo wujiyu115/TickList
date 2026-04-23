@@ -608,6 +608,7 @@ class Note:
         is_pinned: bool = False,
         color: str = '',
         order: int = 0,
+        tags: Optional[List[str]] = None,
         created_at: Optional[datetime] = None,
         updated_at: Optional[datetime] = None
     ):
@@ -619,9 +620,10 @@ class Note:
         self.is_pinned = is_pinned
         self.color = color
         self.order = order
+        self.tags = tags or []
         self.created_at = created_at or datetime.now()
         self.updated_at = updated_at or datetime.now()
-    
+
     def to_dict(self) -> Dict:
         return {
             'id': self.id,
@@ -632,6 +634,7 @@ class Note:
             'is_pinned': self.is_pinned,
             'color': self.color,
             'order': self.order,
+            'tags': self.tags,
             'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else self.created_at,
             'updated_at': self.updated_at.isoformat() if isinstance(self.updated_at, datetime) else self.updated_at,
         }

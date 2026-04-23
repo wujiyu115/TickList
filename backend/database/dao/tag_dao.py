@@ -3,7 +3,7 @@
 from typing import List, Optional, Dict
 from sqlalchemy import desc
 from database.connection import db_connection
-from database.models import TagModel, TaskTagModel
+from database.models import TagModel, TaskTagModel, NoteTagModel
 
 
 class TagDAO:
@@ -62,12 +62,15 @@ class TagDAO:
             session.close()
     
     def delete_tag(self, user_id: str, tag_id: str) -> bool:
-        """删除标签（同时清理 task_tags 关系表）"""
+        """删除标签（同时清理 task_tags 和 note_tags 关系表）"""
         session = self._get_session()
         try:
             # 先删除 task_tags 中引用该 tag 的记录
             session.query(TaskTagModel).filter(TaskTagModel.tag_id == tag_id).delete()
-            
+
+            # 删除 note_tags 中引用该 tag 的记录
+            session.query(NoteTagModel).filter(NoteTagModel.tag_id == tag_id).delete()
+
             # 再删除标签本身
             result = session.query(TagModel).filter(
                 TagModel.id == tag_id,
