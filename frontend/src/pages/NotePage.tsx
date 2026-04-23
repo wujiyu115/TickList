@@ -15,31 +15,18 @@ import {
   PushpinOutlined,
   PushpinFilled,
   DeleteOutlined,
+  TagOutlined,
 } from '@ant-design/icons';
 import { Editor } from '@bytemd/react';
 import gfm from '@bytemd/plugin-gfm';
 import highlight from '@bytemd/plugin-highlight';
 import breaks from '@bytemd/plugin-breaks';
 import 'bytemd/dist/index.css';
-import { Note, NoteFolder } from '../types';
+import { Note, NoteFolder, Tag } from '../types';
 import { getNote, updateNote, deleteNote } from '../api/note';
 import { getNoteFolders } from '../api/note';
+import { getTags } from '../api/tag';
 import './NotePage.less';
-
-const { Option } = Select;
-
-// 预设颜色
-const PRESET_COLORS = [
-  '#1890ff',
-  '#52c41a',
-  '#faad14',
-  '#f5222d',
-  '#722ed1',
-  '#eb2f96',
-  '#13c2c2',
-  '#fa8c16',
-  '#8c8c8c',
-];
 
 const bytemdPlugins = [gfm(), highlight(), breaks()];
 
@@ -47,28 +34,29 @@ const NotePage: React.FC = () => {
   const [note, setNote] = useState<Note | null>(null);
   const [loading, setLoading] = useState(false);
   const [folders, setFolders] = useState<NoteFolder[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState<string | undefined>('');
-  const [selectedColor, setSelectedColor] = useState('');
-  
+
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const note_id = searchParams.get('note_id');
-  
+
   // 自动保存防抖定时器
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 获取笔记详情
   const fetchNote = useCallback(async () => {
     if (!note_id) return;
-    
+
     setLoading(true);
     try {
       const noteData = await getNote(note_id);
       setNote(noteData);
       setTitle(noteData.title);
       setContent(noteData.content);
-      setSelectedColor(noteData.color);
+      setSelectedTags(noteData.tags || []);
     } catch (error) {
       console.error('Failed to fetch note:', error);
       message.error('获取笔记失败');
@@ -87,28 +75,36 @@ const NotePage: React.FC = () => {
     }
   }, []);
 
+  // 获取标签列表
+  const fetchTags = useCallback(async () => {
+    try {
+      const response = await getTags();
+      setTags(response.tags || []);
+    } catch (error) {
+      console.error('Failed to fetch tags:', error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchNote();
     fetchFolders();
-  }, [fetchNote, fetchFolders]);
+    fetchTags();
+  }, [fetchNote, fetchFolders, fetchTags]);
 
   // 自动保存
   const autoSave = useCallback(() => {
     if (!note) return;
 
-    // 清除之前的定时器
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
-    // 设置新的定时器，1秒后保存
     saveTimeoutRef.current = setTimeout(async () => {
       try {
         await updateNote(note.id, {
           title,
           content: content || '',
         });
-        // 不显示保存成功消息，避免干扰用户
       } catch (error) {
         console.error('Failed to auto save note:', error);
         message.error('自动保存失败');
@@ -116,13 +112,10 @@ const NotePage: React.FC = () => {
     }, 1000);
   }, [note, title, content]);
 
-  // 监听标题和内容变化，触发自动保存
   useEffect(() => {
     if (note) {
       autoSave();
     }
-    
-    // 清理定时器
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
@@ -133,7 +126,6 @@ const NotePage: React.FC = () => {
   // 切换置顶
   const handleTogglePin = async () => {
     if (!note) return;
-    
     try {
       await updateNote(note.id, { is_pinned: !note.is_pinned });
       message.success(note.is_pinned ? '已取消置顶' : '已置顶');
@@ -144,24 +136,21 @@ const NotePage: React.FC = () => {
     }
   };
 
-  // 切换颜色
-  const handleColorChange = async (color: string) => {
+  // 标签变更
+  const handleTagsChange = async (tagIds: string[]) => {
     if (!note) return;
-    
     try {
-      setSelectedColor(color);
-      await updateNote(note.id, { color });
-      fetchNote();
+      setSelectedTags(tagIds);
+      await updateNote(note.id, { tags: tagIds });
     } catch (error) {
-      console.error('Failed to update color:', error);
-      message.error('更新颜色失败');
+      console.error('Failed to update tags:', error);
+      message.error('更新标签失败');
     }
   };
 
   // 移动到文件夹
   const handleMoveToFolder = async (folderId: string | null) => {
     if (!note) return;
-    
     try {
       await updateNote(note.id, { folder_id: folderId });
       message.success('移动成功');
@@ -175,7 +164,6 @@ const NotePage: React.FC = () => {
   // 删除笔记
   const handleDelete = async () => {
     if (!note) return;
-    
     try {
       await deleteNote(note.id);
       message.success('删除成功');
@@ -186,7 +174,6 @@ const NotePage: React.FC = () => {
     }
   };
 
-  // 无笔记选中时显示空状态
   if (!note_id || !note) {
     return (
       <div className="note-page">
@@ -215,18 +202,20 @@ const NotePage: React.FC = () => {
               />
             </Tooltip>
 
-            <Tooltip title="选择颜色">
-              <div className="color-picker">
-                {PRESET_COLORS.map((color) => (
-                  <div
-                    key={color}
-                    className={`color-option ${selectedColor === color ? 'selected' : ''}`}
-                    style={{ backgroundColor: color }}
-                    onClick={() => handleColorChange(color)}
-                  />
-                ))}
-              </div>
-            </Tooltip>
+            <Select
+              mode="multiple"
+              value={selectedTags}
+              onChange={handleTagsChange}
+              placeholder="添加标签"
+              style={{ minWidth: 150 }}
+              options={tags.map(tag => ({ value: tag.id, label: tag.name }))}
+              tagRender={(props) => (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '0 4px' }}>
+                  <TagOutlined style={{ fontSize: 12, color: tags.find(t => t.id === props.value)?.color }} />
+                  {props.label}
+                </span>
+              )}
+            />
 
             <Select
               value={note.folder_id}

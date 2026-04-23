@@ -366,6 +366,7 @@ export interface Note {
   is_pinned: boolean;
   color: string;
   order: number;
+  tags: string[];
   created_at: string;
   updated_at: string;
 }
@@ -375,8 +376,8 @@ export interface NoteCreateRequest {
   content?: string;
   folder_id?: string | null;
   is_pinned?: boolean;
-  color?: string;
   order?: number;
+  tags?: string[];
 }
 
 export interface NoteUpdateRequest {
@@ -384,6 +385,6 @@ export interface NoteUpdateRequest {
   content?: string;
   folder_id?: string | null;
   is_pinned?: boolean;
-  color?: string;
   order?: number;
+  tags?: string[];
 }

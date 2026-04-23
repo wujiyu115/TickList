@@ -77,15 +77,30 @@ class TaskChildModel(Base):
 class TaskTagModel(Base):
     """任务标签关联表"""
     __tablename__ = 'task_tags'
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     task_id = Column(String(36), ForeignKey('tasks.id', ondelete='CASCADE'), nullable=False)
     tag_id = Column(String(36), ForeignKey('tags.id', ondelete='CASCADE'), nullable=False)
-    
+
     __table_args__ = (
         Index('idx_task_tags_task', 'task_id'),
         Index('idx_task_tags_tag', 'tag_id'),
         UniqueConstraint('task_id', 'tag_id', name='uq_task_tags_task_tag'),
+    )
+
+
+class NoteTagModel(Base):
+    """笔记标签关联表"""
+    __tablename__ = 'note_tags'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    note_id = Column(String(36), ForeignKey('notes.id', ondelete='CASCADE'), nullable=False)
+    tag_id = Column(String(36), ForeignKey('tags.id', ondelete='CASCADE'), nullable=False)
+
+    __table_args__ = (
+        Index('idx_note_tags_note', 'note_id'),
+        Index('idx_note_tags_tag', 'tag_id'),
+        UniqueConstraint('note_id', 'tag_id', name='uq_note_tags_note_tag'),
     )
 
 

@@ -200,8 +200,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
 
   const loadNotes = async () => {
     try {
-      const folderId = searchParams.get('folder_id');
-      const data = await getNotes(folderId ? { folder_id: folderId } : undefined);
+      const data = await getNotes({ limit: 200 });
       setNotes(data.notes || []);
     } catch (e) {
       console.error('Failed to load notes:', e);
@@ -232,7 +231,6 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         content: '',
         folder_id: folderId || null,
         is_pinned: false,
-        color: '#1677ff'
       });
       message.success('笔记创建成功');
       loadNotes();
@@ -335,7 +333,6 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         content: '',
         folder_id: folderId,
         is_pinned: false,
-        color: '#1677ff'
       });
       message.success('笔记创建成功');
       loadNotes();
@@ -1536,9 +1533,9 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
       {isNoteView && (
         <div className="secondary-panel">
           <div className="panel-title">笔记</div>
-          
+
           {/* 全部笔记快速筛选 */}
-          <div 
+          <div
             className={`filter-item ${!searchParams.get('folder_id') ? 'active' : ''}`}
             onClick={(e) => { e.stopPropagation(); navigate('/notes'); onNavigate?.(); }}
           >
@@ -1546,12 +1543,12 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
             <span>全部笔记</span>
           </div>
 
-          {/* 文件夹区域 */}
+          {/* 文件夹区域 - 树形结构 */}
           <div className="section-header">
             <span>文件夹</span>
             <PlusOutlined style={{ cursor: 'pointer' }} onClick={() => setCreateNoteFolderModalVisible(true)} />
           </div>
-          
+
           <div className="lists-container">
             {noteFolders.length > 0 ? (
               noteFolders
@@ -1559,34 +1556,53 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
                 .map(folder => {
                   const isSelected = searchParams.get('folder_id') === folder.id;
                   const isHovered = hoveredNoteFolderId === folder.id;
+                  const isExpanded = !noteCollapsedFolders[folder.id];
+                  const folderNotes = notes.filter(n => n.folder_id === folder.id).sort((a, b) => a.order - b.order);
                   return (
-                    <div 
-                      key={folder.id}
-                      className={`list-item ${isSelected ? 'active' : ''}`}
-                      onClick={(e) => { e.stopPropagation(); navigate(`/notes?folder_id=${folder.id}`); onNavigate?.(); }}
-                      onMouseEnter={() => { if (supportsHover) setHoveredNoteFolderId(folder.id); }}
-                      onMouseLeave={() => { if (supportsHover) setHoveredNoteFolderId(null); }}
-                    >
-                      <FolderOutlined />
-                      <span className="list-name">{folder.name}</span>
-                      {isHovered ? (
-                        <Dropdown 
-                          menu={{ items: getNoteFolderContextMenuItems(folder) }} 
-                          trigger={['click']}
-                        >
-                          <MoreOutlined
-                            style={{ 
-                              marginLeft: 'auto',
-                              fontSize: 14,
-                              color: 'var(--ant-color-text-tertiary)',
-                              cursor: 'pointer'
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </Dropdown>
-                      ) : (
-                        <span className="list-dot" style={{ background: folder.color }} />
-                      )}
+                    <div key={folder.id}>
+                      <div
+                        className={`list-item ${isSelected ? 'active' : ''}`}
+                        onClick={(e) => { e.stopPropagation(); setNoteCollapsedFolders(prev => ({ ...prev, [folder.id]: !prev[folder.id] })); onNavigate?.(); }}
+                        onMouseEnter={() => { if (supportsHover) setHoveredNoteFolderId(folder.id); }}
+                        onMouseLeave={() => { if (supportsHover) setHoveredNoteFolderId(null); }}
+                      >
+                        {isExpanded ? <DownOutlined style={{ fontSize: 10 }} /> : <RightOutlined style={{ fontSize: 10 }} />}
+                        <FolderOutlined />
+                        <span className="list-name">{folder.name}</span>
+                        {isHovered ? (
+                          <Dropdown
+                            menu={{ items: getNoteFolderContextMenuItems(folder) }}
+                            trigger={['click']}
+                          >
+                            <MoreOutlined
+                              style={{
+                                marginLeft: 'auto',
+                                fontSize: 14,
+                                color: 'var(--ant-color-text-tertiary)',
+                                cursor: 'pointer'
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </Dropdown>
+                        ) : (
+                          <span className="list-dot" style={{ background: folder.color }} />
+                        )}
+                      </div>
+                      {/* 文件夹下的笔记 */}
+                      {isExpanded && folderNotes.map(note => {
+                        const noteSelected = searchParams.get('note_id') === note.id;
+                        return (
+                          <div
+                            key={note.id}
+                            className={`list-item ${noteSelected ? 'active' : ''}`}
+                            style={{ paddingLeft: 36 }}
+                            onClick={(e) => { e.stopPropagation(); navigate(`/notes?note_id=${note.id}`); onNavigate?.(); }}
+                          >
+                            <FileTextOutlined style={{ fontSize: 14 }} />
+                            <span className="list-name">{note.title}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })
@@ -1595,36 +1611,103 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
             )}
           </div>
 
-          {/* 笔记列表区域 */}
+          {/* 未分类笔记 */}
+          {(() => {
+            const uncategorized = notes.filter(n => !n.folder_id).sort((a, b) => a.order - b.order);
+            if (uncategorized.length === 0) return null;
+            const isExpanded = !noteCollapsedFolders['_uncategorized_'];
+            return (
+              <div>
+                <div
+                  className="section-header"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setNoteCollapsedFolders(prev => ({ ...prev, '_uncategorized_': !prev['_uncategorized_'] }))}
+                >
+                  <span>
+                    {isExpanded ? <DownOutlined style={{ fontSize: 10 }} /> : <RightOutlined style={{ fontSize: 10 }} />}
+                    未分类
+                  </span>
+                </div>
+                {isExpanded && (
+                  <div className="lists-container">
+                    {uncategorized.map(note => {
+                      const noteSelected = searchParams.get('note_id') === note.id;
+                      return (
+                        <div
+                          key={note.id}
+                          className={`list-item ${noteSelected ? 'active' : ''}`}
+                          onClick={(e) => { e.stopPropagation(); navigate(`/notes?note_id=${note.id}`); onNavigate?.(); }}
+                        >
+                          <FileTextOutlined style={{ fontSize: 14 }} />
+                          <span className="list-name">{note.title}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* 标签区域 */}
           <div className="section-header">
-            <span>笔记</span>
+            <span onClick={() => {
+              if (tagDisplayMode === 'hidden') {
+                setTagDisplayMode('all');
+              }
+            }}>
+              {tagDisplayMode === 'hidden'
+                ? <RightOutlined style={{ fontSize: 10, marginRight: 4 }} />
+                : <DownOutlined style={{ fontSize: 10, marginRight: 4 }} />
+              }
+              标签
+            </span>
+            <PlusOutlined
+              style={{ cursor: 'pointer' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                openCreateTagModal();
+              }}
+            />
           </div>
-          
-          <div className="lists-container">
-            {notes.length > 0 ? (
-              notes
-                .sort((a, b) => a.order - b.order)
-                .map(note => {
-                  const isSelected = searchParams.get('note_id') === note.id;
-                  return (
-                    <div 
-                      key={note.id}
-                      className={`list-item ${isSelected ? 'active' : ''}`}
-                      onClick={(e) => { e.stopPropagation(); navigate(`/notes?note_id=${note.id}`); onNavigate?.(); }}
+          {tagDisplayMode !== 'hidden' && (
+            <div className="tags-container">
+              {tags.map(tag => (
+                <div
+                  key={tag.id}
+                  className={`tag-item ${searchParams.get('tag') === tag.id ? 'active' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); navigate(`/notes?tag=${tag.id}`); onNavigate?.(); }}
+                  onMouseEnter={() => { if (supportsHover) setHoveredTagId(tag.id); }}
+                  onMouseLeave={() => { if (supportsHover) setHoveredTagId(null); }}
+                >
+                  <TagOutlined style={{ color: tag.color }} />
+                  <span>{tag.name}</span>
+                  {hoveredTagId === tag.id ? (
+                    <Dropdown
+                      menu={{ items: getTagMoreMenuItems(tag) }}
+                      trigger={['click']}
                     >
-                      <FileTextOutlined />
-                      <span className="list-name">{note.title}</span>
-                    </div>
-                  );
-                })
-            ) : (
-              <div style={{ padding: '8px 16px', color: 'var(--ant-color-text-quaternary)', fontSize: 13 }}>暂无笔记</div>
-            )}
-          </div>
+                      <MoreOutlined
+                        style={{
+                          marginLeft: 'auto',
+                          fontSize: 14,
+                          color: 'var(--ant-color-text-tertiary)',
+                          cursor: 'pointer'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </Dropdown>
+                  ) : (
+                    <span className="tag-dot" style={{ background: tag.color }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* 新建笔记按钮 */}
           <div className="bottom-items">
-            <div 
+            <div
               className="filter-item"
               onClick={(e) => { e.stopPropagation(); handleCreateNote(); }}
             >
