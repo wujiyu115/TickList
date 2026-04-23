@@ -1,12 +1,14 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import dayjs from 'dayjs';
 import { Input, Button, Spin, Empty, message } from 'antd';
 import { PlusOutlined, CaretDownOutlined, CaretRightOutlined, HolderOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
 import { useTaskContext } from '../contexts/TaskContext';
+import { DragProvider, useDragContext } from '../contexts/DragContext';
 import { Task, TaskList as TaskListType } from '../types';
-import { reorderTasks } from '../api/task';
+import { reorderTasks, moveTask } from '../api/task';
 import TaskItem from './TaskItem';
+import DragIndicator from './DragIndicator';
 import './TaskList.less';
 
 const supportsHover = window.matchMedia('(hover: hover)').matches;
@@ -22,7 +24,10 @@ interface TaskGroupProps {
   hideDetails?: boolean;
   lists?: TaskListType[];
   onReorder?: (tasks: Task[]) => void;
+  onMoveToChild?: (sourceTaskId: string, targetTaskId: string) => void;
 }
+
+const CHILD_DRAG_THRESHOLD = 30; // 水平偏移阈值，超过此值视为"变为子任务"
 
 const TaskGroup: React.FC<TaskGroupProps> = ({ 
   title, 
@@ -33,40 +38,95 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
   allTasks,
   hideDetails,
   lists,
-  onReorder
+  onReorder,
+  onMoveToChild
 }) => {
-  const dragItemRef = useRef<number | null>(null);
-  const dragOverItemRef = useRef<number | null>(null);
+  const { dragSource, dragTarget, setDragSource, setDragTarget, setDragStartX, dragStartX, clearDrag } = useDragContext();
 
-  const handleDragStart = (index: number) => {
-    dragItemRef.current = index;
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    const task = tasks[index];
+    if (!task) return;
+    setDragStartX(e.clientX);
+    setDragSource({ taskId: task.id, index });
+    // 设置拖拽效果
+    e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
-    dragOverItemRef.current = index;
+    e.dataTransfer.dropEffect = 'move';
+    const task = tasks[index];
+    if (!dragSource || !task || dragSource.taskId === task.id) {
+      setDragTarget(null);
+      return;
+    }
+
+    // 计算鼠标在目标元素中的垂直位置
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    const position: 'above' | 'below' = e.clientY < midY ? 'above' : 'below';
+
+    // 计算水平偏移量，判断 sibling 还是 child
+    const deltaX = e.clientX - dragStartX;
+    const type: 'sibling' | 'child' = deltaX > CHILD_DRAG_THRESHOLD ? 'child' : 'sibling';
+
+    setDragTarget({
+      taskId: task.id,
+      index,
+      position,
+      type,
+    });
   };
 
   const handleDrop = () => {
-    const from = dragItemRef.current;
-    const to = dragOverItemRef.current;
-    if (from === null || to === null || from === to) {
-      dragItemRef.current = null;
-      dragOverItemRef.current = null;
+    if (!dragSource || !dragTarget) {
+      clearDrag();
       return;
     }
-    // Reorder: separate pinned and non-pinned
-    const newTasks = [...tasks];
-    const [moved] = newTasks.splice(from, 1);
-    newTasks.splice(to, 0, moved);
-    dragItemRef.current = null;
-    dragOverItemRef.current = null;
-    onReorder?.(newTasks);
+    if (dragSource.taskId === dragTarget.taskId) {
+      clearDrag();
+      return;
+    }
+
+    const { position, type } = dragTarget;
+
+    // 查找源任务在当前 tasks 中的索引（可能是子任务拖过来的，不在 tasks 中）
+    const sourceIndex = tasks.findIndex(t => t.id === dragSource.taskId);
+    const targetIndex = tasks.findIndex(t => t.id === dragTarget.taskId);
+
+    if (type === 'child') {
+      // 变为子任务：将源任务移动为目标任务的子任务
+      onMoveToChild?.(dragSource.taskId, dragTarget.taskId);
+    } else if (sourceIndex !== -1 && targetIndex !== -1 && !dragSource.parentId) {
+      // 同级排序（仅当源也是顶级任务时才排序）
+      const newTasks = [...tasks];
+      const [moved] = newTasks.splice(sourceIndex, 1);
+      // 计算插入位置
+      let insertIndex = targetIndex;
+      if (sourceIndex < targetIndex) {
+        insertIndex = position === 'above' ? targetIndex - 1 : targetIndex;
+      } else {
+        insertIndex = position === 'above' ? targetIndex : targetIndex + 1;
+      }
+      newTasks.splice(insertIndex, 0, moved);
+      onReorder?.(newTasks);
+    } else if (dragSource.parentId) {
+      // 子任务拖到顶级位置：脱离父任务变为独立任务
+      onMoveToChild?.(dragSource.taskId, '');
+    }
+
+    clearDrag();
+  };
+
+  const handleDragEnd = () => {
+    clearDrag();
   };
 
   if (tasks.length === 0 && title !== '进行中') {
     return null;
   }
+
+  const isDraggable = supportsHover && title !== '已完成';
 
   return (
     <div className="task-group">
@@ -83,13 +143,18 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
             tasks.map((task, index) => (
               <div
                 key={task.id}
-                className="task-drag-wrapper"
-                draggable={supportsHover && title !== '已完成'}
-                onDragStart={() => handleDragStart(index)}
+                className={`task-drag-wrapper${dragSource && dragSource.taskId === task.id ? ' dragging' : ''}`}
+                draggable={isDraggable}
+                onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
               >
-                {supportsHover && title !== '已完成' && (
+                {/* 拖拽指示线 */}
+                {dragTarget && dragTarget.taskId === task.id && dragTarget.position === 'above' && (
+                  <DragIndicator position="top" type={dragTarget.type} />
+                )}
+                {isDraggable && (
                   <HolderOutlined className="task-drag-handle" />
                 )}
                 <TaskItem
@@ -98,13 +163,13 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
                   depth={0}
                   hideDetails={hideDetails}
                   lists={lists}
-                  onMoveUp={title !== '已完成' ? () => {
+                  onMoveUp={isDraggable ? () => {
                     if (index === 0) return;
                     const newTasks = [...tasks];
                     [newTasks[index - 1], newTasks[index]] = [newTasks[index], newTasks[index - 1]];
                     onReorder?.(newTasks);
                   } : undefined}
-                  onMoveDown={title !== '已完成' ? () => {
+                  onMoveDown={isDraggable ? () => {
                     if (index === tasks.length - 1) return;
                     const newTasks = [...tasks];
                     [newTasks[index], newTasks[index + 1]] = [newTasks[index + 1], newTasks[index]];
@@ -113,6 +178,10 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
                   canMoveUp={index > 0}
                   canMoveDown={index < tasks.length - 1}
                 />
+                {/* 拖拽指示线 - 下方 */}
+                {dragTarget && dragTarget.taskId === task.id && dragTarget.position === 'below' && (
+                  <DragIndicator position="bottom" type={dragTarget.type} />
+                )}
               </div>
             ))
           ) : (
@@ -199,6 +268,18 @@ const TaskList: React.FC<TaskListProps> = ({
     }
   }, [refreshTasks]);
 
+  // 将任务移动为另一个任务的子任务，targetTaskId 为空时脱离父任务变为独立任务
+  const handleMoveToChild = useCallback(async (sourceTaskId: string, targetTaskId: string) => {
+    try {
+      await moveTask(sourceTaskId, targetTaskId || undefined);
+      await refreshTasks();
+      message.success(targetTaskId ? '已移动为子任务' : '已移动为独立任务');
+    } catch {
+      message.error('移动失败');
+      await refreshTasks();
+    }
+  }, [refreshTasks]);
+
   // 构建任务树（只取顶级任务：不被任何其他任务的 child_ids 引用的任务）
   const childIdSet = new Set<string>(
     tasks.reduce<string[]>((acc, t) => acc.concat(t.child_ids || []), [])
@@ -270,6 +351,7 @@ const TaskList: React.FC<TaskListProps> = ({
   }
 
   return (
+    <DragProvider>
     <div className="task-list-new">
       {/* 内联添加任务 */}
       <div className="add-task-inline">
@@ -298,6 +380,7 @@ const TaskList: React.FC<TaskListProps> = ({
           hideDetails={hideDetails}
           lists={lists}
           onReorder={handleReorder}
+          onMoveToChild={handleMoveToChild}
         />
 
         {/* 进行中 */}
@@ -311,6 +394,7 @@ const TaskList: React.FC<TaskListProps> = ({
           hideDetails={hideDetails}
           lists={lists}
           onReorder={handleReorder}
+          onMoveToChild={handleMoveToChild}
         />
 
         {/* 已完成 */}
@@ -345,6 +429,7 @@ const TaskList: React.FC<TaskListProps> = ({
         <Empty description="暂无任务" className="empty-state" />
       )}
     </div>
+    </DragProvider>
   );
 };
 

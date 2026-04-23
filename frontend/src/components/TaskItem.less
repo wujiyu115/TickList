@@ -1,4 +1,32 @@
 .task-item-wrapper {
+  position: relative;
+
+  &.subtask-dragging {
+    opacity: 0.4;
+    transition: opacity 0.2s;
+  }
+
+  .subtask-drag-row {
+    position: relative;
+
+    .subtask-drag-handle {
+      position: absolute;
+      left: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--ant-color-text-quaternary);
+      cursor: grab;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 1;
+    }
+
+    &:hover .subtask-drag-handle {
+      opacity: 1;
+    }
+  }
+
   .task-item-new {
     display: flex;
     align-items: flex-start;

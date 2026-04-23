@@ -1,0 +1,41 @@
+.drag-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  transition: left 0.15s ease;
+
+  &.drag-indicator-top {
+    top: -1px;
+  }
+
+  &.drag-indicator-bottom {
+    bottom: -1px;
+  }
+
+  .drag-indicator-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--ant-color-primary);
+    flex-shrink: 0;
+    position: relative;
+    top: 0;
+  }
+
+  .drag-indicator-line {
+    flex: 1;
+    height: 2px;
+    background-color: var(--ant-color-primary);
+    border-radius: 1px;
+  }
+
+  // 子任务缩进模式
+  &.drag-indicator-child {
+    left: 30px;
+  }
+}

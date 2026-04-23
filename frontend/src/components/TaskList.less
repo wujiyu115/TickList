@@ -72,6 +72,11 @@
         display: flex;
         align-items: center;
         position: relative;
+        transition: opacity 0.2s;
+
+        &.dragging {
+          opacity: 0.4;
+        }
 
         .task-drag-handle {
           position: absolute;

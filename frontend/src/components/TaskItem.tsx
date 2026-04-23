@@ -1,13 +1,15 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Checkbox, Dropdown, Input } from 'antd';
-import { CaretDownOutlined, CaretRightOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { Checkbox, Dropdown, Input, message } from 'antd';
+import { CaretDownOutlined, CaretRightOutlined, ClockCircleOutlined, HolderOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
 import { Task, TaskList as TaskListType } from '../types';
 import { useTaskContext } from '../contexts/TaskContext';
+import { useDragContext } from '../contexts/DragContext';
 import { useLongPress } from '../hooks/useLongPress';
-import { reorderTasks } from '../api/task';
+import { reorderTasks, moveTask } from '../api/task';
 import TaskContextMenu from './TaskContextMenu';
+import DragIndicator from './DragIndicator';
 import './TaskItem.less';
 
 interface TaskItemProps {
@@ -24,8 +26,12 @@ interface TaskItemProps {
   initialEditing?: boolean;
 }
 
+const CHILD_DRAG_THRESHOLD = 30;
+const supportsHover = window.matchMedia('(hover: hover)').matches;
+
 const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDetails, lists, onMoveUp, onMoveDown, canMoveUp, canMoveDown, onEnterAdd, initialEditing }) => {
   const { updateTaskData, selectTask, selectedTask, refreshTasks, addTask } = useTaskContext();
+  const { dragSource, dragTarget, dragStartX, setDragSource, setDragTarget, setDragStartX, clearDrag } = useDragContext();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(true);
   const [contextMenuVisible, setContextMenuVisible] = useState(false);
@@ -108,6 +114,86 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
     }
   }, [children, task, addTask, refreshTasks]);
 
+  // 子任务拖拽是否可用
+  const isSubtaskDraggable = supportsHover && depth > 0 && task.status !== 'completed';
+
+  // 查找当前任务的父任务 ID
+  const findParentId = useCallback((): string | undefined => {
+    return allTasks.find(t => (t.child_ids || []).includes(task.id))?.id;
+  }, [allTasks, task.id]);
+
+  const handleSubtaskDragStart = useCallback((e: React.DragEvent) => {
+    e.stopPropagation();
+    setDragStartX(e.clientX);
+    setDragSource({
+      taskId: task.id,
+      parentId: findParentId(),
+      index: 0,
+    });
+    e.dataTransfer.effectAllowed = 'move';
+  }, [task.id, findParentId, setDragSource, setDragStartX]);
+
+  const handleSubtaskDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    if (!dragSource || dragSource.taskId === task.id) {
+      setDragTarget(null);
+      return;
+    }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    const position: 'above' | 'below' = e.clientY < midY ? 'above' : 'below';
+
+    const deltaX = e.clientX - dragStartX;
+    const type: 'sibling' | 'child' = deltaX > CHILD_DRAG_THRESHOLD ? 'child' : 'sibling';
+
+    setDragTarget({
+      taskId: task.id,
+      index: 0,
+      position,
+      type,
+    });
+  }, [dragSource, dragStartX, task.id, setDragTarget]);
+
+  const handleSubtaskDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!dragSource || !dragTarget || dragSource.taskId === task.id) {
+      clearDrag();
+      return;
+    }
+
+    try {
+      if (dragTarget.type === 'child') {
+        // 变为当前任务的子任务
+        await moveTask(dragSource.taskId, task.id);
+        message.success('已移动为子任务');
+      } else {
+        // sibling 模式：移动到当前任务的父任务下（与当前任务同级）
+        const parentId = findParentId();
+        await moveTask(dragSource.taskId, parentId);
+        message.success(parentId ? '已移动为子任务' : '已移动为独立任务');
+      }
+      await refreshTasks();
+    } catch {
+      message.error('移动失败');
+      await refreshTasks();
+    }
+
+    clearDrag();
+  }, [dragSource, dragTarget, task.id, findParentId, clearDrag, refreshTasks]);
+
+  const handleSubtaskDragEnd = useCallback(() => {
+    clearDrag();
+  }, [clearDrag]);
+
+  // 当前任务是否正在被拖拽
+  const isDraggingThis = dragSource?.taskId === task.id;
+  // 当前任务是否是拖拽目标
+  const isDragTarget = dragTarget?.taskId === task.id;
+
   const isSelected = selectedTask?.id === task.id;
   const isCompleted = task.status === 'completed';
 
@@ -183,7 +269,23 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
   };
 
   return (
-    <div className="task-item-wrapper">
+    <div className={`task-item-wrapper${isDraggingThis ? ' subtask-dragging' : ''}`}>
+      {/* 子任务拖拽指示线 - 上方 */}
+      {isDragTarget && dragTarget.position === 'above' && (
+        <DragIndicator position="top" type={dragTarget.type} />
+      )}
+      <div
+        className="subtask-drag-row"
+        draggable={isSubtaskDraggable}
+        onDragStart={isSubtaskDraggable ? handleSubtaskDragStart : undefined}
+        onDragOver={handleSubtaskDragOver}
+        onDrop={handleSubtaskDrop}
+        onDragEnd={isSubtaskDraggable ? handleSubtaskDragEnd : undefined}
+        style={{ position: 'relative' }}
+      >
+        {isSubtaskDraggable && (
+          <HolderOutlined className="subtask-drag-handle" />
+        )}
       <Dropdown
         open={contextMenuVisible}
         onOpenChange={setContextMenuVisible}
@@ -317,6 +419,11 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
           </div>
         </div>
       </Dropdown>
+      </div>
+      {/* 子任务拖拽指示线 - 下方 */}
+      {isDragTarget && dragTarget.position === 'below' && (
+        <DragIndicator position="bottom" type={dragTarget.type} />
+      )}
 
       {/* 递归渲染子任务 */}
       {hasChildren && expanded && (
