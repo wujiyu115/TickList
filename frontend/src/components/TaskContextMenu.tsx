@@ -20,12 +20,15 @@ import {
   UndoOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
+  SwapOutlined,
+  VerticalAlignTopOutlined,
+  VerticalAlignBottomOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { Task, TaskList, Tag } from '../types';
 import { useTaskContext } from '../contexts/TaskContext';
-import { duplicateTask, restoreTask, permanentDeleteTask } from '../api/task';
+import { duplicateTask, restoreTask, permanentDeleteTask, moveTask } from '../api/task';
 import { getLists } from '../api/list';
 import { getTags } from '../api/tag';
 
@@ -40,8 +43,11 @@ interface TaskContextMenuProps {
 }
 
 const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTrashView, onMoveUp, onMoveDown, canMoveUp, canMoveDown }) => {
-  const { updateTaskData, deleteTaskData, refreshTasks, addTask, selectTask } = useTaskContext();
+  const { updateTaskData, deleteTaskData, refreshTasks, addTask, selectTask, tasks: allTasks } = useTaskContext();
   const navigate = useNavigate();
+
+  // 通过 child_ids 推导当前任务的父任务
+  const parentTask = allTasks.find(t => t.child_ids?.includes(task.id));
   
   // 清单数据
   const [lists, setLists] = useState<TaskList[]>([]);
@@ -61,6 +67,12 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
   // 自定义日期弹窗状态
   const [customDateVisible, setCustomDateVisible] = useState(false);
   const [customDate, setCustomDate] = useState<dayjs.Dayjs | null>(null);
+
+  // 层级调整弹窗状态
+  const [makeChildVisible, setMakeChildVisible] = useState(false);
+  const [makeSiblingVisible, setMakeSiblingVisible] = useState(false);
+  const [parentSearchText, setParentSearchText] = useState('');
+  const [siblingSearchText, setSiblingSearchText] = useState('');
   
   // 加载清单和标签
   useEffect(() => {
@@ -364,6 +376,13 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
       return;
     }
 
+    // 层级调整弹窗不关闭菜单
+    if (key === 'make-child' || key === 'make-sibling') {
+      if (key === 'make-child') setMakeChildVisible(true);
+      if (key === 'make-sibling') setMakeSiblingVisible(true);
+      return;
+    }
+
     onClose();
 
     try {
@@ -464,12 +483,12 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
   };
 
   const items: MenuProps['items'] = [
+    // 层级
     {
       key: 'add-subtask',
       icon: <SubnodeOutlined />,
       label: '添加子任务',
     },
-    { type: 'divider' },
     {
       key: 'date',
       icon: <CalendarOutlined />,
@@ -492,6 +511,11 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
         { key: 'priority-3', label: <span style={{ color: 'blue' }}>蓝旗</span> },
         { key: 'priority-4', label: <span style={{ color: 'gray' }}>灰旗</span> },
       ],
+    },
+    {
+      key: 'pin',
+      icon: <PushpinOutlined />,
+      label: task.is_pinned ? '取消置顶' : '置顶',
     },
     {
       key: 'move-to-list',
@@ -535,13 +559,6 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
         </div>
       ),
     },
-    { type: 'divider' },
-    {
-      key: 'pin',
-      icon: <PushpinOutlined />,
-      label: task.is_pinned ? '取消置顶' : '置顶',
-    },
-    { type: 'divider' },
     {
       key: 'focus',
       icon: <ClockCircleOutlined />,
@@ -552,6 +569,20 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
       ],
     },
     { type: 'divider' },
+    // 排序
+    {
+      key: 'sort',
+      icon: <SwapOutlined />,
+      label: '排序',
+      children: [
+        { key: 'move-up', label: '上移', disabled: !canMoveUp },
+        { key: 'move-down', label: '下移', disabled: !canMoveDown },
+        { key: 'make-child', label: '设为子任务' },
+        { key: 'make-sibling', label: '提升为同级', disabled: !parentTask },
+      ],
+    },
+    { type: 'divider' },
+    // 其他
     {
       key: 'duplicate',
       icon: <CopyOutlined />,
@@ -563,21 +594,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
       label: '复制链接',
     },
     { type: 'divider' },
-    ...(onMoveUp || onMoveDown ? [
-      {
-        key: 'move-up',
-        icon: <ArrowUpOutlined />,
-        label: '上移',
-        disabled: !canMoveUp,
-      },
-      {
-        key: 'move-down',
-        icon: <ArrowDownOutlined />,
-        label: '下移',
-        disabled: !canMoveDown,
-      },
-      { type: 'divider' as const },
-    ] : []),
+    // 危险
     {
       key: 'delete',
       icon: <DeleteOutlined />,
@@ -635,6 +652,82 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
     }
   };
 
+  // 设为子任务 - 选择父任务
+  const handleMakeChild = async (parentId: string) => {
+    if (parentId === task.id) return;
+    try {
+      await moveTask(task.id, parentId);
+      message.success('已设为子任务');
+      await refreshTasks();
+      setMakeChildVisible(false);
+      onClose();
+    } catch (error) {
+      console.error('设为子任务失败:', error);
+      message.error('操作失败');
+    }
+  };
+
+  // 提升为同级
+  const handleMakeSibling = async () => {
+    try {
+      await moveTask(task.id);
+      message.success('已提升为同级');
+      await refreshTasks();
+      setMakeSiblingVisible(false);
+      onClose();
+    } catch (error) {
+      console.error('提升为同级失败:', error);
+      message.error('操作失败');
+    }
+  };
+
+  // 渲染选择父任务的弹窗内容
+  const renderMakeChildContent = () => {
+    const candidates = allTasks.filter(t =>
+      t.id !== task.id &&
+      !t.child_ids?.includes(task.id) &&
+      t.status !== 'completed'
+    );
+    const filtered = parentSearchText
+      ? candidates.filter(t => t.title.toLowerCase().includes(parentSearchText.toLowerCase()))
+      : candidates;
+
+    return (
+      <div>
+        <Input
+          placeholder="搜索任务"
+          prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+          value={parentSearchText}
+          onChange={(e) => setParentSearchText(e.target.value)}
+          size="small"
+          allowClear
+          style={{ marginBottom: 8 }}
+        />
+        <div style={{ maxHeight: 300, overflow: 'auto' }}>
+          {filtered.length === 0 ? (
+            <div style={{ padding: 12, textAlign: 'center', color: '#999' }}>暂无可选任务</div>
+          ) : (
+            filtered.map(t => (
+              <div
+                key={t.id}
+                style={{
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  borderRadius: 4,
+                }}
+                onClick={() => handleMakeChild(t.id)}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#f5f5f5'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                {t.title}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const trashMenuItems: MenuProps['items'] = [
     {
       key: 'restore',
@@ -679,6 +772,25 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
               style={{ width: '100%' }}
               placeholder="选择截止日期和时间"
             />
+          </Modal>
+          <Modal
+            title="选择父任务"
+            open={makeChildVisible}
+            onCancel={() => { setMakeChildVisible(false); setParentSearchText(''); }}
+            footer={null}
+            width={320}
+          >
+            {renderMakeChildContent()}
+          </Modal>
+          <Modal
+            title="提升为同级"
+            open={makeSiblingVisible}
+            onOk={handleMakeSibling}
+            onCancel={() => setMakeSiblingVisible(false)}
+            okText="确定"
+            cancelText="取消"
+          >
+            <p>将该任务从子任务提升为同级任务？</p>
           </Modal>
         </>
       )}
