@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
 import uuid
@@ -217,7 +217,9 @@ async def get_tasks(
                 pass
         if end_date:
             try:
-                end_date_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+                # end_date 加1天，使 < 比较覆盖整天（如 today 的 completed_at 14:30 < 次日00:00）
+                parsed = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+                end_date_dt = parsed + timedelta(days=1)
             except:
                 pass
         

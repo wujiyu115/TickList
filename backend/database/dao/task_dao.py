@@ -408,9 +408,14 @@ class TaskDAO:
                             TaskModel.start_time >= start_date_iso,
                             TaskModel.start_time < end_date_iso,
                         ),
+                        and_(
+                            TaskModel.completed_at.isnot(None),
+                            TaskModel.completed_at >= start_date_iso,
+                            TaskModel.completed_at < end_date_iso,
+                        ),
                     )
                 )
-            
+
             # 排序：已完成任务按完成时间从新到旧，其他任务按置顶、排序、创建时间
             if status == 'completed':
                 query = query.order_by(
@@ -745,6 +750,11 @@ class TaskDAO:
                             TaskModel.start_time.isnot(None),
                             TaskModel.start_time >= start_date_iso,
                             TaskModel.start_time < end_date_iso,
+                        ),
+                        and_(
+                            TaskModel.completed_at.isnot(None),
+                            TaskModel.completed_at >= start_date_iso,
+                            TaskModel.completed_at < end_date_iso,
                         ),
                     )
                 )
