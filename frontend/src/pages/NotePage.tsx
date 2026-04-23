@@ -142,6 +142,7 @@ const NotePage: React.FC = () => {
     try {
       setSelectedTags(tagIds);
       await updateNote(note.id, { tags: tagIds });
+      window.dispatchEvent(new CustomEvent('notes-refreshed'));
     } catch (error) {
       console.error('Failed to update tags:', error);
       message.error('更新标签失败');
@@ -155,6 +156,7 @@ const NotePage: React.FC = () => {
       await updateNote(note.id, { folder_id: folderId });
       message.success('移动成功');
       fetchNote();
+      window.dispatchEvent(new CustomEvent('notes-refreshed'));
     } catch (error) {
       console.error('Failed to move note:', error);
       message.error('移动失败');
@@ -202,6 +204,7 @@ const NotePage: React.FC = () => {
               />
             </Tooltip>
 
+            <span style={{ color: 'var(--ant-color-text-secondary)', fontSize: 13 }}>标签</span>
             <Select
               mode="multiple"
               value={selectedTags}
@@ -217,6 +220,7 @@ const NotePage: React.FC = () => {
               )}
             />
 
+            <span style={{ color: 'var(--ant-color-text-secondary)', fontSize: 13 }}>文件夹</span>
             <Select
               value={note.folder_id}
               onChange={handleMoveToFolder}

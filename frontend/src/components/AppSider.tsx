@@ -162,6 +162,16 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
     }
   }, [isNoteView]);
 
+  // 监听笔记数据刷新事件
+  useEffect(() => {
+    const handler = () => {
+      loadNoteFolders();
+      loadNotes();
+    };
+    window.addEventListener('notes-refreshed', handler);
+    return () => window.removeEventListener('notes-refreshed', handler);
+  }, []);
+
   const loadLists = async () => {
     try {
       const data = await getLists();
@@ -1653,12 +1663,21 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
             <span onClick={() => {
               if (tagDisplayMode === 'hidden') {
                 setTagDisplayMode('all');
+              } else {
+                const allCollapsed = tags.length > 0 && tags.every(t => noteCollapsedFolders[`tag-${t.id}`]);
+                setNoteCollapsedFolders(prev => {
+                  const next = { ...prev };
+                  tags.forEach(t => { next[`tag-${t.id}`] = !allCollapsed; });
+                  return next;
+                });
               }
             }}>
-              {tagDisplayMode === 'hidden'
-                ? <RightOutlined style={{ fontSize: 10, marginRight: 4 }} />
-                : <DownOutlined style={{ fontSize: 10, marginRight: 4 }} />
-              }
+              {(() => {
+                  const allCollapsed = tags.length > 0 && tags.every(t => noteCollapsedFolders[`tag-${t.id}`]);
+                  return allCollapsed
+                    ? <RightOutlined style={{ fontSize: 10, marginRight: 4 }} />
+                    : <DownOutlined style={{ fontSize: 10, marginRight: 4 }} />;
+                })()}
               标签
             </span>
             <PlusOutlined
