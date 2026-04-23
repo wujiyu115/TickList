@@ -160,21 +160,34 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
   const handleSubtaskDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!dragSource || !dragTarget || dragSource.taskId === task.id) {
+    if (!dragSource || !dragTarget || dragSource.taskId === dragTarget.taskId) {
       clearDrag();
       return;
     }
 
+    // 从 allTasks 中查找 dragTarget 对应的任务，获取其父任务
+    const targetTask = allTasks.find(t => t.id === dragTarget.taskId);
+    if (!targetTask) {
+      clearDrag();
+      return;
+    }
+    const targetParentId = allTasks.find(t => (t.child_ids || []).includes(dragTarget.taskId))?.id;
+
     try {
       if (dragTarget.type === 'child') {
-        // 变为当前任务的子任务
-        await moveTask(dragSource.taskId, task.id);
+        // child 模式：变为目标任务的子任务
+        await moveTask(dragSource.taskId, dragTarget.taskId);
         message.success('已移动为子任务');
       } else {
-        // sibling 模式：移动到当前任务的父任务下（与当前任务同级）
-        const parentId = findParentId();
-        await moveTask(dragSource.taskId, parentId);
-        message.success(parentId ? '已移动为子任务' : '已移动为独立任务');
+        // sibling 模式：与目标任务同级（移动到目标任务的父任务下）
+        if (targetParentId) {
+          await moveTask(dragSource.taskId, targetParentId);
+          message.success('已移动为同级任务');
+        } else {
+          // 目标任务是顶级任务，变为独立任务
+          await moveTask(dragSource.taskId, undefined);
+          message.success('已移动为独立任务');
+        }
       }
       await refreshTasks();
     } catch {
@@ -183,7 +196,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
     }
 
     clearDrag();
-  }, [dragSource, dragTarget, task.id, findParentId, clearDrag, refreshTasks]);
+  }, [dragSource, dragTarget, allTasks, clearDrag, refreshTasks]);
 
   const handleSubtaskDragEnd = useCallback(() => {
     clearDrag();
@@ -272,14 +285,14 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
     <div className={`task-item-wrapper${isDraggingThis ? ' subtask-dragging' : ''}`}>
       {/* 子任务拖拽指示线 - 上方 */}
       {isDragTarget && dragTarget.position === 'above' && (
-        <DragIndicator position="top" type={dragTarget.type} />
+        <DragIndicator position="top" type={dragTarget.type} depth={depth} />
       )}
       <div
         className="subtask-drag-row"
         draggable={isSubtaskDraggable}
         onDragStart={isSubtaskDraggable ? handleSubtaskDragStart : undefined}
-        onDragOver={handleSubtaskDragOver}
-        onDrop={handleSubtaskDrop}
+        onDragOver={depth > 0 ? handleSubtaskDragOver : undefined}
+        onDrop={depth > 0 ? handleSubtaskDrop : undefined}
         onDragEnd={isSubtaskDraggable ? handleSubtaskDragEnd : undefined}
         style={{ position: 'relative' }}
       >
@@ -422,7 +435,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
       </div>
       {/* 子任务拖拽指示线 - 下方 */}
       {isDragTarget && dragTarget.position === 'below' && (
-        <DragIndicator position="bottom" type={dragTarget.type} />
+        <DragIndicator position="bottom" type={dragTarget.type} depth={depth} />
       )}
 
       {/* 递归渲染子任务 */}

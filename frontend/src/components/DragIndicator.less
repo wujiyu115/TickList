@@ -7,7 +7,7 @@
   z-index: 10;
   display: flex;
   align-items: center;
-  transition: left 0.15s ease;
+  transition: padding-left 0.15s ease;
 
   &.drag-indicator-top {
     top: -1px;
@@ -32,10 +32,5 @@
     height: 2px;
     background-color: var(--ant-color-primary);
     border-radius: 1px;
-  }
-
-  // 子任务缩进模式
-  &.drag-indicator-child {
-    left: 30px;
   }
 }

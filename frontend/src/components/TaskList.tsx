@@ -152,7 +152,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
               >
                 {/* 拖拽指示线 */}
                 {dragTarget && dragTarget.taskId === task.id && dragTarget.position === 'above' && (
-                  <DragIndicator position="top" type={dragTarget.type} />
+                  <DragIndicator position="top" type={dragTarget.type} depth={0} />
                 )}
                 {isDraggable && (
                   <HolderOutlined className="task-drag-handle" />
@@ -180,7 +180,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
                 />
                 {/* 拖拽指示线 - 下方 */}
                 {dragTarget && dragTarget.taskId === task.id && dragTarget.position === 'below' && (
-                  <DragIndicator position="bottom" type={dragTarget.type} />
+                  <DragIndicator position="bottom" type={dragTarget.type} depth={0} />
                 )}
               </div>
             ))
