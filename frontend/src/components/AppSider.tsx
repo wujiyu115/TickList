@@ -30,6 +30,7 @@ import { Dropdown, Modal, Input, Select, message, Button, Radio, Checkbox, Tabs 
 import type { MenuProps, RadioChangeEvent } from 'antd';
 import { User, TaskList, Tag, Filter, FilterConditions, NoteFolder, Note } from '../types';
 import { getLists, createList, deleteList, updateList, reorderLists } from '../api/list';
+import DeleteListConfirmModal from './DeleteListConfirmModal';
 import { getTags, createTag, updateTag, deleteTag } from '../api/tag';
 import { getFilters, createFilter, updateFilter, deleteFilter } from '../api/filter';
 import { getNoteFolders, createNoteFolder, deleteNoteFolder, updateNoteFolder } from '../api/note';
@@ -101,6 +102,8 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
   const [hoveredFolderId, setHoveredFolderId] = useState<string | null>(null); // hover 的文件夹 id
   const [hoveredListId, setHoveredListId] = useState<string | null>(null); // hover 的清单项 id
   const [hoveredTagId, setHoveredTagId] = useState<string | null>(null); // hover 的标签项 id
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deleteItem, setDeleteItem] = useState<TaskList | null>(null);
   
   // 拖拽排序相关 refs
   const dragItemRef = useRef<{ id: string; parent_id: string | null; index: number } | null>(null);
@@ -465,25 +468,8 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         label: '删除',
         danger: true,
         onClick: () => {
-          const content = childrenCount > 0 
-            ? `该文件夹下有 ${childrenCount} 个清单，删除后子清单也将被删除。确定删除文件夹「${folder.name}」吗？`
-            : `确定删除文件夹「${folder.name}」吗？`;
-          Modal.confirm({
-            title: '删除文件夹',
-            content,
-            okText: '删除',
-            okType: 'danger',
-            cancelText: '取消',
-            onOk: async () => {
-              try {
-                await deleteList(folder.id);
-                message.success('文件夹已删除');
-                loadLists();
-              } catch (e) {
-                message.error('删除失败');
-              }
-            }
-          });
+          setDeleteItem(folder);
+          setDeleteModalVisible(true);
         }
       }
     ];
@@ -505,22 +491,8 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           label: '删除',
           danger: true,
           onClick: () => {
-            Modal.confirm({
-              title: '删除清单',
-              content: `确定删除清单「${list.name}」吗？`,
-              okText: '删除',
-              okType: 'danger',
-              cancelText: '取消',
-              onOk: async () => {
-                try {
-                  await deleteList(list.id);
-                  message.success('清单已删除');
-                  loadLists();
-                } catch (e) {
-                  message.error('删除失败');
-                }
-              }
-            });
+            setDeleteItem(list);
+            setDeleteModalVisible(true);
           }
         }
       ];
@@ -538,22 +510,8 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         label: '删除',
         danger: true,
         onClick: () => {
-          Modal.confirm({
-            title: '删除清单',
-            content: `确定删除清单「${list.name}」吗？`,
-            okText: '删除',
-            okType: 'danger',
-            cancelText: '取消',
-            onOk: async () => {
-              try {
-                await deleteList(list.id);
-                message.success('清单已删除');
-                loadLists();
-              } catch (e) {
-                message.error('删除失败');
-              }
-            }
-          });
+          setDeleteItem(list);
+          setDeleteModalVisible(true);
         }
       }
     ];
@@ -1049,22 +1007,8 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         label: '删除',
         danger: true,
         onClick: () => {
-          Modal.confirm({
-            title: isFolder ? '删除文件夹' : '删除清单',
-            content: `确定删除「${item.name}」吗？`,
-            okText: '删除',
-            okType: 'danger',
-            cancelText: '取消',
-            onOk: async () => {
-              try {
-                await deleteList(item.id);
-                message.success('删除成功');
-                loadLists();
-              } catch (e) {
-                message.error('删除失败');
-              }
-            }
-          });
+          setDeleteItem(item);
+          setDeleteModalVisible(true);
         }
       }
     ];
@@ -1794,6 +1738,19 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           />
         </div>
       </Modal>
+
+      {/* 删除清单确认 Modal */}
+      <DeleteListConfirmModal
+        visible={deleteModalVisible}
+        item={deleteItem}
+        lists={lists}
+        onCancel={() => setDeleteModalVisible(false)}
+        onSuccess={() => {
+          setDeleteModalVisible(false);
+          setDeleteItem(null);
+          loadLists();
+        }}
+      />
 
       {/* 新建/编辑标签 Modal */}
       <Modal
