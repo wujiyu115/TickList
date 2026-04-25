@@ -71,8 +71,9 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
       message.success('任务创建成功');
       await refreshTasks();
       return newTask;
-    } catch (error) {
-      message.error('创建任务失败');
+    } catch (error: any) {
+      const detail = error.response?.data?.detail;
+      message.error(detail || '创建任务失败');
       console.error('Failed to create task:', error);
       throw error;
     }
