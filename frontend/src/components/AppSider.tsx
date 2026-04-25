@@ -31,6 +31,7 @@ import type { MenuProps, RadioChangeEvent } from 'antd';
 import { User, TaskList, Tag, Filter, FilterConditions, NoteFolder, Note } from '../types';
 import { getLists, createList, deleteList, updateList, reorderLists } from '../api/list';
 import DeleteListConfirmModal from './DeleteListConfirmModal';
+import { useTaskContext } from '../contexts/TaskContext';
 import { getTags, createTag, updateTag, deleteTag } from '../api/tag';
 import { getFilters, createFilter, updateFilter, deleteFilter } from '../api/filter';
 import { getNoteFolders, createNoteFolder, deleteNoteFolder, updateNoteFolder } from '../api/note';
@@ -81,6 +82,7 @@ const navItems = [
 
 const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = false, onTogglePanel }) => {
   const navigate = useNavigate();
+  const { refreshTasks } = useTaskContext();
   // 缓存 hover 能力检测，避免移动端触摸触发 mouseenter 导致重渲染吞掉 click
   const supportsHover = window.matchMedia('(hover: hover)').matches;
   const location = useLocation();
@@ -1749,6 +1751,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           setDeleteModalVisible(false);
           setDeleteItem(null);
           loadLists();
+          refreshTasks();
         }}
       />
 
