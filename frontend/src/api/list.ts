@@ -16,9 +16,22 @@ export const updateList = async (listId: string, data: TaskListUpdateRequest): P
   return api.put(`/lists/${listId}`, data);
 };
 
-// 删除清单
-export const deleteList = async (listId: string): Promise<void> => {
-  return api.delete(`/lists/${listId}`);
+// 删除清单（可选任务处理方式）
+export const deleteList = async (
+  listId: string,
+  params?: { action?: string; target_list_id?: string }
+): Promise<any> => {
+  return api.delete(`/lists/${listId}`, { params });
+};
+
+// 获取清单任务数量（支持文件夹统计）
+export const getListTaskCount = async (listId: string): Promise<{
+  list_id: string;
+  type: 'folder' | 'list';
+  task_count: number;
+  sublist_count?: number;
+}> => {
+  return api.get(`/lists/${listId}/task-count`);
 };
 
 // 批量排序清单
