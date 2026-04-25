@@ -1752,6 +1752,18 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           setDeleteItem(null);
           loadLists();
           refreshTasks();
+          // 如果当前正在查看被删除的清单或其子清单，导航到收集箱
+          const currentListId = searchParams.get('list_id');
+          if (deleteItem && currentListId === deleteItem.id) {
+            navigate('/?list_id=inbox');
+            onNavigate?.();
+          } else if (deleteItem && deleteItem.type === 'folder') {
+            const sublists = lists.filter(l => l.parent_id === deleteItem!.id);
+            if (sublists.some(s => s.id === currentListId)) {
+              navigate('/?list_id=inbox');
+              onNavigate?.();
+            }
+          }
         }}
       />
 
