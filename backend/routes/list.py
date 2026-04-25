@@ -110,9 +110,13 @@ async def get_list_task_count(
     task_list = list_dao.get_list_by_id(current_user_id, list_id)
     if not task_list:
         raise HTTPException(status_code=404, detail='清单不存在')
-    
-    count = list_dao.count_tasks_in_list(current_user_id, list_id)
-    return {'list_id': list_id, 'task_count': count}
+
+    if task_list['type'] == 'folder':
+        result = list_dao.count_tasks_in_folder(current_user_id, list_id)
+        return {'list_id': list_id, 'type': 'folder', 'sublist_count': result['sublist_count'], 'task_count': result['task_count']}
+    else:
+        count = list_dao.count_tasks_in_list(current_user_id, list_id)
+        return {'list_id': list_id, 'type': 'list', 'task_count': count}
 
 
 @router.put('/lists/{list_id}')
@@ -151,14 +155,19 @@ async def update_list(
 @router.delete('/lists/{list_id}')
 async def delete_list(
     list_id: str,
+    action: Optional[str] = Query(None, description='处理任务方式: delete_tasks, move_tasks'),
+    target_list_id: Optional[str] = Query(None, description='移动任务的目标清单ID，空值=收集箱'),
     current_user_id: str = Depends(get_current_user)
 ):
-    """删除清单"""
+    """删除清单，可选择处理其中的任务"""
     try:
-        success = list_dao.delete_list(current_user_id, list_id)
-        if not success:
-            raise HTTPException(status_code=404, detail='清单不存在')
-        return {'message': '清单已删除'}
+        result = list_dao.delete_list_with_handling(
+            current_user_id, list_id, action, target_list_id
+        )
+        if not result.get('success'):
+            detail = result.get('error', '清单不存在')
+            raise HTTPException(status_code=400 if '目标' in detail or '不能' in detail else 404, detail=detail)
+        return result
     except HTTPException:
         raise
     except Exception as e:
