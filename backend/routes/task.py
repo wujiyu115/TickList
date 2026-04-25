@@ -8,6 +8,7 @@ import uuid
 
 from middleware.jwt_middleware import get_current_user
 from database.dao.task_dao import task_dao
+from database.dao.list_dao import list_dao
 from models import Task
 
 router = APIRouter()
@@ -119,6 +120,12 @@ async def create_task(
 ):
     """创建任务"""
     try:
+        # 校验 list_id 是否存在
+        if task_data.list_id:
+            existing_list = list_dao.get_list_by_id(current_user_id, task_data.list_id)
+            if not existing_list:
+                raise HTTPException(status_code=400, detail='清单不存在')
+
         # 解析日期时间
         start_time = None
         if task_data.start_time:
