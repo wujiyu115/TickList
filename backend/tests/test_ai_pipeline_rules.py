@@ -343,3 +343,20 @@ class TestRuleHandlerDispatch:
         assert ctx.upstream_hint == {"reason": "no_rule_match"}
         assert "rule:miss" in ctx.trace
         assert any('"stub"' in ev for ev in events)
+
+    async def test_countdown_keyword_wins_over_task_fallback(self):
+        # task 的 _CREATE_PATTERN 中 "(?:任务)?" 是可选的，会贪婪匹配
+        # "加倒数日 高考 2026-06-07"。ALL_RULES 顺序必须保证 countdown
+        # 规则先于 task 规则，否则 task 会把整段当作 title 误吞。
+        nxt = _StubNext()
+        handler = RuleHandler(next_handler=nxt)
+        ctx = ChatContext(
+            user_id="u1",
+            message="加倒数日 高考 2026-06-07",
+            conversation_id="c1",
+        )
+        events = [ev async for ev in handler.handle(ctx)]
+        assert nxt.called_with == []
+        assert any("rule:create_countdown" in t for t in ctx.trace)
+        assert not any("rule:create_task" in t for t in ctx.trace)
+        assert any("create_countdown" in ev for ev in events)
