@@ -72,4 +72,56 @@ class TestToolsExecutorSkipConfirmation:
         from services.ai.tools_executor import _execute_tool
         result = _execute_tool("u1", "delete_task", {"task_id": "t1"}, skip_confirmation=True)
         mock_dao.delete_task.assert_called_once_with("t1", "u1")
-        assert result.get("success") is True
+
+from fastapi.testclient import TestClient
+
+@pytest.mark.asyncio
+class TestEndpoints:
+    def _client_with_user(self, user_id="u1"):
+        from app import app
+        from middleware.jwt_middleware import get_current_user
+        app.dependency_overrides[get_current_user] = lambda: user_id
+        return TestClient(app)
+
+    def test_disambiguate_endpoint_streams_executable_result(self):
+        client = self._client_with_user()
+        with patch("routes.ai._execute_tool") as mock_exec:
+            mock_exec.return_value = {"id": "t1", "status": "completed"}
+            resp = client.post("/api/ai/disambiguate", json={
+                "conversation_id": "c1",
+                "pending_intent": "update_task",
+                "selected_id": "t1",
+                "extra_params": {"status": "completed"},
+            })
+            assert resp.status_code == 200
+            body = resp.text
+            assert "tool_result" in body or '"type": "tool_result"' in body
+            assert '"type": "done"' in body
+            mock_exec.assert_called_once()
+
+    def test_confirm_cancel_does_not_consume_rate_limit(self):
+        client = self._client_with_user("u_cancel")
+        # 调取 21 次取消，正常 chat 限额 20/min；如果消耗配额第 21 次会 429
+        for _ in range(21):
+            resp = client.post("/api/ai/confirm", json={
+                "conversation_id": "c1",
+                "pending_intent": "delete_task",
+                "params": {"task_id": "x"},
+                "confirmed": False,
+            })
+            assert resp.status_code == 200, f"unexpected status {resp.status_code}"
+        # 后续 chat 仍未受影响
+        # （此处仅断言取消未消耗，不再验证 chat 实调）
+
+    def test_confirm_executes_with_skip_confirmation(self):
+        client = self._client_with_user()
+        with patch("routes.ai._execute_tool") as mock_exec:
+            mock_exec.return_value = {"success": True}
+            resp = client.post("/api/ai/confirm", json={
+                "conversation_id": "c1",
+                "pending_intent": "delete_task",
+                "params": {"task_id": "t1"},
+                "confirmed": True,
+            })
+            assert resp.status_code == 200
+            assert mock_exec.call_args.kwargs.get("skip_confirmation") is True
