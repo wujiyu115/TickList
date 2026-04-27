@@ -217,3 +217,40 @@ class TestQueryNotesRule:
     def test_list_all(self):
         result = QueryNotesRule().try_match(_ctx("列出所有笔记"))
         assert result.intent == "list_notes"
+
+from services.ai.pipeline.rules.countdown_rules import (
+    CreateCountdownRule,
+    DeleteCountdownRule,
+    QueryCountdownsRule,
+)
+
+class TestCreateCountdownRule:
+    def test_match_with_date(self, monkeypatch):
+        from datetime import datetime
+        monkeypatch.setattr(
+            "services.ai.pipeline.rules.shared.date_parser._now",
+            lambda: datetime(2026, 4, 27, 10, 0, 0),
+        )
+        result = CreateCountdownRule().try_match(_ctx("添加倒数日 高考 2026-06-07"))
+        assert result is not None
+        assert result.intent == "create_countdown"
+        assert result.params["title"] == "高考"
+        assert "target_date" in result.params
+
+    def test_no_date_returns_pass(self):
+        # 倒数日必须有日期，没有则放行让 LLM 兜底（询问日期）
+        result = CreateCountdownRule().try_match(_ctx("添加倒数日 没日期"))
+        assert result is None or result.status == ResolutionStatus.PASS
+
+class TestDeleteCountdownRule:
+    @patch("services.ai.pipeline.rules.countdown_rules.countdown_dao")
+    def test_single_match(self, mock_dao):
+        mock_dao.get_user_countdowns.return_value = [{"id": "cd1", "title": "高考"}]
+        result = DeleteCountdownRule().try_match(_ctx("删除倒数日 高考"))
+        assert result.status == ResolutionStatus.EXECUTABLE
+        assert result.intent == "delete_countdown"
+
+class TestQueryCountdownsRule:
+    def test_list_all(self):
+        result = QueryCountdownsRule().try_match(_ctx("查看倒数日"))
+        assert result.intent == "list_countdowns"
