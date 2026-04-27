@@ -103,7 +103,7 @@ class TestVerbLexicon:
     def test_no_overlap_between_complete_and_delete(self):
         assert COMPLETE_VERBS.isdisjoint(DELETE_VERBS)
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 
 from services.ai.pipeline.rules.task_rules import (
     CreateTaskRule,
@@ -299,3 +299,47 @@ class TestDeleteCounterRule:
         mock_dao.get_user_counters.return_value = [{"id": "c1", "title": "喝水"}]
         result = DeleteCounterRule().try_match(_ctx("删除计数器 喝水"))
         assert result.intent == "delete_counter"
+
+from services.ai.pipeline.rule_handler import RuleHandler
+from services.ai.pipeline.rules import ALL_RULES
+
+class TestRulesRegistry:
+    def test_all_rules_aggregates_four_domains(self):
+        names = {r.name for r in ALL_RULES}
+        # 至少各覆盖 1 条
+        assert "create_task" in names
+        assert "create_note" in names
+        assert "create_countdown" in names
+        assert "create_counter" in names
+
+class _StubNext:
+    """Async-iterable stub used as next_handler."""
+
+    def __init__(self):
+        self.called_with: list = []
+
+    async def handle(self, ctx):
+        self.called_with.append(ctx)
+        yield 'data: {"type": "stub"}\n\n'
+
+@pytest.mark.asyncio
+class TestRuleHandlerDispatch:
+    async def test_match_short_circuits_next_handler(self):
+        nxt = _StubNext()
+        handler = RuleHandler(next_handler=nxt)
+        ctx = ChatContext(user_id="u1", message="加任务 写日报", conversation_id="c1")
+        events = [ev async for ev in handler.handle(ctx)]
+        # 命中 create_task；不应调用 next_handler
+        assert nxt.called_with == []
+        assert any('"create_task"' in ev or "create_task" in ev for ev in events)
+        assert any("rule:create_task" in t for t in ctx.trace)
+
+    async def test_no_rule_match_falls_through(self):
+        nxt = _StubNext()
+        handler = RuleHandler(next_handler=nxt)
+        ctx = ChatContext(user_id="u1", message="今天的天气如何", conversation_id="c1")
+        events = [ev async for ev in handler.handle(ctx)]
+        assert len(nxt.called_with) == 1
+        assert ctx.upstream_hint == {"reason": "no_rule_match"}
+        assert "rule:miss" in ctx.trace
+        assert any('"stub"' in ev for ev in events)
