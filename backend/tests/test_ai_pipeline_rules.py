@@ -102,3 +102,35 @@ class TestVerbLexicon:
 
     def test_no_overlap_between_complete_and_delete(self):
         assert COMPLETE_VERBS.isdisjoint(DELETE_VERBS)
+
+from unittest.mock import patch
+
+from services.ai.pipeline.rules.shared.entity_matcher import match_entities
+
+class TestEntityMatcher:
+    def _items(self):
+        return [
+            {"id": "1", "title": "周五前交报告"},
+            {"id": "2", "title": "改报告 PPT"},
+            {"id": "3", "title": "开会"},
+        ]
+
+    def test_zero_match(self):
+        result = match_entities("不存在的东西", self._items())
+        assert result == []
+
+    def test_exact_single_match(self):
+        result = match_entities("开会", self._items())
+        assert len(result) == 1
+        assert result[0]["id"] == "3"
+
+    def test_substring_multi_match(self):
+        result = match_entities("报告", self._items())
+        assert len(result) == 2
+        ids = {r["id"] for r in result}
+        assert ids == {"1", "2"}
+
+    def test_fuzzy_fallback(self):
+        # 相似度 ≥ 0.6 兜底（difflib 字符级算法："开会议" 与 "开会" ratio=0.8）
+        result = match_entities("开会议", self._items())
+        assert any(r["id"] == "3" for r in result)
