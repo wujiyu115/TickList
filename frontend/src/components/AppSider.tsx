@@ -873,20 +873,12 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
     dragOverItemRef.current = null;
   };
 
-  // 移动端长按处理
-  const handleListTouchStart = useCallback((e: React.TouchEvent, itemId: string) => {
+  // 移动端长按处理 - 直接设置 mobileMenuKey 触发 Dropdown
+  const handleItemTouchStart = useCallback((menuKey: string) => {
     longPressTriggeredRef.current = false;
-    const target = e.currentTarget as HTMLElement;
-    const touch = e.touches[0];
     longPressTimerRef.current = setTimeout(() => {
       longPressTriggeredRef.current = true;
-      // 模拟右键菜单事件触发 Dropdown
-      const contextMenuEvent = new MouseEvent('contextmenu', {
-        bubbles: true,
-        clientX: touch.clientX,
-        clientY: touch.clientY
-      });
-      target.dispatchEvent(contextMenuEvent);
+      setMobileMenuKey(menuKey);
     }, 500);
   }, []);
 
@@ -1046,7 +1038,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         onDragOver={(e) => handleDragOver(e, item, index)}
         onDrop={(e) => handleDrop(e, item, index)}
         onDragEnd={handleDragEnd}
-        onTouchStart={(e) => handleListTouchStart(e, item.id)}
+        onTouchStart={() => handleItemTouchStart(isFolder ? `folder-${item.id}` : `list-${item.id}`)}
         onTouchMove={handleListTouchMove}
         onTouchEnd={handleListTouchEnd}
         onMouseEnter={() => {
@@ -1400,6 +1392,9 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
                       className={`tag-item ${selectedKey === `tag-${tag.name}` ? 'active' : ''}`}
                       onClick={(e) => { e.stopPropagation(); navigate(`/?tag=${tag.name}`); onNavigate?.(); }}
                       onContextMenu={(e) => { e.preventDefault(); setMobileMenuKey(`tag-${tag.id}`); }}
+                      onTouchStart={() => handleItemTouchStart(`tag-${tag.id}`)}
+                      onTouchMove={handleListTouchMove}
+                      onTouchEnd={handleListTouchEnd}
                       onMouseEnter={() => { if (supportsHover) setHoveredTagId(tag.id); }}
                       onMouseLeave={() => { if (supportsHover) setHoveredTagId(null); }}
                     >
@@ -1525,6 +1520,9 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
                         className={`list-item ${isSelected ? 'active' : ''}`}
                         onClick={(e) => { e.stopPropagation(); setNoteCollapsedFolders(prev => ({ ...prev, [folder.id]: !prev[folder.id] })); onNavigate?.(); }}
                         onContextMenu={(e) => { e.preventDefault(); setMobileMenuKey(`noteFolder-${folder.id}`); }}
+                        onTouchStart={() => handleItemTouchStart(`noteFolder-${folder.id}`)}
+                        onTouchMove={handleListTouchMove}
+                        onTouchEnd={handleListTouchEnd}
                         onMouseEnter={() => { if (supportsHover) setHoveredNoteFolderId(folder.id); }}
                         onMouseLeave={() => { if (supportsHover) setHoveredNoteFolderId(null); }}
                       >
@@ -1653,6 +1651,9 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
                       className={`tag-item ${searchParams.get('tag') === tag.id ? 'active' : ''}`}
                       onClick={(e) => { e.stopPropagation(); setNoteCollapsedFolders(prev => ({ ...prev, [`tag-${tag.id}`]: !prev[`tag-${tag.id}`] })); }}
                       onContextMenu={(e) => { e.preventDefault(); setMobileMenuKey(`noteTag-${tag.id}`); }}
+                      onTouchStart={() => handleItemTouchStart(`noteTag-${tag.id}`)}
+                      onTouchMove={handleListTouchMove}
+                      onTouchEnd={handleListTouchEnd}
                       onMouseEnter={() => { if (supportsHover) setHoveredTagId(tag.id); }}
                       onMouseLeave={() => { if (supportsHover) setHoveredTagId(null); }}
                     >
