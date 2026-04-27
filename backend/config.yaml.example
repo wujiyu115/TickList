@@ -40,3 +40,8 @@ ai:
   openai_api_key: ""  # Set via env OPENAI_API_KEY
   openai_model: gpt-4o  # Set via env OPENAI_MODEL
   openai_base_url: ""  # Set via env OPENAI_BASE_URL (for compatible APIs)
+  # AI Pipeline 灰度配置（详见 docs/superpowers/specs/2026-04-27-ai-hybrid-pipeline-design.md）
+  pipeline:
+    enabled: false                  # 总开关：false=走 legacy tools_call；true=启用三层 pipeline
+    enable_rule_layer: true         # 是否启用规则层：false=跳过规则层，直接进入 JSON Mode 层
+    enable_json_mode_layer: true    # 是否启用 JSON Mode 层：false=规则未命中时直接降级到 tools_call

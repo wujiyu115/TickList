@@ -17,3 +17,4 @@ openai>=1.50.0
 pytest
 pytest-asyncio
 httpx
+dateparser>=1.2.0
