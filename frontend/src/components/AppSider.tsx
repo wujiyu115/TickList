@@ -24,6 +24,7 @@ import {
   ArrowUpOutlined,
   ArrowDownOutlined,
   InboxOutlined as ArchiveOutlined,
+  RobotOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Dropdown, Modal, Input, Select, message, Button, Radio, Checkbox, Tabs } from 'antd';
@@ -79,6 +80,7 @@ const navItems = [
   { key: 'countdown', icon: HourglassOutlined, path: '/countdown', tooltip: '倒数日' },
   { key: 'counter', icon: NumberOutlined, path: '/counter', tooltip: '计数器' },
   { key: 'notes', icon: FileTextOutlined, path: '/notes', tooltip: '笔记' },
+  { key: 'ai', icon: RobotOutlined, path: '/ai', tooltip: 'AI' },
   { key: 'statistics', icon: BarChartOutlined, path: '/statistics', tooltip: '统计' },
 ];
 

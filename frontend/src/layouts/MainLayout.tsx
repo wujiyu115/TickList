@@ -15,6 +15,7 @@ const NotePage = lazy(() => import('../pages/NotePage'));
 const SummaryPage = lazy(() => import('../pages/SummaryPage'));
 const SettingsPage = lazy(() => import('../pages/SettingsPage'));
 const AdminPage = lazy(() => import('../pages/admin/AdminPage'));
+const AiPage = lazy(() => import('../pages/AiPage'));
 import { TaskProvider } from '../contexts/TaskContext';
 import { User } from '../types';
 import './MainLayout.less';
@@ -104,6 +105,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
               <Route path="/statistics" element={<StatisticsPage />} />
               <Route path="/summary" element={<SummaryPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/ai" element={<AiPage />} />
               <Route
                 path="/admin"
                 element={
