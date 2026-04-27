@@ -41,3 +41,41 @@ class TestSseEvent:
         # sse_event 接受 str（视为 content），也接受 dict
         s = sse_event("text", "hello")
         assert '"content": "hello"' in s
+
+from datetime import datetime, date
+
+from services.ai.pipeline.rules.shared.date_parser import extract_date
+
+class TestDateParser:
+    def test_no_date_returns_original_text(self):
+        text, parsed = extract_date("买牛奶")
+        assert text == "买牛奶"
+        assert parsed is None
+
+    def test_today_keyword(self, monkeypatch):
+        # Freeze "today" so the assertion is stable
+        fixed_now = datetime(2026, 4, 27, 10, 0, 0)
+        monkeypatch.setattr(
+            "services.ai.pipeline.rules.shared.date_parser._now",
+            lambda: fixed_now,
+        )
+        text, parsed = extract_date("今天 写日报")
+        assert "今天" not in text
+        assert "写日报" in text
+        assert parsed is not None
+        assert parsed.date() == date(2026, 4, 27)
+
+    def test_tomorrow_keyword(self, monkeypatch):
+        fixed_now = datetime(2026, 4, 27, 10, 0, 0)
+        monkeypatch.setattr(
+            "services.ai.pipeline.rules.shared.date_parser._now",
+            lambda: fixed_now,
+        )
+        text, parsed = extract_date("明天交周报")
+        assert "明天" not in text
+        assert parsed.date() == date(2026, 4, 28)
+
+    def test_iso_date(self):
+        text, parsed = extract_date("2026-05-01 劳动节活动")
+        assert "2026-05-01" not in text
+        assert parsed.date() == date(2026, 5, 1)
