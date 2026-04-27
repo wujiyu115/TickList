@@ -224,6 +224,13 @@ from services.ai.pipeline.rules.countdown_rules import (
     QueryCountdownsRule,
 )
 
+from services.ai.pipeline.rules.counter_rules import (
+    CreateCounterRule,
+    IncrementCounterRule,
+    DecrementCounterRule,
+    DeleteCounterRule,
+)
+
 class TestCreateCountdownRule:
     def test_match_with_date(self, monkeypatch):
         from datetime import datetime
@@ -254,3 +261,41 @@ class TestQueryCountdownsRule:
     def test_list_all(self):
         result = QueryCountdownsRule().try_match(_ctx("查看倒数日"))
         assert result.intent == "list_countdowns"
+
+class TestCreateCounterRule:
+    def test_match(self):
+        result = CreateCounterRule().try_match(_ctx("新建计数器 喝水"))
+        assert result is not None
+        assert result.intent == "create_counter"
+        assert result.params["name"] == "喝水"
+
+class TestIncrementCounterRule:
+    @patch("services.ai.pipeline.rules.counter_rules.counter_dao")
+    def test_plus_one_pattern(self, mock_dao):
+        # 形式 1："喝水 +1"
+        mock_dao.get_user_counters.return_value = [{"id": "c1", "title": "喝水"}]
+        result = IncrementCounterRule().try_match(_ctx("喝水 +1"))
+        assert result.status == ResolutionStatus.EXECUTABLE
+        assert result.intent == "update_counter"
+        assert result.params == {"counter_id": "c1", "action": "increment"}
+
+    @patch("services.ai.pipeline.rules.counter_rules.counter_dao")
+    def test_zero_match_pass(self, mock_dao):
+        mock_dao.get_user_counters.return_value = []
+        result = IncrementCounterRule().try_match(_ctx("不存在 +1"))
+        assert result.status == ResolutionStatus.PASS
+
+class TestDecrementCounterRule:
+    @patch("services.ai.pipeline.rules.counter_rules.counter_dao")
+    def test_minus_one_pattern(self, mock_dao):
+        mock_dao.get_user_counters.return_value = [{"id": "c1", "title": "喝水"}]
+        result = DecrementCounterRule().try_match(_ctx("喝水 -1"))
+        assert result.status == ResolutionStatus.EXECUTABLE
+        assert result.params == {"counter_id": "c1", "action": "decrement"}
+
+class TestDeleteCounterRule:
+    @patch("services.ai.pipeline.rules.counter_rules.counter_dao")
+    def test_single_match(self, mock_dao):
+        mock_dao.get_user_counters.return_value = [{"id": "c1", "title": "喝水"}]
+        result = DeleteCounterRule().try_match(_ctx("删除计数器 喝水"))
+        assert result.intent == "delete_counter"
