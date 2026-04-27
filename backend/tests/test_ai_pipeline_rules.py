@@ -79,3 +79,26 @@ class TestDateParser:
         text, parsed = extract_date("2026-05-01 劳动节活动")
         assert "2026-05-01" not in text
         assert parsed.date() == date(2026, 5, 1)
+
+from services.ai.pipeline.rules.shared.verb_lexicon import (
+    CREATE_VERBS,
+    DELETE_VERBS,
+    COMPLETE_VERBS,
+    UPDATE_VERBS,
+    QUERY_VERBS,
+    verbs_pattern,
+)
+
+class TestVerbLexicon:
+    def test_create_verbs_have_common_words(self):
+        assert "添加" in CREATE_VERBS
+        assert "新建" in CREATE_VERBS
+
+    def test_pattern_compiles_to_alternation(self):
+        pat = verbs_pattern(CREATE_VERBS)
+        assert pat.match("添加")
+        assert pat.match("新建")
+        assert not pat.match("查询")
+
+    def test_no_overlap_between_complete_and_delete(self):
+        assert COMPLETE_VERBS.isdisjoint(DELETE_VERBS)
