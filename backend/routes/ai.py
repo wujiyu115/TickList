@@ -2,7 +2,7 @@
 import time
 from collections import defaultdict
 from fastapi import APIRouter, Depends, HTTPException
-from models.ai import AiChatRequest, AiChatResponse
+from schemas.ai import AiChatRequest
 from middleware.jwt_middleware import get_current_user
 from services.ai_service import chat as ai_chat
 
