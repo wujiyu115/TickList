@@ -560,11 +560,6 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
       onClick: () => message.info('功能开发中')
     },
     {
-      key: 'add-child',
-      label: '添加子标签',
-      onClick: () => message.info('功能开发中')
-    },
-    {
       key: 'delete',
       label: '删除',
       danger: true,
