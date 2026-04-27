@@ -137,6 +137,15 @@ class ConfigLoader:
         """获取Backend配置"""
         return {}
 
+    def get_ai_config(self) -> Dict[str, Any]:
+        """获取AI配置"""
+        return {
+            'provider': self.get('ai.provider', 'claude', 'AI_PROVIDER'),
+            'api_key': self.get('ai.api_key', '', 'AI_API_KEY'),
+            'model': self.get('ai.model', 'claude-sonnet-4-5-20250514', 'AI_MODEL'),
+            'max_tokens': self.get('ai.max_tokens', 4096),
+        }
+
     def get_logging_config(self) -> Dict[str, Any]:
         """获取日志配置"""
         return {
