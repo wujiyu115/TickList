@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  CheckSquareOutlined, 
+import {
+  CheckSquareOutlined,
   CalendarOutlined,
   BarChartOutlined,
   ClockCircleOutlined,
@@ -56,6 +56,8 @@ const colorOptions = [
   { value: '#8c8c8c', label: '灰色' },
 ];
 
+import { useLongPress } from '../hooks/useLongPress';
+
 // 标签预定义颜色（圆形色块）
 const TAG_COLORS = [
   '#f5f5f5',  // 无色/默认
@@ -106,6 +108,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
   const [hoveredTagId, setHoveredTagId] = useState<string | null>(null); // hover 的标签项 id
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteItem, setDeleteItem] = useState<TaskList | null>(null);
+  const [mobileMenuKey, setMobileMenuKey] = useState<string | null>(null); // 移动端长按触发的菜单
   
   // 拖拽排序相关 refs
   const dragItemRef = useRef<{ id: string; parent_id: string | null; index: number } | null>(null);
@@ -1073,6 +1076,10 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
             onNavigate?.();
           }
         }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setMobileMenuKey(isFolder ? `folder-${item.id}` : `list-${item.id}`);
+        }}
       >
         {/* 拖拽手柄（仅桌面端显示） */}
         {isDraggable && supportsHover && (
@@ -1098,11 +1105,13 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         ) : null}
         <span className="list-name">{item.name}</span>
         {/* 文件夹 hover 操作按钮 - 只保留 "..." 菜单 */}
-        {isFolder && isFolderHovered && (
+        {isFolder && (isFolderHovered || mobileMenuKey === `folder-${item.id}`) && (
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Dropdown 
-              menu={{ items: getFolderMoreMenuItems(item) }} 
+            <Dropdown
+              menu={{ items: getFolderMoreMenuItems(item) }}
               trigger={['click']}
+              open={mobileMenuKey === `folder-${item.id}` ? true : undefined}
+              onOpenChange={(visible) => { if (!visible) setMobileMenuKey(null); }}
             >
               <MoreOutlined
                 style={{ 
@@ -1118,10 +1127,12 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           </div>
         )}
         {/* 清单 hover 操作按钮 */}
-        {!isFolder && isListHovered && (
-          <Dropdown 
-            menu={{ items: getListMoreMenuItems(item, isArchivedList) }} 
+        {!isFolder && (isListHovered || mobileMenuKey === `list-${item.id}`) && (
+          <Dropdown
+            menu={{ items: getListMoreMenuItems(item, isArchivedList) }}
             trigger={['click']}
+            open={mobileMenuKey === `list-${item.id}` ? true : undefined}
+            onOpenChange={(visible) => { if (!visible) setMobileMenuKey(null); }}
           >
             <MoreOutlined
               style={{ 
@@ -1384,19 +1395,22 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
                 .map(tag => {
                   const isTagHovered = hoveredTagId === tag.id;
                   return (
-                    <div 
+                    <div
                       key={tag.id}
                       className={`tag-item ${selectedKey === `tag-${tag.name}` ? 'active' : ''}`}
                       onClick={(e) => { e.stopPropagation(); navigate(`/?tag=${tag.name}`); onNavigate?.(); }}
+                      onContextMenu={(e) => { e.preventDefault(); setMobileMenuKey(`tag-${tag.id}`); }}
                       onMouseEnter={() => { if (supportsHover) setHoveredTagId(tag.id); }}
                       onMouseLeave={() => { if (supportsHover) setHoveredTagId(null); }}
                     >
                       <TagOutlined />
                       <span>{tag.name}</span>
-                      {isTagHovered ? (
-                        <Dropdown 
-                          menu={{ items: getTagMoreMenuItems(tag) }} 
+                      {(isTagHovered || mobileMenuKey === `tag-${tag.id}`) ? (
+                        <Dropdown
+                          menu={{ items: getTagMoreMenuItems(tag) }}
                           trigger={['click']}
+                          open={mobileMenuKey === `tag-${tag.id}` ? true : undefined}
+                          onOpenChange={(visible) => { if (!visible) setMobileMenuKey(null); }}
                         >
                           <MoreOutlined
                             style={{ 
@@ -1510,16 +1524,19 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
                       <div
                         className={`list-item ${isSelected ? 'active' : ''}`}
                         onClick={(e) => { e.stopPropagation(); setNoteCollapsedFolders(prev => ({ ...prev, [folder.id]: !prev[folder.id] })); onNavigate?.(); }}
+                        onContextMenu={(e) => { e.preventDefault(); setMobileMenuKey(`noteFolder-${folder.id}`); }}
                         onMouseEnter={() => { if (supportsHover) setHoveredNoteFolderId(folder.id); }}
                         onMouseLeave={() => { if (supportsHover) setHoveredNoteFolderId(null); }}
                       >
                         {isExpanded ? <DownOutlined style={{ fontSize: 10 }} /> : <RightOutlined style={{ fontSize: 10 }} />}
                         <FolderOutlined />
                         <span className="list-name">{folder.name}</span>
-                        {isHovered ? (
+                        {(isHovered || mobileMenuKey === `noteFolder-${folder.id}`) ? (
                           <Dropdown
                             menu={{ items: getNoteFolderContextMenuItems(folder) }}
                             trigger={['click']}
+                            open={mobileMenuKey === `noteFolder-${folder.id}` ? true : undefined}
+                            onOpenChange={(visible) => { if (!visible) setMobileMenuKey(null); }}
                           >
                             <MoreOutlined
                               style={{
@@ -1635,16 +1652,19 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
                     <div
                       className={`tag-item ${searchParams.get('tag') === tag.id ? 'active' : ''}`}
                       onClick={(e) => { e.stopPropagation(); setNoteCollapsedFolders(prev => ({ ...prev, [`tag-${tag.id}`]: !prev[`tag-${tag.id}`] })); }}
+                      onContextMenu={(e) => { e.preventDefault(); setMobileMenuKey(`noteTag-${tag.id}`); }}
                       onMouseEnter={() => { if (supportsHover) setHoveredTagId(tag.id); }}
                       onMouseLeave={() => { if (supportsHover) setHoveredTagId(null); }}
                     >
                       {isExpanded ? <DownOutlined style={{ fontSize: 10 }} /> : <RightOutlined style={{ fontSize: 10 }} />}
                       <TagOutlined style={{ color: tag.color }} />
                       <span>{tag.name}</span>
-                      {hoveredTagId === tag.id ? (
+                      {(hoveredTagId === tag.id || mobileMenuKey === `noteTag-${tag.id}`) ? (
                         <Dropdown
                           menu={{ items: getTagMoreMenuItems(tag) }}
                           trigger={['click']}
+                          open={mobileMenuKey === `noteTag-${tag.id}` ? true : undefined}
+                          onOpenChange={(visible) => { if (!visible) setMobileMenuKey(null); }}
                         >
                           <MoreOutlined
                             style={{
