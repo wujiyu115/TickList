@@ -388,3 +388,23 @@ export interface NoteUpdateRequest {
   order?: number;
   tags?: string[];
 }
+
+// AI 对话类型
+export interface ToolAction {
+  tool: string;
+  params: Record<string, any>;
+  result: string;
+}
+
+export interface AiChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  actions?: ToolAction[];
+  timestamp?: string;
+}
+
+export interface AiChatResponse {
+  reply: string;
+  conversation_id: string;
+  actions: ToolAction[];
+}
