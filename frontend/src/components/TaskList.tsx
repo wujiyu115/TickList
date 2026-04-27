@@ -280,6 +280,9 @@ const TaskList: React.FC<TaskListProps> = ({
     }
   }, [refreshTasks]);
 
+  // 已完成任务：优先使用外部独立加载的分页数据，否则从 tasks 中过滤
+  const hasExternalCompleted = externalCompletedTasks !== undefined;
+
   // 合并 allTasks 供子任务查找（包括外部已完成任务）
   const allTasksForLookup = hasExternalCompleted
     ? [...tasks, ...externalCompletedTasks]
