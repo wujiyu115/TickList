@@ -34,6 +34,7 @@ from routes.settings import router as settings_router
 from routes.focus import router as focus_router
 from routes.webauthn import router as webauthn_router
 from routes.note import router as note_router
+from routes.ai import router as ai_router
 from routes.admin import admin_router
 
 # 导入中间件
@@ -103,6 +104,7 @@ def create_app():
     app.include_router(focus_router)
     app.include_router(webauthn_router)
     app.include_router(note_router)
+    app.include_router(ai_router)
     app.include_router(admin_router)
     
     # 挂载静态文件
