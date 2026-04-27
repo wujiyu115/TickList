@@ -19,8 +19,26 @@ from database.dao.task_dao import task_dao
 from utils.logger import logger
 
 
-def _execute_tool(user_id: str, tool_name: str, tool_input: Dict[str, Any]) -> Any:
+def _execute_tool(
+    user_id: str,
+    tool_name: str,
+    tool_input: Dict[str, Any],
+    skip_confirmation: bool = False,
+) -> Any:
     try:
+        # --- 删除拦截（统一在此处理）---
+        _DELETE_NAMES = {
+            "delete_task", "delete_note", "delete_countdown",
+            "delete_counter", "delete_list", "delete_tag",
+        }
+        if tool_name in _DELETE_NAMES and not skip_confirmation:
+            # 由调用方（pipeline executor / tools_call_handler）决定如何呈现给用户
+            return {
+                "_pending_confirmation": True,
+                "intent": tool_name,
+                "params": tool_input,
+            }
+
         # --- 任务 ---
         if tool_name == "list_tasks":
             params = {}

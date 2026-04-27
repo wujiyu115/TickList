@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-"""AI processing pipeline.
+"""AI processing pipeline (Layer 1 rules, Layer 2 JSON mode, Layer 3 tools call).
 
-Three-layer architecture: RuleHandler -> JsonModeHandler -> ToolsCallHandler.
-The public surface is intentionally narrow: only ``pipeline_chat_stream``
-is intended for use by ``services.ai.chat_stream``.
+Public surface: only ``pipeline_chat_stream`` is intended for use by
+``services.ai.chat_stream``. All handlers and helpers are implementation
+details.
 """
 
-# Note: pipeline_chat_stream is added in a later task. Keep this file minimal
-# until then to avoid import cycles during incremental implementation.
+from .pipeline import pipeline_chat_stream
 
-__all__: list[str] = []
+__all__ = ["pipeline_chat_stream"]

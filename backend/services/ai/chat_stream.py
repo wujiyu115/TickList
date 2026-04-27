@@ -23,6 +23,16 @@ async def chat_stream(
     from config.config_loader import config
 
     ai_config = config.get_ai_config()
+
+    # --- 灰度开关：启用三层 pipeline ---
+    pipe_cfg = ai_config.get("pipeline", {}) or {}
+    if pipe_cfg.get("enabled", False):
+        from .pipeline import pipeline_chat_stream
+        conv_id = conversation_id or str(uuid.uuid4())
+        async for ev in pipeline_chat_stream(user_id, message, conv_id):
+            yield ev
+        return
+
     provider = ai_config.get("provider", "claude")
 
     if provider == "openai":
