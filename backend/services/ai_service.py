@@ -10,7 +10,6 @@ from database.dao.countdown_dao import countdown_dao
 from database.dao.counter_dao import counter_dao
 from database.dao.list_dao import list_dao
 from database.dao.tag_dao import tag_dao
-from database.dao.note_folder_dao import note_folder_dao
 from utils.logger import logger
 
 
@@ -88,7 +87,6 @@ TOOLS = [
             "properties": {
                 "folder_id": {"type": "string", "description": "文件夹ID"},
                 "tags": {"type": "string", "description": "标签，逗号分隔"},
-                "keyword": {"type": "string", "description": "关键词搜索"},
                 "limit": {"type": "integer", "description": "返回数量上限", "default": 50},
             },
         },
@@ -207,7 +205,7 @@ TOOLS = [
     },
     {
         "name": "update_counter",
-        "description": "更新计数器。可递增、递减、重置。",
+        "description": "更新计数器。可递增、递减、重置或改名。",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -215,7 +213,7 @@ TOOLS = [
                 "action": {"type": "string", "description": "操作: increment/decrement/reset", "enum": ["increment", "decrement", "reset"]},
                 "title": {"type": "string", "description": "新名称"},
             },
-            "required": ["counter_id", "action"],
+            "required": ["counter_id"],
         },
     },
     {
@@ -324,16 +322,17 @@ TOOLS = [
 
 # ============ Conversation Store (in-memory) ============
 
-_conversations: Dict[str, List[Dict]] = {}
+_conversations: Dict[str, Dict] = {}
 _MAX_HISTORY = 20
 
 
-def _get_or_create_conversation(conversation_id: Optional[str]) -> tuple[str, List[Dict]]:
+def _get_or_create_conversation(user_id: str, conversation_id: Optional[str]) -> tuple[str, List[Dict]]:
     if not conversation_id:
         conversation_id = str(uuid.uuid4())
-    if conversation_id not in _conversations:
-        _conversations[conversation_id] = []
-    return conversation_id, _conversations[conversation_id]
+    key = f"{user_id}:{conversation_id}"
+    if key not in _conversations:
+        _conversations[key] = {"user_id": user_id, "messages": []}
+    return conversation_id, _conversations[key]["messages"]
 
 
 # ============ System Prompt ============
@@ -455,7 +454,6 @@ def _execute_tool(user_id: str, tool_name: str, tool_input: Dict[str, Any]) -> A
             params = {}
             if tool_input.get("folder_id"): params["folder_id"] = tool_input["folder_id"]
             if tool_input.get("tags"): params["tags"] = [t.strip() for t in tool_input["tags"].split(",")]
-            if tool_input.get("keyword"): params["keyword"] = tool_input["keyword"]
             limit = tool_input.get("limit", 50)
             result = note_dao.get_user_notes(user_id, skip=0, limit=limit, **params)
             return {"notes": result, "count": len(result)}
@@ -490,7 +488,7 @@ def _execute_tool(user_id: str, tool_name: str, tool_input: Dict[str, Any]) -> A
 
         # --- 倒数日 ---
         elif tool_name == "list_countdowns":
-            result = countdown_dao.get_user_countdowns(user_id, limit=tool_input.get("limit", 50))
+            result = countdown_dao.get_user_countdowns(user_id, category=tool_input.get("category"), limit=tool_input.get("limit", 50))
             return {"countdowns": result, "count": len(result)}
 
         elif tool_name == "create_countdown":
@@ -537,8 +535,14 @@ def _execute_tool(user_id: str, tool_name: str, tool_input: Dict[str, Any]) -> A
             return result
 
         elif tool_name == "update_counter":
-            action = tool_input["action"]
             counter_id = tool_input["counter_id"]
+            action = tool_input.get("action")
+            title = tool_input.get("title")
+            # Handle title rename
+            if title:
+                counter_dao.update_counter(user_id, counter_id, {"title": title})
+                if not action:
+                    return counter_dao.get_counter_by_id(user_id, counter_id)
             if action == "increment":
                 existing = counter_dao.get_counter_by_id(user_id, counter_id)
                 result = counter_dao.increment_counter(user_id, counter_id, existing["step"])
@@ -632,7 +636,7 @@ async def chat(user_id: str, message: str, conversation_id: Optional[str] = None
     if not ai_config["api_key"]:
         return {"reply": "AI 功能未配置，请联系管理员设置 API Key。", "conversation_id": conversation_id or str(uuid.uuid4()), "actions": []}
 
-    conv_id, history = _get_or_create_conversation(conversation_id)
+    conv_id, history = _get_or_create_conversation(user_id, conversation_id)
 
     # Add user message to history
     history.append({"role": "user", "content": message})
@@ -665,8 +669,9 @@ async def chat(user_id: str, message: str, conversation_id: Optional[str] = None
             has_tool_use = False
             assistant_content = response.content
 
-            # Build assistant message blocks
+            # Build assistant message blocks and collect tool results
             assistant_blocks = []
+            tool_results = []
             for block in assistant_content:
                 if block.type == "text":
                     assistant_blocks.append({"type": "text", "text": block.text})
@@ -679,22 +684,23 @@ async def chat(user_id: str, message: str, conversation_id: Optional[str] = None
                         "params": block.input,
                         "result": result_str,
                     })
-                    # Add tool_use block + tool_result to messages for next iteration
                     assistant_blocks.append({
                         "type": "tool_use",
                         "id": block.id,
                         "name": block.name,
                         "input": block.input,
                     })
-                    messages.append({"role": "assistant", "content": assistant_blocks})
-                    messages.append({
-                        "role": "user",
-                        "content": [{
-                            "type": "tool_result",
-                            "tool_use_id": block.id,
-                            "content": result_str,
-                        }],
+                    tool_results.append({
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": result_str,
                     })
+
+            if has_tool_use:
+                # Group all tool_use blocks into ONE assistant message
+                # and all tool_results into ONE user message
+                messages.append({"role": "assistant", "content": assistant_blocks})
+                messages.append({"role": "user", "content": tool_results})
 
             if not has_tool_use:
                 # No tool calls — LLM gave a final text reply
@@ -719,7 +725,7 @@ async def chat(user_id: str, message: str, conversation_id: Optional[str] = None
     except Exception as e:
         logger.error(f"AI chat error: {str(e)}")
         return {
-            "reply": f"AI 服务出错: {str(e)}",
+            "reply": "AI 服务暂时不可用，请稍后重试。",
             "conversation_id": conv_id,
             "actions": [],
         }
