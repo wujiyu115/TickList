@@ -181,3 +181,39 @@ class TestQueryTasksRule:
     def test_unfinished_keyword(self):
         result = QueryTasksRule().try_match(_ctx("未完成的任务"))
         assert result.intent == "list_tasks"
+
+from services.ai.pipeline.rules.note_rules import (
+    CreateNoteRule,
+    DeleteNoteRule,
+    QueryNotesRule,
+)
+
+class TestCreateNoteRule:
+    def test_match_basic(self):
+        result = CreateNoteRule().try_match(_ctx("新建笔记 读书心得"))
+        assert result is not None
+        assert result.intent == "create_note"
+        assert result.params["title"] == "读书心得"
+
+    def test_no_match_for_task(self):
+        assert CreateNoteRule().try_match(_ctx("加任务 写日报")) is None
+
+class TestDeleteNoteRule:
+    @patch("services.ai.pipeline.rules.note_rules.note_dao")
+    def test_single_match(self, mock_dao):
+        mock_dao.get_user_notes.return_value = [{"id": "n1", "title": "读书心得"}]
+        result = DeleteNoteRule().try_match(_ctx("删除笔记 读书心得"))
+        assert result.status == ResolutionStatus.EXECUTABLE
+        assert result.intent == "delete_note"
+        assert result.params == {"note_id": "n1"}
+
+    @patch("services.ai.pipeline.rules.note_rules.note_dao")
+    def test_zero_match_pass(self, mock_dao):
+        mock_dao.get_user_notes.return_value = []
+        result = DeleteNoteRule().try_match(_ctx("删除笔记 不存在"))
+        assert result.status == ResolutionStatus.PASS
+
+class TestQueryNotesRule:
+    def test_list_all(self):
+        result = QueryNotesRule().try_match(_ctx("列出所有笔记"))
+        assert result.intent == "list_notes"
