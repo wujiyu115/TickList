@@ -103,34 +103,81 @@ class TestVerbLexicon:
     def test_no_overlap_between_complete_and_delete(self):
         assert COMPLETE_VERBS.isdisjoint(DELETE_VERBS)
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
-from services.ai.pipeline.rules.shared.entity_matcher import match_entities
+from services.ai.pipeline.rules.task_rules import (
+    CreateTaskRule,
+    CompleteTaskRule,
+    DeleteTaskRule,
+    QueryTasksRule,
+)
 
-class TestEntityMatcher:
-    def _items(self):
-        return [
-            {"id": "1", "title": "周五前交报告"},
-            {"id": "2", "title": "改报告 PPT"},
-            {"id": "3", "title": "开会"},
+def _ctx(message: str) -> ChatContext:
+    return ChatContext(user_id="u1", message=message, conversation_id="c1")
+
+class TestCreateTaskRule:
+    def test_match_basic(self):
+        result = CreateTaskRule().try_match(_ctx("加任务 写日报"))
+        assert result is not None
+        assert result.status == ResolutionStatus.EXECUTABLE
+        assert result.intent == "create_task"
+        assert result.params["title"] == "写日报"
+
+    def test_no_match_for_unrelated(self):
+        assert CreateTaskRule().try_match(_ctx("今天天气怎样")) is None
+
+    def test_extracts_date(self, monkeypatch):
+        from datetime import datetime
+        monkeypatch.setattr(
+            "services.ai.pipeline.rules.shared.date_parser._now",
+            lambda: datetime(2026, 4, 27, 10, 0, 0),
+        )
+        result = CreateTaskRule().try_match(_ctx("加任务 明天 写周报"))
+        assert result.params["title"] == "写周报"
+        assert result.params.get("due_date") is not None
+
+class TestCompleteTaskRule:
+    @patch("services.ai.pipeline.rules.task_rules.task_dao")
+    def test_single_match_executable(self, mock_dao):
+        mock_dao.get_user_tasks.return_value = [
+            {"id": "t1", "title": "写日报"},
         ]
+        result = CompleteTaskRule().try_match(_ctx("完成 写日报"))
+        assert result.status == ResolutionStatus.EXECUTABLE
+        assert result.params == {"task_id": "t1", "status": "completed"}
 
-    def test_zero_match(self):
-        result = match_entities("不存在的东西", self._items())
-        assert result == []
+    @patch("services.ai.pipeline.rules.task_rules.task_dao")
+    def test_multi_match_disambiguation(self, mock_dao):
+        mock_dao.get_user_tasks.return_value = [
+            {"id": "t1", "title": "周五前交报告"},
+            {"id": "t2", "title": "改报告 PPT"},
+        ]
+        result = CompleteTaskRule().try_match(_ctx("完成 报告"))
+        assert result.status == ResolutionStatus.NEED_DISAMBIGUATION
+        assert len(result.candidates) == 2
 
-    def test_exact_single_match(self):
-        result = match_entities("开会", self._items())
-        assert len(result) == 1
-        assert result[0]["id"] == "3"
+    @patch("services.ai.pipeline.rules.task_rules.task_dao")
+    def test_zero_match_returns_pass(self, mock_dao):
+        mock_dao.get_user_tasks.return_value = []
+        result = CompleteTaskRule().try_match(_ctx("完成 不存在"))
+        assert result.status == ResolutionStatus.PASS
 
-    def test_substring_multi_match(self):
-        result = match_entities("报告", self._items())
-        assert len(result) == 2
-        ids = {r["id"] for r in result}
-        assert ids == {"1", "2"}
+class TestDeleteTaskRule:
+    @patch("services.ai.pipeline.rules.task_rules.task_dao")
+    def test_single_match_returns_executable_for_executor_to_intercept(self, mock_dao):
+        mock_dao.get_user_tasks.return_value = [{"id": "t1", "title": "写日报"}]
+        result = DeleteTaskRule().try_match(_ctx("删除任务 写日报"))
+        assert result.status == ResolutionStatus.EXECUTABLE
+        assert result.intent == "delete_task"
+        assert result.params == {"task_id": "t1"}
 
-    def test_fuzzy_fallback(self):
-        # 相似度 ≥ 0.6 兜底（difflib 字符级算法："开会议" 与 "开会" ratio=0.8）
-        result = match_entities("开会议", self._items())
-        assert any(r["id"] == "3" for r in result)
+class TestQueryTasksRule:
+    def test_today_keyword(self):
+        result = QueryTasksRule().try_match(_ctx("今天的任务"))
+        assert result is not None
+        assert result.intent == "list_tasks"
+        assert result.params.get("filter") == "today" or "start_date" in result.params
+
+    def test_unfinished_keyword(self):
+        result = QueryTasksRule().try_match(_ctx("未完成的任务"))
+        assert result.intent == "list_tasks"
