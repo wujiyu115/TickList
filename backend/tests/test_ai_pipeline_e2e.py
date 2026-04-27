@@ -3,7 +3,7 @@
 
 import json
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
 from services.ai.pipeline.base import (
     ChatContext,
@@ -90,3 +90,62 @@ class TestExecutorExecutable:
         payloads = _events_to_payloads(events)
         assert any(p["type"] == "error" for p in payloads)
         assert payloads[-1]["type"] == "done"
+
+from services.ai.pipeline.json_mode_handler import JsonModeHandler
+
+@pytest.mark.asyncio
+class TestJsonModeHandler:
+    class _StubNext:
+        def __init__(self):
+            self.calls = []
+
+        async def handle(self, ctx):
+            self.calls.append(ctx)
+            yield 'data: {"type":"stub_next"}\n\n'
+
+    async def test_chitchat_short_circuits(self):
+        nxt = self._StubNext()
+        handler = JsonModeHandler(next_handler=nxt)
+        with patch.object(handler, "_call_llm_json_mode",
+                          new=AsyncMock(return_value='{"intent":"chitchat","params":{},"needs_confirmation":false,"reply":"你好呀"}')):
+            ctx = ChatContext(user_id="u1", message="你好", conversation_id="c1")
+            events = [ev async for ev in handler.handle(ctx)]
+        assert nxt.calls == []
+        joined = "".join(events)
+        assert "你好呀" in joined
+        assert "json:chitchat" in ctx.trace
+
+    async def test_unknown_falls_through(self):
+        nxt = self._StubNext()
+        handler = JsonModeHandler(next_handler=nxt)
+        with patch.object(handler, "_call_llm_json_mode",
+                          new=AsyncMock(return_value='{"intent":"unknown","params":{},"needs_confirmation":false,"reply":""}')):
+            ctx = ChatContext(user_id="u1", message="???", conversation_id="c1")
+            events = [ev async for ev in handler.handle(ctx)]
+        assert len(nxt.calls) == 1
+        assert ctx.upstream_hint == {"reason": "json_mode_unknown"}
+
+    async def test_invalid_json_falls_through(self):
+        nxt = self._StubNext()
+        handler = JsonModeHandler(next_handler=nxt)
+        with patch.object(handler, "_call_llm_json_mode",
+                          new=AsyncMock(return_value='this is not json')):
+            ctx = ChatContext(user_id="u1", message="复杂请求", conversation_id="c1")
+            events = [ev async for ev in handler.handle(ctx)]
+        assert len(nxt.calls) == 1
+        assert ctx.upstream_hint and ctx.upstream_hint["reason"] == "json_mode_failed"
+        assert any(t.startswith("json:fail") for t in ctx.trace)
+
+    @patch("services.ai.pipeline.executor._execute_tool")
+    async def test_executable_intent_dispatches_to_executor(self, mock_exec):
+        mock_exec.return_value = {"id": "t1", "title": "x"}
+        nxt = self._StubNext()
+        handler = JsonModeHandler(next_handler=nxt)
+        payload = '{"intent":"create_task","params":{"title":"x"},"needs_confirmation":false,"reply":"已添加 x"}'
+        with patch.object(handler, "_call_llm_json_mode", new=AsyncMock(return_value=payload)):
+            ctx = ChatContext(user_id="u1", message="帮我加个 x", conversation_id="c1")
+            events = [ev async for ev in handler.handle(ctx)]
+        assert nxt.calls == []
+        joined = "".join(events)
+        assert '"create_task"' in joined
+        assert "json:create_task" in ctx.trace
