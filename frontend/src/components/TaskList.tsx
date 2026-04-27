@@ -280,25 +280,22 @@ const TaskList: React.FC<TaskListProps> = ({
     }
   }, [refreshTasks]);
 
-  // 构建任务树（只取顶级任务：不被任何其他任务的 child_ids 引用的任务）
-  const childIdSet = new Set<string>(
-    tasks.reduce<string[]>((acc, t) => acc.concat(t.child_ids || []), [])
-  );
-  const topLevelTasks = tasks.filter(t => !childIdSet.has(t.id));
-
-  // 按状态分组并应用排序
-  const pendingTasks = sortTasks(topLevelTasks.filter(t => t.status === 'pending'), sortMode || 'custom');
-  const inProgressTasks = sortTasks(topLevelTasks.filter(t => t.status === 'in_progress'), sortMode || 'custom');
-
-  // 已完成任务：优先使用外部独立加载的分页数据，否则从 tasks 中过滤
-  const hasExternalCompleted = externalCompletedTasks !== undefined;
-
   // 合并 allTasks 供子任务查找（包括外部已完成任务）
   const allTasksForLookup = hasExternalCompleted
     ? [...tasks, ...externalCompletedTasks]
     : tasks;
 
-  // 对已完成任务也做树形过滤：排除被其他任务 child_ids 引用的子任务
+  // 构建任务树（只取顶级任务：不被任何其他任务的 child_ids 引用的任务）
+  // 使用 allTasksForLookup 而非 tasks，确保已完成主任务的 child_ids 也被收录
+  const childIdSet = new Set<string>(
+    allTasksForLookup.reduce<string[]>((acc, t) => acc.concat(t.child_ids || []), [])
+  );
+  const topLevelTasks = allTasksForLookup.filter(t => !childIdSet.has(t.id));
+
+  // 按状态分组并应用排序（pending/inProgress 只从 tasks 取，不含外部已完成）
+  const pendingTasks = sortTasks(tasks.filter(t => !childIdSet.has(t.id) && t.status === 'pending'), sortMode || 'custom');
+  const inProgressTasks = sortTasks(tasks.filter(t => !childIdSet.has(t.id) && t.status === 'in_progress'), sortMode || 'custom');
+
   const completedTasks = hideCompleted
     ? []
     : hasExternalCompleted
