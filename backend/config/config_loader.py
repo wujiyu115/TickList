@@ -144,6 +144,9 @@ class ConfigLoader:
             'api_key': self.get('ai.api_key', '', 'AI_API_KEY'),
             'model': self.get('ai.model', 'claude-sonnet-4-5-20250514', 'AI_MODEL'),
             'max_tokens': self.get('ai.max_tokens', 4096),
+            'openai_api_key': self.get('ai.openai_api_key', '', 'OPENAI_API_KEY'),
+            'openai_model': self.get('ai.openai_model', 'gpt-4o', 'OPENAI_MODEL'),
+            'openai_base_url': self.get('ai.openai_base_url', '', 'OPENAI_BASE_URL'),
         }
 
     def get_logging_config(self) -> Dict[str, Any]:

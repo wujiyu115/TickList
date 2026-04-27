@@ -33,7 +33,10 @@ logging:
   log_dir: "logs"
 
 ai:
-  provider: claude
+  provider: claude  # claude or openai, via env AI_PROVIDER
   api_key: ""  # Set via env AI_API_KEY
   model: claude-sonnet-4-5-20250514
   max_tokens: 4096
+  openai_api_key: ""  # Set via env OPENAI_API_KEY
+  openai_model: gpt-4o  # Set via env OPENAI_MODEL
+  openai_base_url: ""  # Set via env OPENAI_BASE_URL (for compatible APIs)

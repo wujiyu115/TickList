@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Input, Button, Spin, Tag, Typography } from 'antd';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Input, Button, Tag, Typography } from 'antd';
 import { SendOutlined, RobotOutlined, UserOutlined, LoadingOutlined } from '@ant-design/icons';
-import { sendAiChat } from '../api/ai';
+import { sendAiChatStream, StreamEvent } from '../api/ai';
 import { AiChatMessage, ToolAction } from '../types';
 import './AiPage.less';
 
@@ -18,7 +18,7 @@ const AiPage: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     const text = inputValue.trim();
     if (!text || loading) return;
 
@@ -27,26 +27,64 @@ const AiPage: React.FC = () => {
     setInputValue('');
     setLoading(true);
 
-    try {
-      const response = await sendAiChat(text, conversationId);
-      setConversationId(response.conversation_id);
+    // Create placeholder assistant message for streaming
+    let assistantContent = '';
+    let assistantActions: ToolAction[] = [];
 
-      const assistantMsg: AiChatMessage = {
-        role: 'assistant',
-        content: response.reply,
-        actions: response.actions,
-      };
-      setMessages(prev => [...prev, assistantMsg]);
-    } catch (err) {
-      const errorMsg: AiChatMessage = {
-        role: 'assistant',
-        content: '请求失败，请稍后重试。',
-      };
-      setMessages(prev => [...prev, errorMsg]);
+    setMessages(prev => [...prev, { role: 'assistant', content: '', actions: [] }]);
+
+    const updateAssistant = () => {
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: 'assistant',
+          content: assistantContent,
+          actions: assistantActions,
+        };
+        return updated;
+      });
+    };
+
+    try {
+      await sendAiChatStream(text, conversationId, (event: StreamEvent) => {
+        switch (event.type) {
+          case 'conversation_id':
+            if (event.conversation_id) {
+              setConversationId(event.conversation_id);
+            }
+            break;
+          case 'text_delta':
+            assistantContent += event.content || '';
+            updateAssistant();
+            break;
+          case 'action':
+            if (event.action) {
+              assistantActions = [...assistantActions, event.action];
+              updateAssistant();
+            }
+            break;
+          case 'error':
+            assistantContent = event.content || '请求失败，请稍后重试。';
+            updateAssistant();
+            break;
+          case 'done':
+            // Final update
+            if (!assistantContent && assistantActions.length === 0) {
+              assistantContent = '请求失败，请稍后重试。';
+            }
+            updateAssistant();
+            break;
+        }
+      });
+    } catch {
+      if (!assistantContent) {
+        assistantContent = '请求失败，请稍后重试。';
+        updateAssistant();
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [inputValue, loading, conversationId]);
 
   const renderAction = (action: ToolAction, idx: number) => {
     const toolLabelMap: Record<string, string> = {
@@ -107,17 +145,12 @@ const AiPage: React.FC = () => {
                   {msg.actions.map((a, i) => renderAction(a, i))}
                 </div>
               )}
+              {msg.role === 'assistant' && !msg.content && loading && (
+                <LoadingOutlined />
+              )}
             </div>
           </div>
         ))}
-        {loading && (
-          <div className="ai-message ai-message-assistant ai-message-loading">
-            <div className="ai-message-icon"><RobotOutlined /></div>
-            <div className="ai-message-content">
-              <Spin indicator={<LoadingOutlined />} />
-            </div>
-          </div>
-        )}
         <div ref={messagesEndRef} />
       </div>
 

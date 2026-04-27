@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import json
 import uuid
-from typing import List, Dict, Any, Optional
-from datetime import datetime
+import time
+from collections import defaultdict
+from typing import List, Dict, Any, Optional, AsyncGenerator
+from datetime import datetime, timedelta
 
 from database.dao.task_dao import task_dao
 from database.dao.note_dao import note_dao
@@ -345,7 +347,6 @@ def _build_system_prompt(user_id: str) -> str:
     lists = list_dao.get_user_lists(user_id)
     tags = tag_dao.get_user_tags(user_id)
 
-    # Simplify data for prompt
     task_summaries = [
         {"id": t["id"], "title": t["title"], "status": t["status"],
          "priority": t["priority"], "due_date": t.get("due_date"), "tags": t.get("tags", [])}
@@ -387,11 +388,9 @@ def _build_system_prompt(user_id: str) -> str:
 # ============ Tool Execution ============
 
 def _execute_tool(user_id: str, tool_name: str, tool_input: Dict[str, Any]) -> Any:
-    """Execute a tool by dispatching to existing DAO methods."""
     try:
         # --- 任务 ---
         if tool_name == "list_tasks":
-            from datetime import timedelta
             params = {}
             if tool_input.get("status"): params["status"] = tool_input["status"]
             if tool_input.get("exclude_status"): params["exclude_status"] = tool_input["exclude_status"]
@@ -538,7 +537,6 @@ def _execute_tool(user_id: str, tool_name: str, tool_input: Dict[str, Any]) -> A
             counter_id = tool_input["counter_id"]
             action = tool_input.get("action")
             title = tool_input.get("title")
-            # Handle title rename
             if title:
                 counter_dao.update_counter(user_id, counter_id, {"title": title})
                 if not action:
@@ -626,106 +624,313 @@ def _execute_tool(user_id: str, tool_name: str, tool_input: Dict[str, Any]) -> A
         return {"error": str(e)}
 
 
-# ============ Main Chat Method ============
+# ============ Streaming Chat Method ============
 
-async def chat(user_id: str, message: str, conversation_id: Optional[str] = None) -> Dict[str, Any]:
-    """Process a chat message: call LLM, execute tools, return reply."""
+async def chat_stream(user_id: str, message: str, conversation_id: Optional[str] = None) -> AsyncGenerator[str, None]:
+    """Stream a chat response via SSE events. Dispatches to Claude or OpenAI based on config."""
     from config.config_loader import config
 
     ai_config = config.get_ai_config()
-    if not ai_config["api_key"]:
-        return {"reply": "AI 功能未配置，请联系管理员设置 API Key。", "conversation_id": conversation_id or str(uuid.uuid4()), "actions": []}
+    provider = ai_config.get("provider", "claude")
 
-    conv_id, history = _get_or_create_conversation(user_id, conversation_id)
+    if provider == "openai":
+        api_key = ai_config.get("openai_api_key") or ai_config.get("api_key")
+        if not api_key:
+            yield f"data: {json.dumps({'type': 'error', 'content': 'AI 功能未配置，请联系管理员设置 API Key。'})}\n\n"
+            yield f"data: {json.dumps({'type': 'done', 'conversation_id': conversation_id or str(uuid.uuid4())})}\n\n"
+            return
+        async for event in _chat_stream_openai(user_id, message, conversation_id, ai_config):
+            yield event
+    else:
+        if not ai_config["api_key"]:
+            yield f"data: {json.dumps({'type': 'error', 'content': 'AI 功能未配置，请联系管理员设置 API Key。'})}\n\n"
+            yield f"data: {json.dumps({'type': 'done', 'conversation_id': conversation_id or str(uuid.uuid4())})}\n\n"
+            return
+        async for event in _chat_stream_claude(user_id, message, conversation_id, ai_config):
+            yield event
 
-    # Add user message to history
+    # Emit conversation_id first
+    yield f"data: {json.dumps({'type': 'conversation_id', 'conversation_id': conv_id})}\n\n"
+
     history.append({"role": "user", "content": message})
-    # Trim history
     if len(history) > _MAX_HISTORY:
         history[:] = history[-_MAX_HISTORY:]
 
     system_prompt = _build_system_prompt(user_id)
 
-    # Call LLM API
     try:
         import anthropic
         client = anthropic.Anthropic(api_key=ai_config["api_key"])
 
-        actions = []
         messages = history.copy()
+        actions = []
 
-        # Loop: LLM may return multiple tool calls in sequence
         max_iterations = 5
         for _ in range(max_iterations):
-            response = client.messages.create(
+            # Use streaming API
+            with client.messages.stream(
                 model=ai_config["model"],
                 max_tokens=ai_config["max_tokens"],
                 system=system_prompt,
                 tools=TOOLS,
                 messages=messages,
-            )
+            ) as stream:
+                # Collect complete response for tool handling
+                # But also stream text to frontend
+                current_tool_uses = []
+                tool_input_buffers = {}
+
+                for event in stream:
+                    if event.type == "message_start":
+                        pass
+                    elif event.type == "content_block_start":
+                        if event.content_block.type == "text":
+                            yield f"data: {json.dumps({'type': 'text_start'})}\n\n"
+                        elif event.content_block.type == "tool_use":
+                            current_tool_uses.append({
+                                "id": event.content_block.id,
+                                "name": event.content_block.name,
+                                "input": {},
+                            })
+                            tool_input_buffers[event.content_block.id] = ""
+                            yield f"data: {json.dumps({'type': 'tool_start', 'tool': event.content_block.name})}\n\n"
+                    elif event.type == "content_block_delta":
+                        if event.delta.type == "text_delta":
+                            yield f"data: {json.dumps({'type': 'text_delta', 'content': event.delta.text})}\n\n"
+                        elif event.delta.type == "input_json_delta":
+                            # Accumulate tool input JSON
+                            if current_tool_uses:
+                                last_tool = current_tool_uses[-1]
+                                tool_input_buffers[last_tool["id"]] += event.delta.partial_json
+                    elif event.type == "content_block_stop":
+                        if current_tool_uses and current_tool_uses[-1]["id"] == event.index:
+                            # Parse accumulated input for this tool
+                            last_tool = current_tool_uses[-1]
+                            try:
+                                last_tool["input"] = json.loads(tool_input_buffers.get(last_tool["id"], "{}"))
+                            except json.JSONDecodeError:
+                                last_tool["input"] = {}
+                    elif event.type == "message_stop":
+                        pass
+
+                # Get the final accumulated message
+                response = stream.get_final_message()
 
             # Check if response contains tool calls
             has_tool_use = False
-            assistant_content = response.content
-
-            # Build assistant message blocks and collect tool results
             assistant_blocks = []
-            tool_results = []
-            for block in assistant_content:
+            tool_results_for_api = []
+
+            for block in response.content:
                 if block.type == "text":
                     assistant_blocks.append({"type": "text", "text": block.text})
                 elif block.type == "tool_use":
                     has_tool_use = True
                     tool_result = _execute_tool(user_id, block.name, block.input)
                     result_str = json.dumps(tool_result, ensure_ascii=False, default=str)
-                    actions.append({
-                        "tool": block.name,
-                        "params": block.input,
-                        "result": result_str,
-                    })
+                    action = {"tool": block.name, "params": block.input, "result": result_str}
+                    actions.append(action)
+
+                    # Emit action result to frontend
+                    yield f"data: {json.dumps({'type': 'action', 'action': action})}\n\n"
+
                     assistant_blocks.append({
                         "type": "tool_use",
                         "id": block.id,
                         "name": block.name,
                         "input": block.input,
                     })
-                    tool_results.append({
+                    tool_results_for_api.append({
                         "type": "tool_result",
                         "tool_use_id": block.id,
                         "content": result_str,
                     })
 
             if has_tool_use:
-                # Group all tool_use blocks into ONE assistant message
-                # and all tool_results into ONE user message
                 messages.append({"role": "assistant", "content": assistant_blocks})
-                messages.append({"role": "user", "content": tool_results})
+                messages.append({"role": "user", "content": tool_results_for_api})
 
             if not has_tool_use:
-                # No tool calls — LLM gave a final text reply
+                # Final text reply received — save to history
                 reply_text = "".join(b.get("text", "") for b in assistant_blocks if b.get("type") == "text")
-                # Add final assistant reply to history
                 history.append({"role": "assistant", "content": reply_text})
-                return {
-                    "reply": reply_text,
-                    "conversation_id": conv_id,
-                    "actions": actions,
-                }
+                yield f"data: {json.dumps({'type': 'done', 'conversation_id': conv_id})}\n\n"
+                return
 
-        # Max iterations reached — return last text
+        # Max iterations reached
         reply_text = "".join(b.get("text", "") for b in assistant_blocks if b.get("type") == "text")
         history.append({"role": "assistant", "content": reply_text})
-        return {
-            "reply": reply_text or "操作过多，请简化请求。",
-            "conversation_id": conv_id,
-            "actions": actions,
-        }
+        yield f"data: {json.dumps({'type': 'done', 'conversation_id': conv_id})}\n\n"
 
     except Exception as e:
-        logger.error(f"AI chat error: {str(e)}")
-        return {
-            "reply": "AI 服务暂时不可用，请稍后重试。",
-            "conversation_id": conv_id,
-            "actions": [],
-        }
+        logger.error(f"AI chat stream error (Claude): {str(e)}")
+        yield f"data: {json.dumps({'type': 'error', 'content': 'AI 服务暂时不可用，请稍后重试。'})}\n\n"
+        yield f"data: {json.dumps({'type': 'done', 'conversation_id': conv_id})}\n\n"
+
+
+# ============ OpenAI Streaming Chat Method ============
+
+def _anthropic_tools_to_openai_tools() -> List[Dict]:
+    """Convert Anthropic tool format to OpenAI function calling format."""
+    openai_tools = []
+    for tool in TOOLS:
+        openai_tools.append({
+            "type": "function",
+            "function": {
+                "name": tool["name"],
+                "description": tool["description"],
+                "parameters": tool["input_schema"],
+            },
+        })
+    return openai_tools
+
+
+async def _chat_stream_openai(user_id: str, message: str, conversation_id: Optional[str], ai_config: Dict) -> AsyncGenerator[str, None]:
+    """Stream chat via OpenAI API with function calling."""
+    conv_id, history = _get_or_create_conversation(user_id, conversation_id)
+
+    yield f"data: {json.dumps({'type': 'conversation_id', 'conversation_id': conv_id})}\n\n"
+
+    history.append({"role": "user", "content": message})
+    if len(history) > _MAX_HISTORY:
+        history[:] = history[-_MAX_HISTORY:]
+
+    system_prompt = _build_system_prompt(user_id)
+    openai_tools = _anthropic_tools_to_openai_tools()
+
+    try:
+        from openai import OpenAI
+        base_url = ai_config.get("openai_base_url") or None
+        client = OpenAI(
+            api_key=ai_config.get("openai_api_key") or ai_config.get("api_key"),
+            base_url=base_url if base_url else None,
+        )
+
+        # Convert history to OpenAI message format
+        oai_messages = [{"role": "system", "content": system_prompt}]
+        for h in history:
+            if h["role"] == "user":
+                if isinstance(h["content"], str):
+                    oai_messages.append({"role": "user", "content": h["content"]})
+                elif isinstance(h["content"], list):
+                    oai_messages.append({"role": "tool", "content": json.dumps(h["content"], ensure_ascii=False, default=str)})
+            elif h["role"] == "assistant":
+                if isinstance(h["content"], str):
+                    oai_messages.append({"role": "assistant", "content": h["content"]})
+                elif isinstance(h["content"], list):
+                    text_parts = [b["text"] for b in h["content"] if b.get("type") == "text"]
+                    tool_calls = []
+                    for b in h["content"]:
+                        if b.get("type") == "tool_use":
+                            tool_calls.append({
+                                "id": b["id"],
+                                "type": "function",
+                                "function": {
+                                    "name": b["name"],
+                                    "arguments": json.dumps(b.get("input", {}), ensure_ascii=False),
+                                },
+                            })
+                    msg = {"role": "assistant"}
+                    if text_parts:
+                        msg["content"] = "".join(text_parts)
+                    if tool_calls:
+                        msg["tool_calls"] = tool_calls
+                    oai_messages.append(msg)
+
+        actions = []
+        max_iterations = 5
+
+        for _ in range(max_iterations):
+            stream = client.chat.completions.create(
+                model=ai_config.get("openai_model", "gpt-4o"),
+                messages=oai_messages,
+                tools=openai_tools if openai_tools else None,
+                stream=True,
+            )
+
+            collected_text = ""
+            collected_tool_calls = {}
+
+            for chunk in stream:
+                delta = chunk.choices[0].delta if chunk.choices else None
+                if not delta:
+                    continue
+
+                if delta.content:
+                    collected_text += delta.content
+                    yield f"data: {json.dumps({'type': 'text_delta', 'content': delta.content})}\n\n"
+
+                if delta.tool_calls:
+                    for tc_delta in delta.tool_calls:
+                        idx = tc_delta.index
+                        if idx not in collected_tool_calls:
+                            collected_tool_calls[idx] = {"id": tc_delta.id or "", "name": tc_delta.function.name or "", "arguments": ""}
+                        if tc_delta.id:
+                            collected_tool_calls[idx]["id"] = tc_delta.id
+                        if tc_delta.function and tc_delta.function.name:
+                            collected_tool_calls[idx]["name"] = tc_delta.function.name
+                        if tc_delta.function and tc_delta.function.arguments:
+                            collected_tool_calls[idx]["arguments"] += tc_delta.function.arguments
+
+            has_tool_use = len(collected_tool_calls) > 0
+
+            if has_tool_use:
+                assistant_msg = {"role": "assistant"}
+                if collected_text:
+                    assistant_msg["content"] = collected_text
+                assistant_msg["tool_calls"] = []
+                assistant_blocks = []
+                if collected_text:
+                    assistant_blocks.append({"type": "text", "text": collected_text})
+
+                for idx, tc in sorted(collected_tool_calls.items()):
+                    try:
+                        tool_input = json.loads(tc["arguments"])
+                    except json.JSONDecodeError:
+                        tool_input = {}
+
+                    yield f"data: {json.dumps({'type': 'tool_start', 'tool': tc['name']})}\n\n"
+
+                    tool_result = _execute_tool(user_id, tc["name"], tool_input)
+                    result_str = json.dumps(tool_result, ensure_ascii=False, default=str)
+                    action = {"tool": tc["name"], "params": tool_input, "result": result_str}
+                    actions.append(action)
+                    yield f"data: {json.dumps({'type': 'action', 'action': action})}\n\n"
+
+                    oai_messages.append({"role": "tool", "tool_call_id": tc["id"], "content": result_str})
+
+                    assistant_msg["tool_calls"].append({
+                        "id": tc["id"],
+                        "type": "function",
+                        "function": {
+                            "name": tc["name"],
+                            "arguments": tc["arguments"],
+                        },
+                    })
+
+                    assistant_blocks.append({
+                        "type": "tool_use",
+                        "id": tc["id"],
+                        "name": tc["name"],
+                        "input": tool_input,
+                    })
+
+                oai_messages.append(assistant_msg)
+
+                # Save to history in Anthropic format
+                history.append({"role": "assistant", "content": assistant_blocks})
+                history.append({"role": "user", "content": [{"type": "tool_result", "tool_use_id": tc["id"], "content": result_str} for idx, tc in sorted(collected_tool_calls.items())]})
+
+            if not has_tool_use:
+                reply_text = collected_text
+                history.append({"role": "assistant", "content": reply_text})
+                yield f"data: {json.dumps({'type': 'done', 'conversation_id': conv_id})}\n\n"
+                return
+
+        history.append({"role": "assistant", "content": collected_text})
+        yield f"data: {json.dumps({'type': 'done', 'conversation_id': conv_id})}\n\n"
+
+    except Exception as e:
+        logger.error(f"AI chat stream error (OpenAI): {str(e)}")
+        yield f"data: {json.dumps({'type': 'error', 'content': 'AI 服务暂时不可用，请稍后重试。'})}\n\n"
+        yield f"data: {json.dumps({'type': 'done', 'conversation_id': conv_id})}\n\n"
