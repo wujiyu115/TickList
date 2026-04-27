@@ -22,6 +22,7 @@ async def _chat_stream_claude(
     message: str,
     conversation_id: Optional[str],
     ai_config: Dict,
+    system_prompt_suffix: str = "",
 ) -> AsyncGenerator[str, None]:
     """Stream chat via Anthropic Claude API with tool use."""
     conv_id, history = _get_or_create_conversation(user_id, conversation_id)
@@ -34,6 +35,8 @@ async def _chat_stream_claude(
         history[:] = history[-MAX_HISTORY:]
 
     system_prompt = _build_system_prompt(user_id)
+    if system_prompt_suffix:
+        system_prompt = f"{system_prompt}{system_prompt_suffix}"
 
     assistant_blocks = []
 

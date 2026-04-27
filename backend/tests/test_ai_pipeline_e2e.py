@@ -149,3 +149,27 @@ class TestJsonModeHandler:
         joined = "".join(events)
         assert '"create_task"' in joined
         assert "json:create_task" in ctx.trace
+
+from services.ai.pipeline.tools_call_handler import ToolsCallHandler
+
+@pytest.mark.asyncio
+class TestToolsCallHandler:
+    @patch("services.ai.pipeline.tools_call_handler._chat_stream_claude")
+    @patch("services.ai.pipeline.tools_call_handler.config")
+    async def test_passes_upstream_hint_as_suffix(self, mock_config, mock_claude):
+        mock_config.get_ai_config.return_value = {
+            "provider": "claude", "api_key": "fake", "model": "m", "max_tokens": 100,
+        }
+
+        async def _fake_stream(user_id, message, conv, ai_config, system_prompt_suffix=""):
+            # Echo back so the test can assert the suffix was forwarded
+            yield f'data: {{"type":"text","content":"{system_prompt_suffix}"}}\n\n'
+
+        mock_claude.side_effect = lambda *a, **kw: _fake_stream(*a, **kw)
+        handler = ToolsCallHandler()
+        ctx = ChatContext(user_id="u1", message="x", conversation_id="c1")
+        ctx.upstream_hint = {"reason": "json_mode_failed"}
+        events = [ev async for ev in handler.handle(ctx)]
+        joined = "".join(events)
+        assert "json_mode_failed" in joined
+        assert "tools_call" in ctx.trace
