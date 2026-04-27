@@ -12,6 +12,8 @@ pyyaml==6.0.2
 requests==2.32.3
 apscheduler>=3.10
 webauthn>=2.0.0
+anthropic>=0.39.0
+openai>=1.50.0
 pytest
 pytest-asyncio
 httpx
