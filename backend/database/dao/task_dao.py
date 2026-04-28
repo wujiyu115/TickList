@@ -143,7 +143,12 @@ class TaskDAO:
             session.close()
     
     def update_task(self, task_id: str, user_id: str, update_data: Dict) -> bool:
-        """更新任务"""
+        """更新任务
+
+        说明：当 status 被更新为 'completed' 时，会级联将所有子孙任务一并标记为
+        completed（仅更新当前未完成且未删除的子孙），并同步设置 completed_at /
+        updated_at，整个过程在同一事务中完成。
+        """
         session = self._get_session()
         try:
             update_data['updated_at'] = datetime.now().isoformat()
@@ -161,6 +166,22 @@ class TaskDAO:
                 TaskModel.id == task_id,
                 TaskModel.user_id == user_id
             ).update(update_data)
+            
+            # 级联完成：当本次更新把状态置为 completed 时，把所有子孙任务一起完成
+            if update_data.get('status') == 'completed':
+                descendant_ids = self._collect_descendant_ids(task_id, session)
+                if descendant_ids:
+                    cascade_data = {
+                        'status': 'completed',
+                        'completed_at': update_data.get('completed_at') or datetime.now().isoformat(),
+                        'updated_at': update_data['updated_at'],
+                    }
+                    session.query(TaskModel).filter(
+                        TaskModel.id.in_(descendant_ids),
+                        TaskModel.user_id == user_id,
+                        TaskModel.deleted_at == None,
+                        TaskModel.status != 'completed',
+                    ).update(cascade_data, synchronize_session=False)
             
             # 如果包含 child_ids，先删除旧关系再插入新关系
             if child_ids is not None:
@@ -194,6 +215,25 @@ class TaskDAO:
             raise
         finally:
             session.close()
+    
+    def _collect_descendant_ids(self, task_id: str, session: Session) -> List[str]:
+        """递归收集任务的所有子孙任务 ID（BFS 遍历，自动去环）"""
+        descendant_ids: List[str] = []
+        visited = {task_id}
+        frontier = [task_id]
+        while frontier:
+            rows = session.query(TaskChildModel.child_id).filter(
+                TaskChildModel.parent_id.in_(frontier)
+            ).all()
+            next_frontier: List[str] = []
+            for (child_id,) in rows:
+                if child_id in visited:
+                    continue
+                visited.add(child_id)
+                descendant_ids.append(child_id)
+                next_frontier.append(child_id)
+            frontier = next_frontier
+        return descendant_ids
     
     def add_child_to_task(self, parent_id: str, child_id: str, user_id: str) -> bool:
         """向父任务的 child_ids 添加子任务 ID"""
@@ -640,21 +680,48 @@ class TaskDAO:
             session.close()
     
     def batch_update_status(self, task_ids: List[str], user_id: str, status: str) -> int:
-        """批量更新任务状态"""
+        """批量更新任务状态
+
+        说明：当 status == 'completed' 时，会级联将所有传入任务的子孙任务一并标记为
+        completed（仅更新当前用户、未删除且未完成的子孙），整个过程在同一事务中完成。
+        返回值为本次实际被更新的任务总数（包含级联更新的子孙）。
+        """
         session = self._get_session()
         try:
+            now_iso = datetime.now().isoformat()
             update_data = {
                 'status': status,
-                'updated_at': datetime.now().isoformat()
+                'updated_at': now_iso
             }
             
             if status == 'completed':
-                update_data['completed_at'] = datetime.now().isoformat()
+                update_data['completed_at'] = now_iso
             
             result = session.query(TaskModel).filter(
                 TaskModel.id.in_(task_ids),
                 TaskModel.user_id == user_id
             ).update(update_data, synchronize_session=False)
+            
+            # 级联完成：把所有传入任务的子孙任务一起置为 completed
+            if status == 'completed':
+                all_descendants: set = set()
+                for tid in task_ids:
+                    for did in self._collect_descendant_ids(tid, session):
+                        all_descendants.add(did)
+                # 排除已经在 task_ids 中的，避免重复 update
+                cascade_ids = list(all_descendants - set(task_ids))
+                if cascade_ids:
+                    cascade_result = session.query(TaskModel).filter(
+                        TaskModel.id.in_(cascade_ids),
+                        TaskModel.user_id == user_id,
+                        TaskModel.deleted_at == None,
+                        TaskModel.status != 'completed',
+                    ).update({
+                        'status': 'completed',
+                        'completed_at': now_iso,
+                        'updated_at': now_iso,
+                    }, synchronize_session=False)
+                    result += cascade_result
             
             session.commit()
             return result

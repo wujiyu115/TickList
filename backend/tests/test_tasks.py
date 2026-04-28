@@ -103,6 +103,114 @@ def test_subtask_order_auto_increment(app_client, auth_headers):
     assert child1["order"] < child2["order"]
     assert child2["order"] < child3["order"]
 
+# ------------------------------------------------------------------
+# 级联完成（父 -> 子 -> 孙）
+# ------------------------------------------------------------------
+
+def test_complete_task_cascades_to_descendants(app_client, auth_headers):
+    """完成主任务时，子级、孙级任务应一并被标记为 completed"""
+    parent = _create_task(app_client, auth_headers, title="Cascade Parent")
+    child = _create_task(
+        app_client, auth_headers, title="Cascade Child", parent_task_id=parent["id"]
+    )
+    grandchild = _create_task(
+        app_client, auth_headers, title="Cascade Grandchild", parent_task_id=child["id"]
+    )
+
+    # 完成父任务
+    resp = app_client.put(
+        f"/api/tasks/{parent['id']}",
+        json={"status": "completed"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "completed"
+    assert resp.json()["completed_at"] is not None
+
+    # 子级、孙级任务应该一起被完成
+    child_resp = app_client.get(f"/api/tasks/{child['id']}", headers=auth_headers)
+    assert child_resp.status_code == 200
+    assert child_resp.json()["status"] == "completed"
+    assert child_resp.json()["completed_at"] is not None
+
+    grandchild_resp = app_client.get(
+        f"/api/tasks/{grandchild['id']}", headers=auth_headers
+    )
+    assert grandchild_resp.status_code == 200
+    assert grandchild_resp.json()["status"] == "completed"
+    assert grandchild_resp.json()["completed_at"] is not None
+
+def test_complete_task_does_not_affect_unrelated_tasks(app_client, auth_headers):
+    """级联完成不应影响其他无关任务"""
+    parent = _create_task(app_client, auth_headers, title="P")
+    _create_task(app_client, auth_headers, title="P-Child", parent_task_id=parent["id"])
+    other = _create_task(app_client, auth_headers, title="Unrelated")
+
+    app_client.put(
+        f"/api/tasks/{parent['id']}",
+        json={"status": "completed"},
+        headers=auth_headers,
+    )
+
+    other_resp = app_client.get(f"/api/tasks/{other['id']}", headers=auth_headers)
+    assert other_resp.status_code == 200
+    assert other_resp.json()["status"] == "pending"
+
+def test_uncomplete_task_does_not_cascade(app_client, auth_headers):
+    """把任务从 completed 改回 pending 时，不应级联修改子任务（避免误伤）"""
+    parent = _create_task(app_client, auth_headers, title="UnC Parent")
+    child = _create_task(
+        app_client, auth_headers, title="UnC Child", parent_task_id=parent["id"]
+    )
+
+    # 先级联完成
+    app_client.put(
+        f"/api/tasks/{parent['id']}",
+        json={"status": "completed"},
+        headers=auth_headers,
+    )
+    # 把父任务改回 pending
+    resp = app_client.put(
+        f"/api/tasks/{parent['id']}",
+        json={"status": "pending"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "pending"
+
+    # 子任务应该保持 completed
+    child_resp = app_client.get(f"/api/tasks/{child['id']}", headers=auth_headers)
+    assert child_resp.status_code == 200
+    assert child_resp.json()["status"] == "completed"
+
+def test_batch_update_completed_cascades_to_descendants(app_client, auth_headers):
+    """批量接口完成任务时，应级联完成所有子孙任务"""
+    # 任务 A: A -> A1 -> A11
+    a = _create_task(app_client, auth_headers, title="Batch A")
+    a1 = _create_task(app_client, auth_headers, title="Batch A1", parent_task_id=a["id"])
+    a11 = _create_task(
+        app_client, auth_headers, title="Batch A11", parent_task_id=a1["id"]
+    )
+    # 任务 B: B -> B1
+    b = _create_task(app_client, auth_headers, title="Batch B")
+    b1 = _create_task(app_client, auth_headers, title="Batch B1", parent_task_id=b["id"])
+
+    # 批量完成 A 和 B
+    resp = app_client.post(
+        "/api/tasks/batch-update",
+        json={"task_ids": [a["id"], b["id"]], "status": "completed"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    # updated_count 应包含级联更新的子孙（A、A1、A11、B、B1 共 5 个）
+    assert resp.json()["updated_count"] >= 2
+
+    # 校验所有子孙都被完成
+    for task_id in [a["id"], a1["id"], a11["id"], b["id"], b1["id"]]:
+        r = app_client.get(f"/api/tasks/{task_id}", headers=auth_headers)
+        assert r.status_code == 200
+        assert r.json()["status"] == "completed", f"{task_id} 未被完成"
+
 
 # ------------------------------------------------------------------
 # 移动 / 复制
