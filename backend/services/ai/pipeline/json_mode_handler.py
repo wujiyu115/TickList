@@ -107,43 +107,61 @@ class JsonModeHandler(Handler):
         return await asyncio.to_thread(_sync_call_claude)
 
     async def handle(self, ctx: ChatContext) -> AsyncGenerator[str, None]:
+        import time as _time
+        logger.info(f"[AI][L2-json] enter user={ctx.user_id} timeout={_JSON_MODE_TIMEOUT_SECONDS}s")
+        _t0 = _time.time()
         try:
             raw = await asyncio.wait_for(
                 self._call_llm_json_mode(ctx), timeout=_JSON_MODE_TIMEOUT_SECONDS,
             )
         except asyncio.TimeoutError:
-            logger.warning(f"json_mode timeout for user={ctx.user_id}")
+            logger.warning(
+                f"[AI][L2-json] TIMEOUT user={ctx.user_id} elapsed={_time.time() - _t0:.2f}s"
+            )
             ctx.trace.append("json:fail:Timeout")
             ctx.upstream_hint = {"reason": "json_mode_failed", "detail": "timeout"}
             if self.next_handler is None:
                 yield sse_event("error", {"content": "AI 响应超时，请重试"})
                 yield sse_event("done", {"conversation_id": ctx.conversation_id})
                 return
+            logger.info(f"[AI][L2-json] -> fallback next={type(self.next_handler).__name__}")
             async for ev in self.next_handler.handle(ctx):
                 yield ev
             return
         except Exception as e:
-            logger.error(f"json_mode call failed: {e}")
+            logger.error(
+                f"[AI][L2-json] call FAILED user={ctx.user_id} err={type(e).__name__}: {e}"
+            )
             ctx.trace.append(f"json:fail:{type(e).__name__}")
             ctx.upstream_hint = {"reason": "json_mode_failed", "detail": str(e)[:200]}
             if self.next_handler is None:
                 yield sse_event("error", {"content": "AI 调用失败"})
                 yield sse_event("done", {"conversation_id": ctx.conversation_id})
                 return
+            logger.info(f"[AI][L2-json] -> fallback next={type(self.next_handler).__name__}")
             async for ev in self.next_handler.handle(ctx):
                 yield ev
             return
 
+        logger.info(
+            f"[AI][L2-json] llm_resp_ok user={ctx.user_id} elapsed={_time.time() - _t0:.2f}s "
+            f"raw_len={len(raw)}"
+        )
+
         try:
             payload = _parse_json_payload(raw)
         except Exception as e:
-            logger.warning(f"json_mode parse failed: {e} raw={raw[:200]!r}")
+            logger.warning(
+                f"[AI][L2-json] PARSE_FAIL user={ctx.user_id} err={type(e).__name__}: {e} "
+                f"raw={raw[:200]!r}"
+            )
             ctx.trace.append(f"json:fail:{type(e).__name__}")
             ctx.upstream_hint = {"reason": "json_mode_failed", "raw": raw[:200]}
             if self.next_handler is None:
                 yield sse_event("error", {"content": "AI 响应格式异常"})
                 yield sse_event("done", {"conversation_id": ctx.conversation_id})
                 return
+            logger.info(f"[AI][L2-json] -> fallback next={type(self.next_handler).__name__}")
             async for ev in self.next_handler.handle(ctx):
                 yield ev
             return
@@ -152,6 +170,7 @@ class JsonModeHandler(Handler):
         reply_text = payload.get("reply", "") or ""
 
         if intent == "unknown":
+            logger.info(f"[AI][L2-json] intent=UNKNOWN user={ctx.user_id} -> fallback to L3")
             ctx.trace.append("json:unknown")
             ctx.upstream_hint = {"reason": "json_mode_unknown"}
             if self.next_handler is None:
@@ -163,11 +182,13 @@ class JsonModeHandler(Handler):
             return
 
         if intent == "chitchat":
+            logger.info(f"[AI][L2-json] HIT intent=chitchat user={ctx.user_id}")
             ctx.trace.append("json:chitchat")
             yield sse_event("text", {"content": reply_text or "（无回复）"})
             yield sse_event("done", {"conversation_id": ctx.conversation_id})
             return
 
+        logger.info(f"[AI][L2-json] HIT intent={intent} user={ctx.user_id} params_keys={list((payload.get('params') or {}).keys())}")
         ctx.trace.append(f"json:{intent}")
         result = ResolutionResult(
             status=ResolutionStatus.EXECUTABLE,

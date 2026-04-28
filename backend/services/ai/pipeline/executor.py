@@ -59,9 +59,17 @@ async def execute_resolution(
     result: ResolutionResult, ctx: ChatContext
 ) -> AsyncGenerator[str, None]:
     """Convert a ResolutionResult into the canonical SSE event stream."""
+    logger.info(
+        f"[AI][exec] enter intent={result.intent} status={result.status.value} "
+        f"source={result.source} user={ctx.user_id}"
+    )
 
     # 1) Multi-match: ask the user to pick one
     if result.status == ResolutionStatus.NEED_DISAMBIGUATION:
+        logger.info(
+            f"[AI][exec] NEED_DISAMBIGUATION intent={result.intent} "
+            f"candidates_count={len(result.candidates or [])}"
+        )
         yield sse_event("disambiguation", {
             "pending_intent": result.intent,
             "candidates": result.candidates or [],
@@ -77,6 +85,9 @@ async def execute_resolution(
     # 2) Delete intents: force confirmation regardless of incoming status
     if result.intent in DELETE_INTENTS and result.status != ResolutionStatus.NEED_CONFIRMATION:
         target_desc = _describe_delete_target(ctx.user_id, result.intent, result.params)
+        logger.info(
+            f"[AI][exec] NEED_CONFIRMATION intent={result.intent} target={target_desc!r}"
+        )
         yield sse_event("confirmation", {
             "pending_intent": result.intent,
             "params": result.params,
@@ -91,7 +102,12 @@ async def execute_resolution(
     # 3) Executable: hit the DAO
     if result.status == ResolutionStatus.EXECUTABLE:
         try:
+            logger.info(
+                f"[AI][exec] EXECUTE intent={result.intent} user={ctx.user_id} "
+                f"params_keys={list(result.params.keys())}"
+            )
             tool_result = _execute_tool(ctx.user_id, result.intent, result.params)
+            logger.info(f"[AI][exec] EXECUTE_OK intent={result.intent} user={ctx.user_id}")
             yield sse_event("tool_result", {
                 "tool": result.intent,
                 "result": tool_result,
@@ -102,14 +118,17 @@ async def execute_resolution(
             yield sse_event("done", {"conversation_id": ctx.conversation_id})
             ctx.trace.append("exec:ok")
         except Exception as e:
-            logger.error(f"executor failed: {result.intent} {e}")
+            logger.error(
+                f"[AI][exec] EXECUTE_FAIL intent={result.intent} user={ctx.user_id} "
+                f"err={type(e).__name__}: {e}"
+            )
             yield sse_event("error", {"content": f"执行失败：{e}"})
             yield sse_event("done", {"conversation_id": ctx.conversation_id})
             ctx.trace.append("exec:error")
         return
 
     # Unexpected status: treat as a no-op done event
-    logger.warning(f"executor reached unexpected status: {result.status}")
+    logger.warning(f"[AI][exec] UNEXPECTED status={result.status} intent={result.intent}")
     yield sse_event("done", {"conversation_id": ctx.conversation_id})
 
 __all__ = ["execute_resolution", "DELETE_INTENTS", "_describe_delete_target"]
