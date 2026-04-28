@@ -79,7 +79,7 @@ const TrashTaskItem: React.FC<TrashTaskItemProps> = ({ task, isContextMenuOpen, 
 // 视图类型
 type ViewMode = 'list' | 'kanban';
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 25;
 
 const TaskPage: React.FC = () => {
   const { fetchTasks, selectedTask, selectTask } = useTaskContext();
