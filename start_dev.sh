@@ -1,9 +1,15 @@
 #!/bin/bash
 
 # TickList 任务管理系统启动脚本
+# 用法: ./start_dev.sh [PORT]
+#   PORT: 可选，后端服务端口，默认 5000
+
+PORT="${1:-5000}"
+export PORT
 
 echo "=================================="
 echo "TickList 任务管理系统"
+echo "服务端口: $PORT"
 echo "=================================="
 
 # 检查是否安装了 Node.js
@@ -69,10 +75,10 @@ BACKEND_PID=$!
 
 echo "=================================="
 echo "服务启动完成!"
-echo "应用地址: http://localhost:5000"
-echo "API 文档: http://localhost:5000/docs"
+echo "应用地址: http://localhost:$PORT"
+echo "API 文档: http://localhost:$PORT/docs"
 echo "=================================="
-echo "前后端现在运行在同一端口 (5000)"
+echo "前后端现在运行在同一端口 ($PORT)"
 echo "前端已启用监听模式，文件变化时自动重新构建"
 echo "按 Ctrl+C 停止服务"
 
