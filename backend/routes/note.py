@@ -40,6 +40,7 @@ class NoteUpdate(BaseModel):
     content: Optional[str] = None
     folder_id: Optional[str] = None
     is_pinned: Optional[bool] = None
+    color: Optional[str] = None
     order: Optional[int] = None
     tags: Optional[List[str]] = None
 
