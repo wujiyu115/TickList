@@ -107,12 +107,44 @@ _TIME_WINDOW_KEYWORDS: list[tuple[str, str]] = [
 # 拼出大正则 (?:今天|今日|明天|...)
 _TIME_WINDOW_ALT = "|".join(f"(?:{kw})" for kw, _ in _TIME_WINDOW_KEYWORDS)
 
+# 状态修饰词：可与时间窗口自由组合（如"本周已完成的任务" / "已完成的本周任务"）。
+# 值规则：
+#   - "completed"     → DAO 参数 status="completed"
+#   - "not_completed" → DAO 参数 exclude_status="completed"
+# 同义词长串在前（"已完成" 在 "完成" 前），避免短串误匹配。
+_STATUS_KEYWORDS: list[tuple[str, str]] = [
+    (r"已完成|完成的|做完的|搞定的", "completed"),
+    (r"未完成|没完成|没做完|待办|未做", "not_completed"),
+]
+_STATUS_ALT = "|".join(f"(?:{kw})" for kw, _ in _STATUS_KEYWORDS)
+# 状态修饰可选片段：可在时间词前或后出现，前后允许 "的"。
+_STATUS_OPT = rf"(?:({_STATUS_ALT})的?)?"
+
+
+def _match_status(matched_keyword: Optional[str]) -> Optional[str]:
+    """根据匹配到的状态关键词返回内部状态标识。"""
+    if not matched_keyword:
+        return None
+    for pattern, status in _STATUS_KEYWORDS:
+        if re.fullmatch(pattern, matched_keyword, re.IGNORECASE):
+            return status
+    return None
+
+
+# 时间窗口规则：支持 "本周任务" / "本周已完成的任务" / "已完成的本周任务" 三种形态。
+# 捕获组：
+#   1 = 状态前缀（可空）  2 = 时间窗口  3 = 状态后缀（可空）
+# 注意：状态前缀和状态后缀至多有一个非空（语义上不会同时出现）。
 _QUERY_TIME_WINDOW_PATTERN = re.compile(
-    rf"^{_QUERY_NOT_VERB}{_QUERY_PREFIX}({_TIME_WINDOW_ALT})的?{_TASK_NOUN}\s*{_QUERY_SUFFIX}$",
+    rf"^{_QUERY_NOT_VERB}{_QUERY_PREFIX}{_STATUS_OPT}({_TIME_WINDOW_ALT})的?{_STATUS_OPT}{_TASK_NOUN}\s*{_QUERY_SUFFIX}$",
     re.IGNORECASE,
 )
 _QUERY_UNFINISHED_PATTERN = re.compile(
     rf"^{_QUERY_NOT_VERB}{_QUERY_PREFIX}(?:未完成|没做完|待办|没完成){_TASK_NOUN}\s*{_QUERY_SUFFIX}$",
+    re.IGNORECASE,
+)
+_QUERY_COMPLETED_PATTERN = re.compile(
+    rf"^{_QUERY_NOT_VERB}{_QUERY_PREFIX}(?:已完成|做完了?|搞定了?|完成了)的?{_TASK_NOUN}\s*{_QUERY_SUFFIX}$",
     re.IGNORECASE,
 )
 _QUERY_OVERDUE_PATTERN = re.compile(
@@ -286,24 +318,39 @@ class QueryTasksRule:
     def try_match(self, ctx: ChatContext) -> Optional[ResolutionResult]:
         msg = ctx.message.strip()
 
-        # 1) 相对时间窗口：今天 / 明天 / 后天 / 昨天 / 前天 / 本周 / 上周 / 下周 / 本月 / 上月 / 下月
+        # 1) 相对时间窗口（可选状态修饰）：
+        #    "今天的任务" / "本周已完成的任务" / "已完成的本月任务" / "明天未完成的任务"
         m = _QUERY_TIME_WINDOW_PATTERN.match(msg)
         if m:
-            window = _match_time_window(m.group(1))
+            # 捕获组：1=状态前缀（可空） 2=时间窗口 3=状态后缀（可空）
+            status_keyword = m.group(1) or m.group(3)
+            window_keyword = m.group(2)
+            window = _match_time_window(window_keyword)
+            status = _match_status(status_keyword)
             start_dt, end_dt, reply = _resolve_time_window(window)
+
+            params: dict = {
+                "filter": window,
+                "start_date": start_dt.isoformat(),
+                "end_date": end_dt.isoformat(),
+            }
+            # 叠加状态过滤，并在 reply 文案里体现
+            if status == "completed":
+                params["status"] = "completed"
+                reply = reply.replace("的任务", "已完成的任务")
+            elif status == "not_completed":
+                params["exclude_status"] = "completed"
+                reply = reply.replace("的任务", "未完成的任务")
+
             return ResolutionResult(
                 status=ResolutionStatus.EXECUTABLE,
                 intent="list_tasks",
-                params={
-                    "filter": window,
-                    "start_date": start_dt.isoformat(),
-                    "end_date": end_dt.isoformat(),
-                },
+                params=params,
                 reply_text=reply,
                 source="rule",
             )
 
-        # 2) 未完成 / 待办
+        # 2) 未完成 / 待办（无时间限定）
         if _QUERY_UNFINISHED_PATTERN.match(msg):
             return ResolutionResult(
                 status=ResolutionStatus.EXECUTABLE,
@@ -313,7 +360,17 @@ class QueryTasksRule:
                 source="rule",
             )
 
-        # 3) 过期 / 逾期
+        # 3) 已完成（无时间限定）
+        if _QUERY_COMPLETED_PATTERN.match(msg):
+            return ResolutionResult(
+                status=ResolutionStatus.EXECUTABLE,
+                intent="list_tasks",
+                params={"filter": "completed", "status": "completed"},
+                reply_text="已完成的任务：",
+                source="rule",
+            )
+
+        # 4) 过期 / 逾期
         if _QUERY_OVERDUE_PATTERN.match(msg):
             today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
             yesterday_end = (today - timedelta(microseconds=1))

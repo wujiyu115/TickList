@@ -156,11 +156,17 @@
 }
 
 // Desktop floating panel
+// 宽度策略：
+//   - 默认 600px（比原 400px 更宽，长任务标题/列表项不易换行）
+//   - 视口较窄（< 1280）时收窄到 480px，避免遮住主内容
+//   - 用 min/max 双重夹紧，超大屏不至于过宽显得空旷
 .ai-chat-floating {
   position: fixed;
   right: 24px;
   top: 72px;
-  width: 400px;
+  width: 600px;
+  min-width: 420px;
+  max-width: 40vw;
   height: calc(100vh - 96px);
   background: var(--ant-color-bg-container);
   border: 1px solid var(--ant-color-border);
@@ -171,6 +177,12 @@
 
   .ai-chat-panel {
     height: 100%;
+  }
+}
+
+@media (max-width: 1280px) {
+  .ai-chat-floating {
+    width: 480px;
   }
 }
 
