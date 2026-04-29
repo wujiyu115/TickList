@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Layout, Avatar, Dropdown, Space, Button, message, Modal } from 'antd';
-import { UserOutlined, LogoutOutlined, LockOutlined, KeyOutlined, CrownOutlined, MenuOutlined, FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons';
+import { UserOutlined, LogoutOutlined, LockOutlined, KeyOutlined, CrownOutlined, MenuOutlined, FullscreenOutlined, FullscreenExitOutlined, RobotOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { MenuProps } from 'antd';
 import { User } from '../types';
+import { useAiContext } from '../contexts/AiContext';
 
 const { Header } = Layout;
 
@@ -23,6 +24,7 @@ interface AppHeaderProps {
 
 const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onMenuClick }) => {
   const navigate = useNavigate();
+  const { openPanel, panelVisible, closePanel } = useAiContext();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -128,6 +130,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onMenuClick }) =>
         style={{ fontSize: 18, width: 40, height: 40 }}
       />
       <Space style={{ marginLeft: 'auto', alignItems: 'center' }}>
+        <Button
+          type={panelVisible ? 'primary' : 'text'}
+          icon={<RobotOutlined />}
+          onClick={panelVisible ? closePanel : openPanel}
+          style={{ fontSize: 18, width: 40, height: 40 }}
+          title="AI 助手"
+        />
         <Button
           type="text"
           icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}

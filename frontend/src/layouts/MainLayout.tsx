@@ -3,6 +3,7 @@ import { Layout, Drawer, Spin } from 'antd';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
 import AppSider from '../components/AppSider';
+import AiChatPanel from '../components/AiChatPanel';
 import TaskPage from '../pages/TaskPage';
 
 const StatisticsPage = lazy(() => import('../pages/StatisticsPage'));
@@ -15,8 +16,8 @@ const NotePage = lazy(() => import('../pages/NotePage'));
 const SummaryPage = lazy(() => import('../pages/SummaryPage'));
 const SettingsPage = lazy(() => import('../pages/SettingsPage'));
 const AdminPage = lazy(() => import('../pages/admin/AdminPage'));
-const AiPage = lazy(() => import('../pages/AiPage'));
 import { TaskProvider } from '../contexts/TaskContext';
+import { AiProvider } from '../contexts/AiContext';
 import { User } from '../types';
 import './MainLayout.less';
 
@@ -77,6 +78,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
   }, []);
 
   return (
+    <AiProvider>
     <TaskProvider>
       <Layout className="main-layout" style={{ height: '100vh' }} hasSider>
         {!isMobile && (
@@ -105,7 +107,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
               <Route path="/statistics" element={<StatisticsPage />} />
               <Route path="/summary" element={<SummaryPage />} />
               <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/ai" element={<AiPage />} />
               <Route
                 path="/admin"
                 element={
@@ -132,8 +133,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
             <AppSider user={user} onNavigate={handleDrawerNavigate} />
           </Drawer>
         )}
+
+        {/* AI 浮动聊天面板 */}
+        <AiChatPanel />
       </Layout>
     </TaskProvider>
+    </AiProvider>
   );
 };
 
