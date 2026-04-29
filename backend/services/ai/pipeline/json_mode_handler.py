@@ -174,7 +174,8 @@ class JsonModeHandler(Handler):
             ctx.trace.append("json:unknown")
             ctx.upstream_hint = {"reason": "json_mode_unknown"}
             if self.next_handler is None:
-                yield sse_event("text", {"content": "没听懂，请换种说法"})
+                # 对齐 legacy 事件契约：text_delta（不是 text）
+                yield sse_event("text_delta", {"content": "没听懂，请换种说法"})
                 yield sse_event("done", {"conversation_id": ctx.conversation_id})
                 return
             async for ev in self.next_handler.handle(ctx):
@@ -184,7 +185,8 @@ class JsonModeHandler(Handler):
         if intent == "chitchat":
             logger.info(f"[AI][L2-json] HIT intent=chitchat user={ctx.user_id}")
             ctx.trace.append("json:chitchat")
-            yield sse_event("text", {"content": reply_text or "（无回复）"})
+            # 对齐 legacy 事件契约：text_delta（不是 text）
+            yield sse_event("text_delta", {"content": reply_text or "（无回复）"})
             yield sse_event("done", {"conversation_id": ctx.conversation_id})
             return
 

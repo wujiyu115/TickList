@@ -20,18 +20,176 @@ from database.dao.task_dao import task_dao
 from ..base import ChatContext, ResolutionResult, ResolutionStatus
 from .shared.date_parser import extract_date
 
-_CREATE_PATTERN = re.compile(
-    r"^(?:加|添加|新建|创建|新增)(?:个|一个|条)?(?:任务)?[:：]?\s*(.+)$"
+# =========================================================================
+# 共用片段：所有任务规则都基于以下片段拼装，保证同义词/标点/任务名词的修改
+# 只需要在一个地方维护，避免规则之间漂移。
+# =========================================================================
+
+# 任务名词同义词：所有规则共用（create/complete/delete 末尾可选；query 必选）。
+_TASK_NOUN = r"(?:任务|todo|to ?do)"
+
+# 动词词表：动作类（create/complete/delete）规则各自一份，外加 _QUERY_NOT_VERB
+# 反向断言时统一从这里拼，避免动词清单两处维护漂移。
+_ACTION_VERBS: dict[str, list[str]] = {
+    "create": ["加", "添加", "新建", "创建", "新增"],
+    "complete": ["完成", "搞定", "做完", "勾掉", "打钩"],
+    "delete": ["删", "删除", "去掉", "移除"],
+}
+
+# 数量修饰词："个 / 一个 / 条"，只有 create/delete 这种带名词宾语的动词适用；
+# complete（"完成饺子"）不需要这种修饰词。
+_QUANTITY_MODIFIER = r"(?:个|一个|条)?"
+
+# 标点 + 空白：动作动词与宾语之间可选的分隔。
+_OPTIONAL_COLON_WS = r"[:：]?\s*"
+
+
+def _build_action_pattern(verb_kind: str, with_modifier: bool) -> re.Pattern[str]:
+    """根据动词类别生成动作类规则的正则。
+
+    匹配形如 "<动词><可选修饰><可选'任务'><可选冒号空白><捕获内容>" 的整句。
+    捕获组 1 是动词后的剩余文本（标题/关键词），由调用方再 strip。
+
+    Args:
+        verb_kind: ``_ACTION_VERBS`` 的键（``"create"`` / ``"complete"`` / ``"delete"``）。
+        with_modifier: 是否允许 "个/一个/条" 修饰词。complete 不允许。
+    """
+    verbs = "|".join(_ACTION_VERBS[verb_kind])
+    modifier = _QUANTITY_MODIFIER if with_modifier else ""
+    return re.compile(
+        rf"^(?:{verbs}){modifier}{_TASK_NOUN}?{_OPTIONAL_COLON_WS}(.+)$",
+        re.IGNORECASE,
+    )
+
+
+# 动作类规则：和 query 规则一样从共用片段拼出，避免硬编码。
+_CREATE_PATTERN = _build_action_pattern("create", with_modifier=True)
+_COMPLETE_PATTERN = _build_action_pattern("complete", with_modifier=False)
+_DELETE_PATTERN = _build_action_pattern("delete", with_modifier=True)
+
+
+# =========================================================================
+# 查询类规则：放宽前后缀，覆盖以下常见说法（前缀+核心+可选后缀均可省略）
+#   - "今天的任务"、"今日任务"、"明天任务"、"本周任务"、"这个月任务"
+#   - "查一下今天的任务"、"看看明天有什么任务"、"本周有哪些任务"
+#   - "今天的任务？"、"本月任务呢"、"过期任务啊"
+# 关键约束：核心关键字（时间词/状态词 + 任务）之间允许少量字符（如"有什么"、"有哪些"），
+# 但禁止包含可能改变意图的动词（完成/删除/添加），避免误吃 create/complete/delete 命令。
+# =========================================================================
+_QUERY_PREFIX = r"(?:查(?:一下|查|看)?|看(?:一下|看|下)?|列(?:一下|出)?|显示|有(?:没有|什么|哪些)?|帮我(?:查|看|列)?)?"
+_QUERY_SUFFIX = r"(?:有(?:什么|哪些|啥)?|是(?:什么|啥|哪些)?|呢|吗|嘛|呀|啊|？|\?|！|!|。|\.)*"
+# 反向断言：从 _ACTION_VERBS 自动拼接所有动作动词，保证和动作规则同步演进。
+_QUERY_NOT_VERB = (
+    r"(?!.*(?:"
+    + "|".join(v for verbs in _ACTION_VERBS.values() for v in verbs)
+    + r"))"
 )
-_COMPLETE_PATTERN = re.compile(
-    r"^(?:完成|搞定|做完|勾掉|打钩)(?:任务)?[:：]?\s*(.+)$"
+
+# 相对时间窗口关键词 → 内部 window 标识。顺序无所谓，但同义词必须列全。
+# 注意：长串（"这个月"）必须在短串（"这"/"月"）前面，避免被部分吃掉。
+_TIME_WINDOW_KEYWORDS: list[tuple[str, str]] = [
+    # 今 / 明 / 后 / 昨 / 前
+    (r"今天|今日", "today"),
+    (r"明天|明日", "tomorrow"),
+    (r"后天", "day_after_tomorrow"),
+    (r"昨天|昨日", "yesterday"),
+    (r"前天", "day_before_yesterday"),
+    # 周（这周 / 本周 / 上周 / 下周）
+    (r"这个?周|本周", "this_week"),
+    (r"上(?:个|一)?周", "last_week"),
+    (r"下(?:个|一)?周", "next_week"),
+    # 月（这个月 / 本月 / 上个月 / 下个月）
+    (r"这个?月|本月", "this_month"),
+    (r"上(?:个|一)?月", "last_month"),
+    (r"下(?:个|一)?月", "next_month"),
+]
+
+# 拼出大正则 (?:今天|今日|明天|...)
+_TIME_WINDOW_ALT = "|".join(f"(?:{kw})" for kw, _ in _TIME_WINDOW_KEYWORDS)
+
+_QUERY_TIME_WINDOW_PATTERN = re.compile(
+    rf"^{_QUERY_NOT_VERB}{_QUERY_PREFIX}({_TIME_WINDOW_ALT})的?{_TASK_NOUN}\s*{_QUERY_SUFFIX}$",
+    re.IGNORECASE,
 )
-_DELETE_PATTERN = re.compile(
-    r"^(?:删|删除|去掉|移除)(?:个|一个|条)?(?:任务)?[:：]?\s*(.+)$"
+_QUERY_UNFINISHED_PATTERN = re.compile(
+    rf"^{_QUERY_NOT_VERB}{_QUERY_PREFIX}(?:未完成|没做完|待办|没完成){_TASK_NOUN}\s*{_QUERY_SUFFIX}$",
+    re.IGNORECASE,
 )
-_QUERY_TODAY_PATTERN = re.compile(r"^(?:今天|今日)的?任务$")
-_QUERY_UNFINISHED_PATTERN = re.compile(r"^(?:未完成|没做完|待办)的?任务$")
-_QUERY_OVERDUE_PATTERN = re.compile(r"^(?:过期|逾期)(?:的)?任务$")
+_QUERY_OVERDUE_PATTERN = re.compile(
+    rf"^{_QUERY_NOT_VERB}{_QUERY_PREFIX}(?:过期|逾期|超期)的?{_TASK_NOUN}\s*{_QUERY_SUFFIX}$",
+    re.IGNORECASE,
+)
+
+
+def _match_time_window(matched_keyword: str) -> str:
+    """根据匹配到的中文关键词找回内部 window 标识。"""
+    for pattern, window in _TIME_WINDOW_KEYWORDS:
+        if re.fullmatch(pattern, matched_keyword, re.IGNORECASE):
+            return window
+    return "today"  # 兜底，理论上不会走到
+
+
+def _resolve_time_window(window: str) -> tuple[datetime, datetime, str]:
+    """把 window 标识转成 (start_dt, end_dt, reply_prefix)。
+
+    边界一律对齐到天：start = 当天 00:00:00.000，end = 当天 23:59:59.999999，
+    避免 list_tasks 在边界毫秒上抖动。
+    """
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    end_of_day = lambda d: d.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    if window == "today":
+        return today, end_of_day(today), "今天的任务如下："
+    if window == "tomorrow":
+        d = today + timedelta(days=1)
+        return d, end_of_day(d), "明天的任务如下："
+    if window == "day_after_tomorrow":
+        d = today + timedelta(days=2)
+        return d, end_of_day(d), "后天的任务如下："
+    if window == "yesterday":
+        d = today - timedelta(days=1)
+        return d, end_of_day(d), "昨天的任务如下："
+    if window == "day_before_yesterday":
+        d = today - timedelta(days=2)
+        return d, end_of_day(d), "前天的任务如下："
+
+    # 周：周一为起点（weekday() 周一=0、周日=6）
+    weekday = today.weekday()
+    week_start = today - timedelta(days=weekday)
+    week_end = end_of_day(week_start + timedelta(days=6))
+    if window == "this_week":
+        return week_start, week_end, "本周的任务如下："
+    if window == "last_week":
+        return week_start - timedelta(days=7), end_of_day(week_end - timedelta(days=7)), "上周的任务如下："
+    if window == "next_week":
+        return week_start + timedelta(days=7), end_of_day(week_end + timedelta(days=7)), "下周的任务如下："
+
+    # 月：当前月 1 号 ~ 下个月 1 号 - 1 微秒
+    month_start = today.replace(day=1)
+    # 下个月 1 号
+    if month_start.month == 12:
+        next_month_start = month_start.replace(year=month_start.year + 1, month=1)
+    else:
+        next_month_start = month_start.replace(month=month_start.month + 1)
+    month_end = next_month_start - timedelta(microseconds=1)
+    if window == "this_month":
+        return month_start, month_end, "本月的任务如下："
+    if window == "last_month":
+        if month_start.month == 1:
+            last_month_start = month_start.replace(year=month_start.year - 1, month=12)
+        else:
+            last_month_start = month_start.replace(month=month_start.month - 1)
+        last_month_end = month_start - timedelta(microseconds=1)
+        return last_month_start, last_month_end, "上月的任务如下："
+    if window == "next_month":
+        if next_month_start.month == 12:
+            after_next_start = next_month_start.replace(year=next_month_start.year + 1, month=1)
+        else:
+            after_next_start = next_month_start.replace(month=next_month_start.month + 1)
+        return next_month_start, after_next_start - timedelta(microseconds=1), "下月的任务如下："
+
+    # 兜底
+    return today, end_of_day(today), "今天的任务如下："
 
 class CreateTaskRule:
     name = "create_task"
@@ -128,20 +286,24 @@ class QueryTasksRule:
     def try_match(self, ctx: ChatContext) -> Optional[ResolutionResult]:
         msg = ctx.message.strip()
 
-        if _QUERY_TODAY_PATTERN.match(msg):
-            today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        # 1) 相对时间窗口：今天 / 明天 / 后天 / 昨天 / 前天 / 本周 / 上周 / 下周 / 本月 / 上月 / 下月
+        m = _QUERY_TIME_WINDOW_PATTERN.match(msg)
+        if m:
+            window = _match_time_window(m.group(1))
+            start_dt, end_dt, reply = _resolve_time_window(window)
             return ResolutionResult(
                 status=ResolutionStatus.EXECUTABLE,
                 intent="list_tasks",
                 params={
-                    "filter": "today",
-                    "start_date": today.isoformat(),
-                    "end_date": today.isoformat(),
+                    "filter": window,
+                    "start_date": start_dt.isoformat(),
+                    "end_date": end_dt.isoformat(),
                 },
-                reply_text="今天的任务如下：",
+                reply_text=reply,
                 source="rule",
             )
 
+        # 2) 未完成 / 待办
         if _QUERY_UNFINISHED_PATTERN.match(msg):
             return ResolutionResult(
                 status=ResolutionStatus.EXECUTABLE,
@@ -151,15 +313,16 @@ class QueryTasksRule:
                 source="rule",
             )
 
+        # 3) 过期 / 逾期
         if _QUERY_OVERDUE_PATTERN.match(msg):
             today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-            yesterday = today - timedelta(days=1)
+            yesterday_end = (today - timedelta(microseconds=1))
             return ResolutionResult(
                 status=ResolutionStatus.EXECUTABLE,
                 intent="list_tasks",
                 params={
                     "filter": "overdue",
-                    "end_date": yesterday.isoformat(),
+                    "end_date": yesterday_end.isoformat(),
                     "exclude_status": "completed",
                 },
                 reply_text="过期的任务：",

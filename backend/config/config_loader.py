@@ -139,6 +139,19 @@ class ConfigLoader:
 
     def get_ai_config(self) -> Dict[str, Any]:
         """获取AI配置"""
+        # pipeline 子配置原样透传（含 enabled / enable_rule_layer / enable_json_mode_layer）
+        pipeline_cfg = self.get('ai.pipeline', {}) or {}
+        # 同时支持环境变量覆盖关键开关，方便线上灰度
+        env_enabled = os.getenv('AI_PIPELINE_ENABLED')
+        if env_enabled is not None:
+            pipeline_cfg = {**pipeline_cfg, 'enabled': env_enabled.lower() in ('true', '1', 'yes', 'on')}
+        env_rule = os.getenv('AI_PIPELINE_ENABLE_RULE_LAYER')
+        if env_rule is not None:
+            pipeline_cfg = {**pipeline_cfg, 'enable_rule_layer': env_rule.lower() in ('true', '1', 'yes', 'on')}
+        env_json = os.getenv('AI_PIPELINE_ENABLE_JSON_MODE_LAYER')
+        if env_json is not None:
+            pipeline_cfg = {**pipeline_cfg, 'enable_json_mode_layer': env_json.lower() in ('true', '1', 'yes', 'on')}
+
         return {
             'provider': self.get('ai.provider', 'claude', 'AI_PROVIDER'),
             'api_key': self.get('ai.api_key', '', 'AI_API_KEY'),
@@ -147,6 +160,7 @@ class ConfigLoader:
             'openai_api_key': self.get('ai.openai_api_key', '', 'OPENAI_API_KEY'),
             'openai_model': self.get('ai.openai_model', 'gpt-4o', 'OPENAI_MODEL'),
             'openai_base_url': self.get('ai.openai_base_url', '', 'OPENAI_BASE_URL'),
+            'pipeline': pipeline_cfg,
         }
 
     def get_logging_config(self) -> Dict[str, Any]:

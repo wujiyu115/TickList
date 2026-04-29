@@ -17,6 +17,39 @@ const TOOL_LABEL_MAP: Record<string, string> = {
   create_tag: '创建标签', update_tag: '更新标签', delete_tag: '删除标签', list_tags: '查询标签',
 };
 
+// 把列表项渲染成"标题"。task/note 用 title，list/tag/counter 用 name，countdown 用 title。
+const renderListItemTitle = (tool: string, item: any): string => {
+  return item?.title || item?.name || item?.id || '(未命名)';
+};
+
+// 渲染列表项的元信息（截止时间、状态等），返回小尺寸 Tag 数组。
+const renderListItemMeta = (tool: string, item: any): React.ReactNode => {
+  const tags: React.ReactNode[] = [];
+  // 任务：状态 + 截止时间
+  if (tool === 'list_tasks') {
+    if (item.status === 'completed') {
+      tags.push(<Tag key="s" color="green" style={{ marginLeft: 4 }}>已完成</Tag>);
+    } else if (item.status === 'pending') {
+      tags.push(<Tag key="s" color="blue" style={{ marginLeft: 4 }}>待办</Tag>);
+    }
+    if (item.due_date) {
+      const d = new Date(item.due_date);
+      const text = `${d.getMonth() + 1}-${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      tags.push(<Tag key="d" style={{ marginLeft: 4 }}>{text}</Tag>);
+    }
+  }
+  // 倒数日：目标日期
+  if (tool === 'list_countdowns' && item.target_date) {
+    const d = new Date(item.target_date);
+    tags.push(<Tag key="d" style={{ marginLeft: 4 }}>{`${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`}</Tag>);
+  }
+  // 计数器：当前值
+  if (tool === 'list_counters' && typeof item.current_value === 'number') {
+    tags.push(<Tag key="v" color="purple" style={{ marginLeft: 4 }}>{item.current_value}</Tag>);
+  }
+  return tags.length > 0 ? <span className="action-list-meta">{tags}</span> : null;
+};
+
 const AiChatPanel: React.FC = () => {
   const { messages, setMessages, conversationId, setConversationId, loading, setLoading, panelVisible, closePanel, newConversation } = useAiContext();
   const [inputValue, setInputValue] = useState('');
@@ -51,33 +84,77 @@ const AiChatPanel: React.FC = () => {
 
     try {
       await sendAiChatStream(text, conversationId, (event: StreamEvent) => {
+        console.debug('[AI][panel] handle event', event.type, event);
         switch (event.type) {
           case 'conversation_id':
-            if (event.conversation_id) setConversationId(event.conversation_id);
+            if (event.conversation_id) {
+              console.info('[AI][panel] conversation_id', event.conversation_id);
+              setConversationId(event.conversation_id);
+            }
             break;
+          // legacy 流式增量
           case 'text_delta':
             assistantContent += event.content || '';
             updateAssistant();
             break;
+          // pipeline / chitchat 一次性文本
+          case 'text':
+            assistantContent += event.content || '';
+            updateAssistant();
+            break;
+          // legacy tool 执行 action
           case 'action':
             if (event.action) {
               assistantActions = [...assistantActions, event.action];
               updateAssistant();
             }
             break;
+          // pipeline executor 执行结果。result 在后端是 dict，统一 JSON 序列化，
+          // 以保证 renderAction 中 `result.includes('"error"')` 能正确识别错误。
+          case 'tool_result':
+            if (event.tool) {
+              const action: ToolAction = {
+                tool: event.tool,
+                params: {},
+                result: JSON.stringify(event.result ?? {}),
+              };
+              assistantActions = [...assistantActions, action];
+              updateAssistant();
+            }
+            break;
+          // pipeline 多匹配：当前前端未对接 /ai/disambiguate 二次交互接口，
+          // 先以文案提示用户重新精确表述，避免静默失败。后续接入后再扩展。
+          case 'disambiguation':
+            assistantContent += (event.reply || '匹配到多个结果，请重新描述具体目标。') + '\n';
+            updateAssistant();
+            break;
+          // pipeline 删除确认：当前前端未对接 /ai/confirm 二次交互接口，
+          // 先以文案提示用户在界面手动操作，避免误删。后续接入后再扩展。
+          case 'confirmation':
+            assistantContent += (event.reply || '该操作需确认，请在对应页面手动执行。') + '\n';
+            updateAssistant();
+            break;
           case 'error':
+            console.warn('[AI][panel] error event', event.content);
             assistantContent = event.content || '请求失败，请稍后重试。';
             updateAssistant();
             break;
           case 'done':
+            console.info('[AI][panel] done', {
+              assistantContentLen: assistantContent.length,
+              actionsCount: assistantActions.length,
+            });
             if (!assistantContent && assistantActions.length === 0) {
               assistantContent = '请求失败，请稍后重试。';
             }
             updateAssistant();
             break;
+          default:
+            console.warn('[AI][panel] unknown event type', event.type, event);
         }
       });
-    } catch {
+    } catch (err) {
+      console.error('[AI][panel] sendAiChatStream throw', err);
       if (!assistantContent) {
         assistantContent = '请求失败，请稍后重试。';
         updateAssistant();
@@ -87,14 +164,77 @@ const AiChatPanel: React.FC = () => {
     }
   }, [inputValue, loading, conversationId, setMessages, setConversationId, setLoading]);
 
+  // result 是后端 JSON 序列化后的字符串，统一在此 parse + 抽取关键字段渲染。
+  // 失败安全：parse 异常时回退到"已完成"摘要。
   const renderAction = (action: ToolAction, idx: number) => {
     const label = TOOL_LABEL_MAP[action.tool] || action.tool;
     const isDelete = action.tool.startsWith('delete_');
-    const isError = action.result.includes('"error"');
+    const isList = action.tool.startsWith('list_');
+
+    let parsed: any = null;
+    try {
+      parsed = action.result ? JSON.parse(action.result) : null;
+    } catch {
+      parsed = null;
+    }
+    const isError = parsed && typeof parsed === 'object' && 'error' in parsed;
+
+    // 1) 错误场景：单独高亮
+    if (isError) {
+      return (
+        <div className="action-card action-card-error" key={idx}>
+          <Tag color="orange">{label}</Tag>
+          <Text className="action-result">操作失败：{String(parsed.error)}</Text>
+        </div>
+      );
+    }
+
+    // 2) 查询类：展开列表项（任务/笔记/倒数日/计数器/清单/标签）
+    if (isList && parsed && typeof parsed === 'object') {
+      // 后端返回 { tasks: [...], count: n } / { notes: [...], count: n } 等
+      const listKey = Object.keys(parsed).find(k => Array.isArray((parsed as any)[k]));
+      const items: any[] = listKey ? (parsed as any)[listKey] : [];
+      const count = parsed.count ?? items.length;
+
+      return (
+        <div className="action-card action-card-list" key={idx}>
+          <div className="action-card-header">
+            <Tag color="blue">{label}</Tag>
+            <Text type="secondary">共 {count} 条</Text>
+          </div>
+          {items.length > 0 ? (
+            <ul className="action-list">
+              {items.slice(0, 20).map((item, i) => (
+                <li key={item.id || i} className="action-list-item">
+                  <Text>{renderListItemTitle(action.tool, item)}</Text>
+                  {renderListItemMeta(action.tool, item)}
+                </li>
+              ))}
+              {items.length > 20 && (
+                <li className="action-list-item action-list-more">
+                  <Text type="secondary">… 还有 {items.length - 20} 条未显示</Text>
+                </li>
+              )}
+            </ul>
+          ) : (
+            <Text type="secondary" className="action-empty">没有匹配的结果</Text>
+          )}
+        </div>
+      );
+    }
+
+    // 3) 创建/更新/删除：摘要展示
+    let summary = '已完成';
+    if (isDelete) {
+      summary = '已删除';
+    } else if (parsed && typeof parsed === 'object') {
+      const title = parsed.title || parsed.name;
+      if (title) summary = `「${title}」`;
+    }
     return (
       <div className="action-card" key={idx}>
-        <Tag color={isDelete ? 'red' : isError ? 'orange' : 'blue'}>{label}</Tag>
-        <Text className="action-result">{isError ? '操作失败' : '已完成'}</Text>
+        <Tag color={isDelete ? 'red' : 'blue'}>{label}</Tag>
+        <Text className="action-result">{summary}</Text>
       </div>
     );
   };

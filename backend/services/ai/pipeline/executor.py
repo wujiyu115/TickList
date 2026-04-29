@@ -6,8 +6,17 @@ Responsible for cross-cutting concerns:
 - delete confirmation interception (any DELETE_INTENTS becomes a
   ``confirmation`` event before reaching the DAO layer)
 - DAO invocation via the existing ``tools_executor._execute_tool``
+
+事件契约（与 legacy claude_stream / openai_stream 完全一致）：
+- ``text_delta`` ``{content}`` —— 文本内容（一次性或增量）
+- ``action`` ``{action: {tool, params, result(string)}}`` —— 工具执行结果
+- ``done`` ``{conversation_id}`` —— 流结束
+- ``error`` ``{content}`` —— 错误信息
+- ``disambiguation`` / ``confirmation`` —— pipeline 新增的二次交互事件，
+  额外伴随一条 ``text_delta`` 提示，保证旧前端也有可见文案。
 """
 
+import json
 from typing import AsyncGenerator
 
 from database.dao.countdown_dao import countdown_dao
@@ -70,12 +79,15 @@ async def execute_resolution(
             f"[AI][exec] NEED_DISAMBIGUATION intent={result.intent} "
             f"candidates_count={len(result.candidates or [])}"
         )
+        reply = result.reply_text or "匹配到多个结果，请重新描述具体目标。"
+        # 兼容性 text_delta：保证未对接二次交互的旧前端也有可见文案
+        yield sse_event("text_delta", {"content": reply})
         yield sse_event("disambiguation", {
             "pending_intent": result.intent,
             "candidates": result.candidates or [],
             "extra_params": {k: v for k, v in result.params.items()
                              if k not in {"task_id", "note_id", "countdown_id", "counter_id"}},
-            "reply": result.reply_text or "请选择：",
+            "reply": reply,
             "source": result.source,
         })
         yield sse_event("done", {"conversation_id": ctx.conversation_id})
@@ -88,11 +100,14 @@ async def execute_resolution(
         logger.info(
             f"[AI][exec] NEED_CONFIRMATION intent={result.intent} target={target_desc!r}"
         )
+        reply = f"确认删除「{target_desc}」？"
+        # 兼容性 text_delta：保证未对接二次交互的旧前端也有可见文案
+        yield sse_event("text_delta", {"content": reply})
         yield sse_event("confirmation", {
             "pending_intent": result.intent,
             "params": result.params,
             "target_description": target_desc,
-            "reply": f"确认删除「{target_desc}」？",
+            "reply": reply,
             "source": result.source,
         })
         yield sse_event("done", {"conversation_id": ctx.conversation_id})
@@ -108,13 +123,16 @@ async def execute_resolution(
             )
             tool_result = _execute_tool(ctx.user_id, result.intent, result.params)
             logger.info(f"[AI][exec] EXECUTE_OK intent={result.intent} user={ctx.user_id}")
-            yield sse_event("tool_result", {
+            # 对齐 legacy 的 action 事件契约：
+            #   action.params 透传调用入参；action.result 序列化为 string 以匹配前端 ToolAction 类型
+            action = {
                 "tool": result.intent,
-                "result": tool_result,
-                "source": result.source,
-            })
+                "params": result.params or {},
+                "result": json.dumps(tool_result, ensure_ascii=False, default=str),
+            }
+            yield sse_event("action", {"action": action})
             if result.reply_text:
-                yield sse_event("text", {"content": result.reply_text})
+                yield sse_event("text_delta", {"content": result.reply_text})
             yield sse_event("done", {"conversation_id": ctx.conversation_id})
             ctx.trace.append("exec:ok")
         except Exception as e:

@@ -47,36 +47,77 @@ const AiPage: React.FC = () => {
 
     try {
       await sendAiChatStream(text, conversationId, (event: StreamEvent) => {
+        console.debug('[AI][page] handle event', event.type, event);
         switch (event.type) {
           case 'conversation_id':
             if (event.conversation_id) {
+              console.info('[AI][page] conversation_id', event.conversation_id);
               setConversationId(event.conversation_id);
             }
             break;
+          // legacy 流式增量
           case 'text_delta':
             assistantContent += event.content || '';
             updateAssistant();
             break;
+          // pipeline / chitchat 一次性文本
+          case 'text':
+            assistantContent += event.content || '';
+            updateAssistant();
+            break;
+          // legacy tool 执行 action
           case 'action':
             if (event.action) {
               assistantActions = [...assistantActions, event.action];
               updateAssistant();
             }
             break;
+          // pipeline executor 执行结果。result 在后端是 dict，统一 JSON 序列化，
+          // 以保证 renderAction 中 `result.includes('"error"')` 能正确识别错误。
+          case 'tool_result':
+            if (event.tool) {
+              const action: ToolAction = {
+                tool: event.tool,
+                params: {},
+                result: JSON.stringify(event.result ?? {}),
+              };
+              assistantActions = [...assistantActions, action];
+              updateAssistant();
+            }
+            break;
+          // pipeline 多匹配：当前前端未对接 /ai/disambiguate 二次交互接口，
+          // 先以文案提示用户重新精确表述，避免静默失败。后续接入后再扩展。
+          case 'disambiguation':
+            assistantContent += (event.reply || '匹配到多个结果，请重新描述具体目标。') + '\n';
+            updateAssistant();
+            break;
+          // pipeline 删除确认：当前前端未对接 /ai/confirm 二次交互接口，
+          // 先以文案提示用户在界面手动操作，避免误删。后续接入后再扩展。
+          case 'confirmation':
+            assistantContent += (event.reply || '该操作需确认，请在对应页面手动执行。') + '\n';
+            updateAssistant();
+            break;
           case 'error':
+            console.warn('[AI][page] error event', event.content);
             assistantContent = event.content || '请求失败，请稍后重试。';
             updateAssistant();
             break;
           case 'done':
-            // Final update
+            console.info('[AI][page] done', {
+              assistantContentLen: assistantContent.length,
+              actionsCount: assistantActions.length,
+            });
             if (!assistantContent && assistantActions.length === 0) {
               assistantContent = '请求失败，请稍后重试。';
             }
             updateAssistant();
             break;
+          default:
+            console.warn('[AI][page] unknown event type', event.type, event);
         }
       });
-    } catch {
+    } catch (err) {
+      console.error('[AI][page] sendAiChatStream throw', err);
       if (!assistantContent) {
         assistantContent = '请求失败，请稍后重试。';
         updateAssistant();

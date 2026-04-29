@@ -25,6 +25,11 @@ def _execute_tool(
     tool_input: Dict[str, Any],
     skip_confirmation: bool = False,
 ) -> Any:
+    # 入口统一打印工具名 + 原始入参，便于追溯"前端到底传了什么 → DAO 实际收到什么"
+    logger.info(
+        f"[AI][tool] enter name={tool_name} user={user_id} "
+        f"raw_input_keys={list(tool_input.keys())} raw_input={tool_input}"
+    )
     try:
         # --- 删除拦截（统一在此处理）---
         _DELETE_NAMES = {
@@ -33,6 +38,7 @@ def _execute_tool(
         }
         if tool_name in _DELETE_NAMES and not skip_confirmation:
             # 由调用方（pipeline executor / tools_call_handler）决定如何呈现给用户
+            logger.info(f"[AI][tool] {tool_name} -> pending_confirmation (intercepted)")
             return {
                 "_pending_confirmation": True,
                 "intent": tool_name,
@@ -52,9 +58,18 @@ def _execute_tool(
                 params["start_date"] = datetime.fromisoformat(tool_input["start_date"].replace("Z", "+00:00"))
             if tool_input.get("end_date"):
                 parsed = datetime.fromisoformat(tool_input["end_date"].replace("Z", "+00:00"))
+                # 注意：DAO 端 end_date 用的是 ``<`` 比较（左闭右开），
+                # 这里 +1 天是为了兼容"用户只传日期串"的场景（YYYY-MM-DD 视作当天 00:00），
+                # 让 [today, today] -> [today 00:00, tomorrow 00:00) 能覆盖整天。
+                # 若调用方已传精确到秒/微秒的 ISO 串，会"多覆盖一天"——这是已知的折衷。
                 params["end_date"] = parsed + timedelta(days=1)
             limit = tool_input.get("limit", 50)
+            logger.info(
+                f"[AI][tool] list_tasks -> task_dao.get_user_tasks user={user_id} "
+                f"limit={limit} dao_params={params}"
+            )
             result = task_dao.get_user_tasks(user_id, skip=0, limit=limit, **params)
+            logger.info(f"[AI][tool] list_tasks <- count={len(result)}")
             return {"tasks": result, "count": len(result)}
 
         elif tool_name == "create_task":
@@ -104,7 +119,12 @@ def _execute_tool(
             if tool_input.get("folder_id"): params["folder_id"] = tool_input["folder_id"]
             if tool_input.get("tags"): params["tags"] = [t.strip() for t in tool_input["tags"].split(",")]
             limit = tool_input.get("limit", 50)
+            logger.info(
+                f"[AI][tool] list_notes -> note_dao.get_user_notes user={user_id} "
+                f"limit={limit} dao_params={params}"
+            )
             result = note_dao.get_user_notes(user_id, skip=0, limit=limit, **params)
+            logger.info(f"[AI][tool] list_notes <- count={len(result)}")
             return {"notes": result, "count": len(result)}
 
         elif tool_name == "create_note":
@@ -137,7 +157,14 @@ def _execute_tool(
 
         # --- 倒数日 ---
         elif tool_name == "list_countdowns":
-            result = countdown_dao.get_user_countdowns(user_id, category=tool_input.get("category"), limit=tool_input.get("limit", 50))
+            category = tool_input.get("category")
+            limit = tool_input.get("limit", 50)
+            logger.info(
+                f"[AI][tool] list_countdowns -> countdown_dao.get_user_countdowns "
+                f"user={user_id} category={category!r} limit={limit}"
+            )
+            result = countdown_dao.get_user_countdowns(user_id, category=category, limit=limit)
+            logger.info(f"[AI][tool] list_countdowns <- count={len(result)}")
             return {"countdowns": result, "count": len(result)}
 
         elif tool_name == "create_countdown":
@@ -167,7 +194,13 @@ def _execute_tool(
 
         # --- 计数器 ---
         elif tool_name == "list_counters":
-            result = counter_dao.get_user_counters(user_id, limit=tool_input.get("limit", 50))
+            limit = tool_input.get("limit", 50)
+            logger.info(
+                f"[AI][tool] list_counters -> counter_dao.get_user_counters "
+                f"user={user_id} limit={limit}"
+            )
+            result = counter_dao.get_user_counters(user_id, limit=limit)
+            logger.info(f"[AI][tool] list_counters <- count={len(result)}")
             return {"counters": result, "count": len(result)}
 
         elif tool_name == "create_counter":
@@ -212,7 +245,9 @@ def _execute_tool(
 
         # --- 清单 ---
         elif tool_name == "list_lists":
+            logger.info(f"[AI][tool] list_lists -> list_dao.get_user_lists user={user_id}")
             result = list_dao.get_user_lists(user_id)
+            logger.info(f"[AI][tool] list_lists <- count={len(result)}")
             return {"lists": result, "count": len(result)}
 
         elif tool_name == "create_list":
@@ -240,7 +275,9 @@ def _execute_tool(
 
         # --- 标签 ---
         elif tool_name == "list_tags":
+            logger.info(f"[AI][tool] list_tags -> tag_dao.get_user_tags user={user_id}")
             result = tag_dao.get_user_tags(user_id)
+            logger.info(f"[AI][tool] list_tags <- count={len(result)}")
             return {"tags": result, "count": len(result)}
 
         elif tool_name == "create_tag":
@@ -267,10 +304,14 @@ def _execute_tool(
             return {"success": True, "message": "标签已删除"}
 
         else:
+            logger.warning(f"[AI][tool] UNKNOWN_TOOL name={tool_name}")
             return {"error": f"未知工具: {tool_name}"}
 
     except Exception as e:
-        logger.error(f"Tool execution error: {tool_name} - {str(e)}")
+        logger.error(
+            f"[AI][tool] EXEC_FAIL name={tool_name} user={user_id} "
+            f"err={type(e).__name__}: {e}"
+        )
         return {"error": str(e)}
 
 

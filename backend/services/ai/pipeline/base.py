@@ -50,6 +50,51 @@ class Handler(ABC):
 
 SseEventPayload = Union[str, dict]
 
+# trace 前缀 → 友好层名。pipeline.py 和 chat_stream.py 的 done 日志会读这个表。
+_TRACE_PREFIX_TO_LAYER: list[tuple[str, str]] = [
+    ("rule:miss", "L1-rule-miss"),
+    ("rule:", "L1-rule"),
+    ("json:miss", "L2-json-miss"),
+    ("json:fail", "L2-json-fail"),
+    ("json:unknown", "L2-json-unknown"),
+    ("json:", "L2-json"),
+    ("tools:fail", "L3-tools-fail"),
+    ("tools:", "L3-tools"),
+]
+
+
+def summarize_hit(trace: list[str]) -> tuple[str, Optional[str]]:
+    """从 ctx.trace 解析"最终命中的层 + 意图"，用于 done 日志一行直观展示。
+
+    Returns:
+        ``(hit_layer, hit_intent)``：
+        - ``hit_layer``：``L1-rule`` / ``L2-json`` / ``L3-tools`` / ``L1-rule-miss`` 等；
+          没有任何 trace 时返回 ``"none"``。
+        - ``hit_intent``：trace entry 冒号后的子串（如 ``query_tasks`` / ``list_tasks``），
+          没有意图（如 ``rule:miss``）时返回 ``None``。
+
+    解析规则：
+        优先以**最后一条非 exec、非 fallback** 的 trace 为准，因为后续的 ``exec:ok``
+        只代表"成功执行"，不代表"哪一层产出的结果"。
+    """
+    if not trace:
+        return "none", None
+    # 反向找：跳过 exec:* 这种"执行结果"标记，找到真正决定意图的那一条。
+    for entry in reversed(trace):
+        if entry.startswith("exec:"):
+            continue
+        for prefix, layer in _TRACE_PREFIX_TO_LAYER:
+            if entry.startswith(prefix):
+                # 提取意图：取冒号后的部分；miss/fail/unknown 这种没有 intent
+                intent_part = entry.split(":", 1)[1] if ":" in entry else ""
+                intent = intent_part if intent_part and intent_part not in {
+                    "miss", "fail", "unknown",
+                } and not intent_part.startswith("fail:") else None
+                return layer, intent
+    # trace 全是 exec:* 之类，没找到匹配前缀
+    return "unknown", None
+
+
 def sse_event(event_type: str, payload: SseEventPayload) -> str:
     """Format a single SSE event line.
 
@@ -77,4 +122,5 @@ __all__ = [
     "ResolutionResult",
     "ResolutionStatus",
     "sse_event",
+    "summarize_hit",
 ]

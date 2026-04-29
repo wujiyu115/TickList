@@ -6,13 +6,14 @@ chain. Skipped layers are simply not instantiated so they incur zero
 runtime cost (no per-request "skip" branch).
 """
 
+import json
 import time
 from typing import AsyncGenerator, Optional
 
 from config.config_loader import config
 from utils.logger import logger
 
-from .base import ChatContext, Handler
+from .base import ChatContext, Handler, summarize_hit
 
 def _build_pipeline() -> Optional[Handler]:
     """Construct the handler chain based on current config. Returns the
@@ -63,11 +64,19 @@ async def pipeline_chat_stream(
     logger.info(
         f"[AI][pipeline] enter head={type(head).__name__} user={user_id} conv={conversation_id}"
     )
+    # 与 legacy claude_stream / openai_stream 一致：流首事件是 conversation_id，
+    # 否则前端拿不到 conv_id（旧 legacy 实现的契约 = 第一行就发 conversation_id）。
+    yield (
+        f"data: {json.dumps({'type': 'conversation_id', 'conversation_id': conversation_id})}"
+        "\n\n"
+    )
     async for ev in head.handle(ctx):
         yield ev
+    hit_layer, hit_intent = summarize_hit(ctx.trace)
+    hit_desc = f"{hit_layer}:{hit_intent}" if hit_intent else hit_layer
     logger.info(
         f"[AI][pipeline] done user={user_id} conv={conversation_id} "
-        f"trace={ctx.trace} elapsed={time.time() - started:.2f}s"
+        f"hit={hit_desc} trace={ctx.trace} elapsed={time.time() - started:.2f}s"
     )
 
 __all__ = ["pipeline_chat_stream", "_build_pipeline"]
