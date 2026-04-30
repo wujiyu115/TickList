@@ -85,6 +85,21 @@
 - ✅ 管理员用户管理（查看用户列表、冻结/解冻、角色管理、重置密码、创建用户）
 - ✅ 注册开关控制（`REGISTER_ENABLED` 环境变量）
 
+### AI 智能助手
+- ✅ 自然语言操作任务/笔记/倒数日/计数器/清单/标签（创建、查询、更新、删除）
+- ✅ 三层 Pipeline 架构（L1 规则层 → L2 JSON Mode → L3 Tools Call），逐层降级
+- ✅ L1 正则规则层：零延迟命中常见指令（"帮我创建任务 xxx"、"查一下今天的任务"等）
+- ✅ L2 JSON Mode 层：轻量 LLM 调用做意图分类 + 参数填充，3-5s 响应
+- ✅ L3 Tools Call 层：完整 function calling 兜底，处理复杂/多步操作
+- ✅ 多 LLM 提供商支持（Claude / OpenAI / DeepSeek 等兼容 API）
+- ✅ SSE 流式响应，实时展示文本 + 操作结果
+- ✅ 数据快照格式可配（JSON / TOON），TOON 格式节省 30-55% token
+- ✅ 各层超时可配，支持环境变量覆盖
+- ✅ 对话上下文保持（conversation_id）
+- ✅ 操作结果卡片展示（任务列表展开、倒数日列表等）
+- ✅ 删除操作二次确认
+- ✅ PC/移动端自适应面板
+
 ### 其他
 - ✅ 全站移动端适配（响应式布局，小屏幕侧边栏 Drawer 弹出）
 - ✅ 侧边栏面板折叠（持久化）
@@ -346,6 +361,7 @@ docker run -d \
 5. 生产环境需要修改 `config.yaml` 中的 `jwt.secret_key`
 6. 前后端集成部署时，后端会自动服务前端静态文件
 7. WebAuthn Passkeys 功能需要 HTTPS 环境（localhost 开发除外）
+8. AI 功能需要配置 LLM API Key（支持 Claude / OpenAI / DeepSeek 等兼容 API）
 
 ---
 
@@ -353,9 +369,9 @@ docker run -d \
 
 ### 技术栈
 
-**后端**：FastAPI + SQLAlchemy（SQLite/MySQL） + JWT + bcrypt + py_webauthn
+**后端**：FastAPI + SQLAlchemy（SQLite/MySQL） + JWT + bcrypt + py_webauthn + AI Pipeline（Claude/OpenAI/DeepSeek）
 
-**前端**：React 18 + TypeScript + Ant Design 5 + Rsbuild + Axios + @simplewebauthn/browser
+**前端**：React 18 + TypeScript + Ant Design 5 + Rsbuild + Axios + @simplewebauthn/browser + SSE
 
 ### 项目结构
 
@@ -369,7 +385,13 @@ ticklist/
 │   │   └── models.py       # SQLAlchemy 模型
 │   ├── middleware/          # 中间件（JWT、日志）
 │   ├── routes/             # API 路由（auth/task/calendar/focus/countdown/counter/data 等）
-│   ├── services/           # 后台服务（到期提醒调度）
+│   ├── services/           # 后台服务（到期提醒调度、AI Pipeline）
+│   │   └── ai/             # AI 模块
+│   │       ├── pipeline/   # 三层 Pipeline（RuleHandler → JsonModeHandler → ToolsCallHandler）
+│   │       ├── formatters/ # 数据快照格式化器（JSON / TOON）
+│   │       ├── system_prompt.py  # System prompt 构建
+│   │       ├── tools_schema.py   # 工具定义（Anthropic 格式）
+│   │       └── tools_executor.py # 工具执行器（DAO 调用）
 │   ├── utils/              # 工具函数
 │   ├── app.py              # 应用入口
 │   ├── config.yaml         # 配置文件
