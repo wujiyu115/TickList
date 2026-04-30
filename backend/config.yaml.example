@@ -45,6 +45,7 @@ ai:
   #   toon - Token-Oriented Object Notation，对同构数组用「表头+CSV行」节省 30-55% token
   # 可通过环境变量 AI_SYSTEM_PROMPT_FORMAT 覆盖
   system_prompt_format: json
+  tools_call_timeout: 60  # L3 tools_call 层 SDK 超时秒数（默认 60，可通过 AI_TOOLS_CALL_TIMEOUT 覆盖）
   # AI Pipeline 灰度配置（详见 docs/superpowers/specs/2026-04-27-ai-hybrid-pipeline-design.md）
   pipeline:
     enabled: false                  # 总开关：false=走 legacy tools_call；true=启用三层 pipeline

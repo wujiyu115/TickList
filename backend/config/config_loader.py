@@ -161,6 +161,7 @@ class ConfigLoader:
             'openai_model': self.get('ai.openai_model', 'gpt-4o', 'OPENAI_MODEL'),
             'openai_base_url': self.get('ai.openai_base_url', '', 'OPENAI_BASE_URL'),
             'system_prompt_format': self.get('ai.system_prompt_format', 'json', 'AI_SYSTEM_PROMPT_FORMAT'),
+            'tools_call_timeout': self.get('ai.tools_call_timeout', 60, 'AI_TOOLS_CALL_TIMEOUT'),
             'pipeline': pipeline_cfg,
         }
 

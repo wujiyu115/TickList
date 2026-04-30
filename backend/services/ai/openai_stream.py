@@ -58,11 +58,18 @@ async def _chat_stream_openai(
     openai_tools = _anthropic_tools_to_openai_tools()
 
     try:
+        import time as _time
         from openai import OpenAI
         base_url = ai_config.get("openai_base_url") or None
+        _tools_timeout = ai_config.get("tools_call_timeout", 60)
         client = OpenAI(
             api_key=ai_config.get("openai_api_key") or ai_config.get("api_key"),
             base_url=base_url if base_url else None,
+            timeout=_tools_timeout,
+        )
+        logger.info(
+            f"[AI][L3] openai client init base_url={base_url} model={ai_config.get('openai_model')} "
+            f"timeout={_tools_timeout}s tools_count={len(openai_tools)}"
         )
 
         # Convert history (Anthropic-style) to OpenAI message format
@@ -130,17 +137,23 @@ async def _chat_stream_openai(
         actions = []
         max_iterations = 5
 
+        _total_t0 = _time.time()
+
         for _iter_idx in range(max_iterations):
-            # ===== DEBUG: dump request payload =====
-            try:
-                _msgs_dump = json.dumps(oai_messages, ensure_ascii=False, indent=2, default=str)
-                logger.info(
-                    f"[OpenAI request] iter={_iter_idx} "
-                    f"model={ai_config.get('openai_model', 'gpt-4o')} "
-                    f"message_count={len(oai_messages)}\nmessages={_msgs_dump}"
-                )
-            except Exception as _log_err:
-                logger.warning(f"[OpenAI request] failed to dump messages: {_log_err}")
+            _iter_t0 = _time.time()
+            # 日志：仅输出消息数量和最后一条用户消息摘要，避免 dump 完整 prompt
+            _last_user_msg = ""
+            for _m in reversed(oai_messages):
+                if _m.get("role") == "user" and isinstance(_m.get("content"), str):
+                    _last_user_msg = _m["content"][:100]
+                    break
+            logger.info(
+                f"[AI][L3] iter={_iter_idx} message_count={len(oai_messages)} "
+                f"last_user_msg={_last_user_msg!r}"
+            )
+            logger.debug(
+                f"[AI][L3] iter={_iter_idx} full_messages={json.dumps(oai_messages, ensure_ascii=False, default=str)[:2000]}"
+            )
 
             try:
                 stream = client.chat.completions.create(
@@ -150,7 +163,6 @@ async def _chat_stream_openai(
                     stream=True,
                 )
             except Exception as _req_err:
-                # Try to surface OpenAI's full error body for diagnosis.
                 _resp_body = None
                 _resp = getattr(_req_err, "response", None)
                 if _resp is not None:
@@ -159,7 +171,8 @@ async def _chat_stream_openai(
                     except Exception:
                         _resp_body = None
                 logger.error(
-                    f"[OpenAI response] request failed. error={_req_err} body={_resp_body}"
+                    f"[AI][L3] iter={_iter_idx} request FAILED elapsed={_time.time()-_iter_t0:.2f}s "
+                    f"error={_req_err} body={_resp_body}"
                 )
                 raise
 
@@ -197,6 +210,13 @@ async def _chat_stream_openai(
                             collected_tool_calls[idx]["arguments"] += tc_delta.function.arguments
 
             has_tool_use = len(collected_tool_calls) > 0
+            _iter_elapsed = _time.time() - _iter_t0
+            _tool_names = [tc["name"] for tc in collected_tool_calls.values()] if has_tool_use else []
+            logger.info(
+                f"[AI][L3] iter={_iter_idx} stream_elapsed={_iter_elapsed:.2f}s "
+                f"has_tool_use={has_tool_use} tool_names={_tool_names} "
+                f"text_len={len(collected_text)} reasoning_len={len(collected_reasoning)}"
+            )
 
             if has_tool_use:
                 assistant_msg = {"role": "assistant"}
@@ -272,6 +292,11 @@ async def _chat_stream_openai(
 
             if not has_tool_use:
                 reply_text = collected_text
+                _total_elapsed = _time.time() - _total_t0
+                logger.info(
+                    f"[AI][L3] done iterations={_iter_idx + 1} total_elapsed={_total_elapsed:.2f}s "
+                    f"reply_len={len(reply_text)}"
+                )
                 # If a reasoning trace exists, persist it as a structured block list so
                 # the next turn can round-trip `reasoning_content` back to the API.
                 if collected_reasoning:
