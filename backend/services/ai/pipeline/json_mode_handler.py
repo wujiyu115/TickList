@@ -16,8 +16,16 @@ from ..system_prompt import _build_system_prompt
 from .base import ChatContext, Handler, ResolutionResult, ResolutionStatus, sse_event
 from .executor import execute_resolution
 
-_JSON_MODE_TIMEOUT_SECONDS = 8
+_JSON_MODE_TIMEOUT_SECONDS_DEFAULT = 15
 _JSON_MODE_MAX_TOKENS = 1024
+
+
+def _get_json_mode_timeout() -> int:
+    """从配置 ai.pipeline.json_mode_timeout 读取超时秒数，默认 15s。"""
+    from config.config_loader import config
+    return config.get("ai.pipeline.json_mode_timeout",
+                      _JSON_MODE_TIMEOUT_SECONDS_DEFAULT,
+                      "AI_PIPELINE_JSON_MODE_TIMEOUT")
 
 _VALID_INTENTS = {
     "create_task", "update_task", "delete_task", "list_tasks",
@@ -64,55 +72,104 @@ def _parse_json_payload(raw: str) -> dict:
 class JsonModeHandler(Handler):
     async def _call_llm_json_mode(self, ctx: ChatContext) -> str:
         """Call the configured LLM in JSON mode and return the raw string."""
+        import time as _time
         from config.config_loader import config
 
         ai_config = config.get_ai_config()
         provider = ai_config.get("provider", "claude")
+
+        _t_prompt0 = _time.time()
         prompt = _build_json_mode_prompt(ctx.user_id)
+        _prompt_elapsed = _time.time() - _t_prompt0
+        logger.info(
+            f"[AI][L2-json][call] provider={provider} build_prompt_elapsed={_prompt_elapsed:.2f}s "
+            f"prompt_chars={len(prompt)} user_msg_chars={len(ctx.message)}"
+        )
 
         if provider == "openai":
             from openai import OpenAI
+            base_url = ai_config.get("openai_base_url") or None
+            model = ai_config.get("openai_model") or ai_config.get("model")
+            logger.info(
+                f"[AI][L2-json][call] openai base_url={base_url} model={model} "
+                f"max_tokens={_JSON_MODE_MAX_TOKENS}"
+            )
             client = OpenAI(
                 api_key=ai_config.get("openai_api_key") or ai_config.get("api_key"),
-                base_url=ai_config.get("openai_base_url") or None,
+                base_url=base_url,
+                timeout=_get_json_mode_timeout(),
             )
             # Run the sync SDK in a thread to remain async-friendly.
             def _sync_call() -> str:
-                resp = client.chat.completions.create(
-                    model=ai_config.get("openai_model") or ai_config.get("model"),
-                    messages=[
-                        {"role": "system", "content": prompt},
-                        {"role": "user", "content": ctx.message},
-                    ],
-                    response_format={"type": "json_object"},
-                    max_tokens=_JSON_MODE_MAX_TOKENS,
-                    temperature=0,
+                _t_sdk0 = _time.time()
+                logger.info(f"[AI][L2-json][sdk] openai.create begin model={model}")
+                try:
+                    resp = client.chat.completions.create(
+                        model=model,
+                        messages=[
+                            {"role": "system", "content": prompt},
+                            {"role": "user", "content": ctx.message},
+                        ],
+                        response_format={"type": "json_object"},
+                        max_tokens=_JSON_MODE_MAX_TOKENS,
+                        temperature=0,
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"[AI][L2-json][sdk] openai.create FAILED elapsed={_time.time()-_t_sdk0:.2f}s "
+                        f"err={type(e).__name__}: {e}"
+                    )
+                    raise
+                _sdk_elapsed = _time.time() - _t_sdk0
+                content = resp.choices[0].message.content or ""
+                usage = getattr(resp, "usage", None)
+                logger.info(
+                    f"[AI][L2-json][sdk] openai.create OK elapsed={_sdk_elapsed:.2f}s "
+                    f"resp_chars={len(content)} usage={usage}"
                 )
-                return resp.choices[0].message.content or ""
+                return content
             return await asyncio.to_thread(_sync_call)
 
         # Claude path: no native json mode; rely on prompt + low temperature.
         import anthropic
+        model = ai_config["model"]
+        logger.info(f"[AI][L2-json][call] claude model={model} max_tokens={_JSON_MODE_MAX_TOKENS}")
         client = anthropic.Anthropic(api_key=ai_config["api_key"])
         def _sync_call_claude() -> str:
-            resp = client.messages.create(
-                model=ai_config["model"],
-                max_tokens=_JSON_MODE_MAX_TOKENS,
-                system=prompt + "\n严禁输出 JSON 之外的任何字符。",
-                messages=[{"role": "user", "content": ctx.message}],
-                temperature=0,
-            )
+            _t_sdk0 = _time.time()
+            logger.info(f"[AI][L2-json][sdk] claude.messages.create begin model={model}")
+            try:
+                resp = client.messages.create(
+                    model=model,
+                    max_tokens=_JSON_MODE_MAX_TOKENS,
+                    system=prompt + "\n严禁输出 JSON 之外的任何字符。",
+                    messages=[{"role": "user", "content": ctx.message}],
+                    temperature=0,
+                )
+            except Exception as e:
+                logger.error(
+                    f"[AI][L2-json][sdk] claude.create FAILED elapsed={_time.time()-_t_sdk0:.2f}s "
+                    f"err={type(e).__name__}: {e}"
+                )
+                raise
+            _sdk_elapsed = _time.time() - _t_sdk0
             parts = [b.text for b in resp.content if getattr(b, "type", None) == "text"]
-            return "".join(parts)
+            text = "".join(parts)
+            logger.info(
+                f"[AI][L2-json][sdk] claude.create OK elapsed={_sdk_elapsed:.2f}s "
+                f"resp_chars={len(text)} usage={getattr(resp, 'usage', None)}"
+            )
+            return text
         return await asyncio.to_thread(_sync_call_claude)
 
     async def handle(self, ctx: ChatContext) -> AsyncGenerator[str, None]:
         import time as _time
-        logger.info(f"[AI][L2-json] enter user={ctx.user_id} timeout={_JSON_MODE_TIMEOUT_SECONDS}s")
+        _timeout = _get_json_mode_timeout()
+        logger.info(f"[AI][L2-json] enter user={ctx.user_id} timeout={_timeout}s")
         _t0 = _time.time()
         try:
             raw = await asyncio.wait_for(
-                self._call_llm_json_mode(ctx), timeout=_JSON_MODE_TIMEOUT_SECONDS,
+                self._call_llm_json_mode(ctx), timeout=_timeout,
             )
         except asyncio.TimeoutError:
             logger.warning(

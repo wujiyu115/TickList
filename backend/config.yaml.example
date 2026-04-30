@@ -50,3 +50,4 @@ ai:
     enabled: false                  # 总开关：false=走 legacy tools_call；true=启用三层 pipeline
     enable_rule_layer: true         # 是否启用规则层：false=跳过规则层，直接进入 JSON Mode 层
     enable_json_mode_layer: true    # 是否启用 JSON Mode 层：false=规则未命中时直接降级到 tools_call
+    json_mode_timeout: 15           # L2 JSON Mode 层的 LLM 调用超时秒数（默认 15，可通过 AI_PIPELINE_JSON_MODE_TIMEOUT 覆盖）
