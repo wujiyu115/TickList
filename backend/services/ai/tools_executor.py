@@ -89,6 +89,7 @@ def _execute_tool(
                 list_id=tool_input.get("list_id"),
                 due_date=due_date,
                 start_time=start_time,
+                content=tool_input.get("content", ""),
                 tags=tags,
                 user_id=user_id,
             )
@@ -104,6 +105,8 @@ def _execute_tool(
                 update_data["due_date"] = datetime.fromisoformat(tool_input["due_date"].replace("Z", "+00:00")).isoformat()
             if tool_input.get("tags"):
                 update_data["tags"] = [t.strip() for t in tool_input["tags"].split(",")]
+            if "content" in tool_input:
+                update_data["content"] = tool_input["content"]
             if update_data.get("status") == "completed":
                 update_data["completed_at"] = datetime.now().isoformat()
             task_dao.update_task(tool_input["task_id"], user_id, update_data)

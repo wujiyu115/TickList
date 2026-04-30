@@ -73,6 +73,53 @@ class TestToolsExecutorSkipConfirmation:
         result = _execute_tool("u1", "delete_task", {"task_id": "t1"}, skip_confirmation=True)
         mock_dao.delete_task.assert_called_once_with("t1", "u1")
 
+
+class TestToolsExecutorContent:
+    """Verify content field is passed through for task create/update."""
+
+    @patch("services.ai.tools_executor.task_dao")
+    def test_create_task_with_content(self, mock_dao):
+        from services.ai.tools_executor import _execute_tool
+        mock_dao.create_task.return_value = {"id": "t1", "title": "test", "content": '[{"text":"a","checked":false}]'}
+        result = _execute_tool("u1", "create_task", {
+            "title": "test",
+            "content": '[{"text":"a","checked":false}]',
+        })
+        call_args = mock_dao.create_task.call_args[0][0]
+        assert call_args.content == '[{"text":"a","checked":false}]'
+
+    @patch("services.ai.tools_executor.task_dao")
+    def test_update_task_with_content(self, mock_dao):
+        from services.ai.tools_executor import _execute_tool
+        mock_dao.get_task_by_id.return_value = {"id": "t1", "title": "test", "content": '[{"text":"b","checked":true}]'}
+        result = _execute_tool("u1", "update_task", {
+            "task_id": "t1",
+            "content": '[{"text":"b","checked":true}]',
+        })
+        call_args = mock_dao.update_task.call_args
+        update_data = call_args[0][2]
+        assert update_data["content"] == '[{"text":"b","checked":true}]'
+
+    @patch("services.ai.tools_executor.task_dao")
+    def test_create_task_without_content_defaults_empty(self, mock_dao):
+        from services.ai.tools_executor import _execute_tool
+        mock_dao.create_task.return_value = {"id": "t1", "title": "test", "content": ''}
+        result = _execute_tool("u1", "create_task", {"title": "test"})
+        call_args = mock_dao.create_task.call_args[0][0]
+        assert call_args.content == ''
+
+    @patch("services.ai.tools_executor.task_dao")
+    def test_update_task_content_empty_string(self, mock_dao):
+        from services.ai.tools_executor import _execute_tool
+        mock_dao.get_task_by_id.return_value = {"id": "t1", "title": "test", "content": ''}
+        result = _execute_tool("u1", "update_task", {
+            "task_id": "t1",
+            "content": "",
+        })
+        call_args = mock_dao.update_task.call_args
+        update_data = call_args[0][2]
+        assert update_data["content"] == ""
+
 from fastapi.testclient import TestClient
 
 @pytest.mark.asyncio
