@@ -136,6 +136,31 @@ class TestCreateTaskRule:
         assert result.params["title"] == "写周报"
         assert result.params.get("due_date") is not None
 
+    def test_content_with_checklist_marker(self):
+        result = CreateTaskRule().try_match(_ctx("添加任务 出差准备，检查项：带护照、订酒店、查天气"))
+        assert result is not None
+        assert result.params["title"] == "出差准备"
+        assert "content" in result.params
+        import json
+        items = json.loads(result.params["content"])
+        assert len(items) == 3
+        assert items[0]["text"] == "带护照"
+        assert items[0]["checked"] is False
+
+    def test_content_with_dunhao_separator(self):
+        result = CreateTaskRule().try_match(_ctx("新建任务 购物清单：牛奶、鸡蛋、面包"))
+        assert result is not None
+        assert result.params["title"] == "购物清单"
+        import json
+        items = json.loads(result.params["content"])
+        assert len(items) == 3
+        assert items[0]["text"] == "牛奶"
+
+    def test_no_content_marker_no_content_param(self):
+        result = CreateTaskRule().try_match(_ctx("加任务 写日报"))
+        assert result is not None
+        assert "content" not in result.params
+
 class TestCompleteTaskRule:
     @patch("services.ai.pipeline.rules.task_rules.task_dao")
     def test_single_match_executable(self, mock_dao):

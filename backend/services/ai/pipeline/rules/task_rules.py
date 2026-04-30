@@ -11,6 +11,7 @@ return ``status=PASS`` so the dispatcher can try the next rule (or fall
 through to the next handler).
 """
 
+import json as _json
 import re
 from datetime import datetime, timedelta
 from typing import Optional
@@ -223,6 +224,56 @@ def _resolve_time_window(window: str) -> tuple[datetime, datetime, str]:
     # 兜底
     return today, end_of_day(today), "今天的任务如下："
 
+
+# Content marker word + colon.  The marker word is kept in the title;
+# only the colon is the split point.  Capture groups:
+#   group(1) = marker word,  group(2) = colon char.
+_CONTENT_MARKER_PATTERN = re.compile(
+    r"(检查项|检查事项|清单|检查清单|checklist|content|items)([:：])"
+)
+
+# Marker words that are *separators* — they introduce a list and are NOT
+# part of the title.  "清单" can be part of the title ("购物清单"), so
+# it stays in title when not preceded by a comma.
+_CONTENT_SEPARATOR_WORDS = {"检查项", "检查事项", "检查清单", "checklist", "content", "items"}
+
+
+def _extract_content(text: str) -> tuple[str, str | None]:
+    """Split text at content markers. Returns (title_part, content_json_or_None).
+
+    If no marker found, returns (text, None).
+    If marker found, splits into title + items, parses items into JSON string.
+    The marker word stays in the title if it is naturally part of it (e.g.
+    "购物清单"), but is stripped if it's a pure separator after a comma
+    (e.g. "出差准备，检查项：...").
+    Items are split by comma/顿号/newline.
+    """
+    m = _CONTENT_MARKER_PATTERN.search(text)
+    if not m:
+        return text, None
+    # Title = everything before the colon (keeps the marker word in title).
+    colon_start = m.start(2)
+    title = text[:colon_start]
+    marker_word = m.group(1)
+    # If the marker word is a pure separator (not "清单") and it follows
+    # a comma/顿号, strip it from the title.
+    if marker_word in _CONTENT_SEPARATOR_WORDS:
+        title = title[:m.start(1)].strip().rstrip("，,、")
+    else:
+        # "清单" — keep it in the title, just strip trailing commas.
+        title = title.strip().rstrip("，,、")
+    items_text = text[m.end():].strip()
+    items = re.split(r"[，,、\n]", items_text)
+    items = [i.strip() for i in items if i.strip()]
+    if not items:
+        return title, None
+    content_json = _json.dumps(
+        [{"text": item, "checked": False} for item in items],
+        ensure_ascii=False,
+    )
+    return title, content_json
+
+
 class CreateTaskRule:
     name = "create_task"
 
@@ -233,10 +284,13 @@ class CreateTaskRule:
         title_raw = m.group(1).strip()
         if not title_raw:
             return None
-        title, due_date = extract_date(title_raw)
+        title, content_json = _extract_content(title_raw)
+        title, due_date = extract_date(title)
         params: dict = {"title": title}
         if due_date is not None:
             params["due_date"] = due_date.isoformat()
+        if content_json is not None:
+            params["content"] = content_json
         return ResolutionResult(
             status=ResolutionStatus.EXECUTABLE,
             intent="create_task",
