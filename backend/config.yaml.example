@@ -40,6 +40,11 @@ ai:
   openai_api_key: ""  # Set via env OPENAI_API_KEY
   openai_model: gpt-4o  # Set via env OPENAI_MODEL
   openai_base_url: ""  # Set via env OPENAI_BASE_URL (for compatible APIs)
+  # 用户数据快照在 system prompt 中的格式：
+  #   json - 自描述、稳定（默认基线）
+  #   toon - Token-Oriented Object Notation，对同构数组用「表头+CSV行」节省 30-55% token
+  # 可通过环境变量 AI_SYSTEM_PROMPT_FORMAT 覆盖
+  system_prompt_format: json
   # AI Pipeline 灰度配置（详见 docs/superpowers/specs/2026-04-27-ai-hybrid-pipeline-design.md）
   pipeline:
     enabled: false                  # 总开关：false=走 legacy tools_call；true=启用三层 pipeline
