@@ -25,7 +25,7 @@ from typing import Any, Dict, List, Sequence
 
 # 各实体使用的字段顺序（与原 system_prompt.py 中的 *_summaries 保持一致）
 _SCHEMAS = {
-    "tasks":      ["id", "title", "status", "priority", "due_date", "tags"],
+    "tasks":      ["id", "title", "status", "priority", "due_date", "list_id", "tags"],
     "notes":      ["id", "title", "folder_id", "tags"],
     "counters":   ["id", "name", "value"],
     "countdowns": ["id", "title", "target_date"],

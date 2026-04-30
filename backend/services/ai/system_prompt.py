@@ -38,7 +38,8 @@ def _collect_snapshot(user_id: str) -> dict:
     return {
         "tasks": [
             {"id": t["id"], "title": t["title"], "status": t["status"],
-             "priority": t["priority"], "due_date": t.get("due_date"), "tags": t.get("tags", [])}
+             "priority": t["priority"], "due_date": t.get("due_date"),
+             "list_id": t.get("list_id"), "tags": t.get("tags", [])}
             for t in tasks
         ],
         "notes": [

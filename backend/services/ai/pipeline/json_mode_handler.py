@@ -42,18 +42,27 @@ def _build_json_mode_prompt(user_id: str) -> str:
     base = _build_system_prompt(user_id)
     json_instr = """
 ---
-请严格输出以下结构的 JSON（只输出 JSON，不要任何额外解释）：
-{
-  "intent": "create_task | update_task | delete_task | list_tasks | create_note | ... | chitchat | unknown",
-  "params": { ... 与 intent 对应的参数（同 tools 的 input schema） ... },
-  "needs_confirmation": false,
-  "reply": "给用户的自然语言回复"
-}
-- 闲聊（你好/感谢/介绍自己）→ intent="chitchat"，reply 写自然回复，params 空对象
-- 无法识别 → intent="unknown"，reply 空字符串
-- 删除类操作 → needs_confirmation=true
-- 涉及到现有实体时，必须从上方数据快照中找到对应 id 填入 params
-- 不要返回 schema 之外的字段
+只输出JSON，不要解释。格式：
+{"intent":"<意图>","params":{...},"needs_confirmation":false,"reply":""}
+
+意图：create_task|update_task|delete_task|list_tasks|create_note|update_note|delete_note|list_notes|create_countdown|update_countdown|delete_countdown|list_countdowns|create_counter|update_counter|delete_counter|list_counters|create_list|update_list|delete_list|list_lists|create_tag|update_tag|delete_tag|list_tags|chitchat|unknown
+
+params参考：
+- list_tasks: {status?, priority?, list_id?, tag?, due_date_start?, due_date_end?}
+- create_task: {title, priority?, due_date?, list_id?, tags?}
+- update_task: {id, title?, status?, priority?, due_date?}
+- delete_task: {id}
+- 其他实体同理
+
+关键规则：
+1. 用户提到清单名（如"当周工作""生活"等）→ 从上方 lists 快照找到对应 id 填入 list_id
+2. 用户提到标签名 → 从上方 tags 快照找到对应 id/name 填入 tag
+3. 用户提到任务名 → 从上方 tasks 快照匹配 id
+4. 状态映射：未完成/待办→status="pending"，已完成/做完→status="completed"，进行中→status="in_progress"
+5. 闲聊→intent="chitchat"，reply填回复
+6. 无法识别→intent="unknown"
+7. 删除→needs_confirmation=true
+8. 非chitchat时reply留空
 """
     return base + json_instr
 
@@ -202,7 +211,7 @@ class JsonModeHandler(Handler):
 
         logger.info(
             f"[AI][L2-json] llm_resp_ok user={ctx.user_id} elapsed={_time.time() - _t0:.2f}s "
-            f"raw_len={len(raw)}"
+            f"raw_len={len(raw)} raw={raw[:500]!r}"
         )
 
         try:
@@ -210,7 +219,7 @@ class JsonModeHandler(Handler):
         except Exception as e:
             logger.warning(
                 f"[AI][L2-json] PARSE_FAIL user={ctx.user_id} err={type(e).__name__}: {e} "
-                f"raw={raw[:200]!r}"
+                f"raw={raw[:500]!r}"
             )
             ctx.trace.append(f"json:fail:{type(e).__name__}")
             ctx.upstream_hint = {"reason": "json_mode_failed", "raw": raw[:200]}
@@ -224,10 +233,18 @@ class JsonModeHandler(Handler):
             return
 
         intent = payload["intent"]
+        params = payload.get("params", {}) or {}
         reply_text = payload.get("reply", "") or ""
 
+        logger.info(
+            f"[AI][L2-json] parsed user={ctx.user_id} intent={intent} "
+            f"params={json.dumps(params, ensure_ascii=False)[:300]} "
+            f"reply={reply_text[:200]!r} "
+            f"needs_confirmation={payload.get('needs_confirmation')}"
+        )
+
         if intent == "unknown":
-            logger.info(f"[AI][L2-json] intent=UNKNOWN user={ctx.user_id} -> fallback to L3")
+            logger.info(f"[AI][L2-json] intent=UNKNOWN user={ctx.user_id} reply={reply_text[:200]!r} -> fallback to L3")
             ctx.trace.append("json:unknown")
             ctx.upstream_hint = {"reason": "json_mode_unknown"}
             if self.next_handler is None:
