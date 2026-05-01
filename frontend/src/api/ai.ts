@@ -34,6 +34,41 @@ export interface StreamEvent {
   reply?: string;
 }
 
+/**
+ * Generic SSE stream reader. Takes a fetch Response and calls onEvent for each parsed StreamEvent.
+ */
+const readSSEStream = async (
+  response: Response,
+  onEvent: (event: StreamEvent) => void,
+): Promise<void> => {
+  const reader = response.body?.getReader();
+  if (!reader) {
+    console.warn('[AI][api] response.body is null');
+    onEvent({ type: 'error', content: '无法读取响应' });
+    return;
+  }
+  const decoder = new TextDecoder();
+  let buffer = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        try {
+          const event: StreamEvent = JSON.parse(line.slice(6));
+          console.debug('[AI][api] event', event.type, event);
+          onEvent(event);
+        } catch (e) {
+          console.warn('[AI][api] SSE parse fail', line, e);
+        }
+      }
+    }
+  }
+};
+
 export const sendAiChatStream = async (
   message: string,
   conversationId?: string,
@@ -64,43 +99,62 @@ export const sendAiChatStream = async (
     return;
   }
 
-  const reader = response.body?.getReader();
-  if (!reader) {
-    console.warn('[AI][api] response.body is null');
-    onEvent({ type: 'error', content: '无法读取响应' });
+  await readSSEStream(response, onEvent);
+  console.info('[AI][api] stream end', { elapsedMs: Math.round(performance.now() - _t0) });
+};
+
+export interface AiConfirmPayload {
+  conversation_id: string;
+  pending_intent: string;
+  params: Record<string, any>;
+  confirmed: boolean;
+}
+
+export const sendAiConfirmStream = async (
+  payload: AiConfirmPayload,
+  onEvent: (event: StreamEvent) => void,
+): Promise<void> => {
+  const token = localStorage.getItem('token');
+  const response = await fetch('/api/ai/confirm', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    onEvent({ type: 'error', content: '确认请求失败，请稍后重试' });
     onEvent({ type: 'done' });
     return;
   }
+  await readSSEStream(response, onEvent);
+};
 
-  const decoder = new TextDecoder();
-  let buffer = '';
-  let eventCount = 0;
+export interface AiDisambiguatePayload {
+  conversation_id: string;
+  pending_intent: string;
+  selected_id: string;
+  extra_params: Record<string, any>;
+}
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      console.info('[AI][api] stream end', {
-        eventCount,
-        elapsedMs: Math.round(performance.now() - _t0),
-      });
-      break;
-    }
-
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
-
-    for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        try {
-          const event: StreamEvent = JSON.parse(line.slice(6));
-          eventCount += 1;
-          console.debug('[AI][api] event', event.type, event);
-          onEvent(event);
-        } catch (e) {
-          console.warn('[AI][api] parse fail', line, e);
-        }
-      }
-    }
+export const sendAiDisambiguateStream = async (
+  payload: AiDisambiguatePayload,
+  onEvent: (event: StreamEvent) => void,
+): Promise<void> => {
+  const token = localStorage.getItem('token');
+  const response = await fetch('/api/ai/disambiguate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    onEvent({ type: 'error', content: '选择请求失败，请稍后重试' });
+    onEvent({ type: 'done' });
+    return;
   }
+  await readSSEStream(response, onEvent);
 };

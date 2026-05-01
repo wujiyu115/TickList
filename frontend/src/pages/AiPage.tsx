@@ -3,6 +3,7 @@ import { Input, Button, Tag, Typography } from 'antd';
 import { SendOutlined, RobotOutlined, UserOutlined, LoadingOutlined } from '@ant-design/icons';
 import { sendAiChatStream, StreamEvent } from '../api/ai';
 import { AiChatMessage, ToolAction } from '../types';
+import AiPendingUI from '../components/AiPendingUI';
 import './AiPage.less';
 
 const { Text } = Typography;
@@ -85,17 +86,41 @@ const AiPage: React.FC = () => {
               updateAssistant();
             }
             break;
-          // pipeline 多匹配：当前前端未对接 /ai/disambiguate 二次交互接口，
-          // 先以文案提示用户重新精确表述，避免静默失败。后续接入后再扩展。
+          // pipeline 多匹配：存储 payload 供交互 UI 渲染
           case 'disambiguation':
-            assistantContent += (event.reply || '匹配到多个结果，请重新描述具体目标。') + '\n';
             updateAssistant();
+            setMessages(prev => {
+              const updated = [...prev];
+              const msg = updated[updated.length - 1];
+              updated[updated.length - 1] = {
+                ...msg,
+                pendingDisambiguation: {
+                  pending_intent: event.pending_intent || '',
+                  candidates: event.candidates || [],
+                  extra_params: event.extra_params || {},
+                  reply: event.reply || '匹配到多个结果，请选择目标。',
+                },
+              };
+              return updated;
+            });
             break;
-          // pipeline 删除确认：当前前端未对接 /ai/confirm 二次交互接口，
-          // 先以文案提示用户在界面手动操作，避免误删。后续接入后再扩展。
+          // pipeline 删除确认：存储 payload 供交互 UI 渲染
           case 'confirmation':
-            assistantContent += (event.reply || '该操作需确认，请在对应页面手动执行。') + '\n';
             updateAssistant();
+            setMessages(prev => {
+              const updated = [...prev];
+              const msg = updated[updated.length - 1];
+              updated[updated.length - 1] = {
+                ...msg,
+                pendingConfirmation: {
+                  pending_intent: event.pending_intent || '',
+                  params: event.params || {},
+                  target_description: event.target_description || '',
+                  reply: event.reply || '该操作需确认。',
+                },
+              };
+              return updated;
+            });
             break;
           case 'error':
             console.warn('[AI][page] error event', event.content);
@@ -126,6 +151,14 @@ const AiPage: React.FC = () => {
       setLoading(false);
     }
   }, [inputValue, loading, conversationId]);
+
+  const handleMessageUpdate = useCallback((index: number, updated: AiChatMessage) => {
+    setMessages(prev => {
+      const copy = [...prev];
+      copy[index] = updated;
+      return copy;
+    });
+  }, []);
 
   const renderAction = (action: ToolAction, idx: number) => {
     const toolLabelMap: Record<string, string> = {
@@ -185,6 +218,14 @@ const AiPage: React.FC = () => {
                 <div className="ai-message-actions">
                   {msg.actions.map((a, i) => renderAction(a, i))}
                 </div>
+              )}
+              {(msg.pendingConfirmation || msg.pendingDisambiguation) && (
+                <AiPendingUI
+                  message={msg}
+                  messageIndex={idx}
+                  conversationId={conversationId}
+                  onMessageUpdate={handleMessageUpdate}
+                />
               )}
               {msg.role === 'assistant' && !msg.content && loading && (
                 <LoadingOutlined />

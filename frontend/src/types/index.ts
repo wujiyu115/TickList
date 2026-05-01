@@ -389,6 +389,21 @@ export interface NoteUpdateRequest {
   tags?: string[];
 }
 
+// AI 二次交互类型
+export interface PendingConfirmation {
+  pending_intent: string;
+  params: Record<string, any>;
+  target_description: string;
+  reply: string;
+}
+
+export interface PendingDisambiguation {
+  pending_intent: string;
+  candidates: Array<{ id: string; title: string }>;
+  extra_params: Record<string, any>;
+  reply: string;
+}
+
 // AI 对话类型
 export interface ToolAction {
   tool: string;
@@ -401,6 +416,8 @@ export interface AiChatMessage {
   content: string;
   actions?: ToolAction[];
   timestamp?: string;
+  pendingConfirmation?: PendingConfirmation;
+  pendingDisambiguation?: PendingDisambiguation;
 }
 
 export interface AiChatResponse {

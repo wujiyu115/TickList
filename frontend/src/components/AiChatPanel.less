@@ -135,6 +135,48 @@
           background: var(--ant-color-warning-bg);
         }
       }
+
+      // 确认/歧义交互 UI
+      .ai-pending-confirmation,
+      .ai-pending-disambiguation {
+        margin-top: 8px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: var(--ant-color-fill-quaternary);
+
+        .ai-pending-prompt {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          margin-bottom: 6px;
+          font-size: 13px;
+        }
+
+        .ai-pending-buttons {
+          display: flex;
+          gap: 6px;
+        }
+
+        .ai-pending-candidates {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 4px;
+
+          .ai-pending-candidate-btn {
+            border: 1px solid var(--ant-color-border);
+            border-radius: 6px;
+            font-size: 12px;
+            padding: 2px 8px;
+            height: auto;
+            line-height: 1.5;
+
+            &:hover {
+              background: var(--ant-color-fill-tertiary);
+              border-color: var(--ant-color-primary);
+            }
+          }
+        }
+      }
     }
   }
 
