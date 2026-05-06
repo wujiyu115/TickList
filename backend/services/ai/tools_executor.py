@@ -107,8 +107,8 @@ def _execute_tool(
                 update_data["tags"] = [t.strip() for t in tool_input["tags"].split(",")]
             if "content" in tool_input:
                 update_data["content"] = tool_input["content"]
-            if update_data.get("status") == "completed":
-                update_data["completed_at"] = datetime.now().isoformat()
+            # completed_at 由 task_dao.update_task 内部统一兜底（completed → 写入 now，
+            # 反完成 → 清空），这里不再重复设置，避免与 DAO 行为漂移。
             task_dao.update_task(tool_input["task_id"], user_id, update_data)
             return task_dao.get_task_by_id(tool_input["task_id"], user_id)
 

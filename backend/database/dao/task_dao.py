@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import json
 from typing import List, Optional, Dict
 from datetime import datetime
 from sqlalchemy import and_, or_, desc, asc, func
@@ -9,6 +10,51 @@ from database.models import TaskModel, TaskChildModel, TaskTagModel
 from models import Task
 from utils.logger import logger
 import uuid
+
+
+def _normalize_content_completed_at(content: Optional[str], now_iso: str,
+                                    force_check_all: bool = False) -> Optional[str]:
+    """归一化任务 content（检查事项 JSON）里子项的 completedAt。
+
+    content schema：``[{text:str, checked:bool, completedAt?:str}]``。
+    所有写入路径（REST/AI/导入）都不一定会显式补 completedAt——把这个不变量
+    下沉到 DAO 层，保证「checked=true 必然有 completedAt」。
+
+    Args:
+        content: 原始 content 字符串。None / 空串 / 非 JSON 数组都原样返回，不做处理。
+        now_iso: 兜底用的当前时间 ISO 串。
+        force_check_all: True 表示「父任务被置为 completed，所有未勾选的子项也一并勾选」，
+            用于级联完成场景；False 仅修复"已勾选但缺 completedAt"的子项。
+
+    Returns:
+        归一化后的 content 字符串；若没有任何变更则返回原值（避免无谓写入）。
+    """
+    if not content:
+        return content
+    try:
+        items = json.loads(content)
+    except (ValueError, TypeError):
+        # 非 JSON（可能是普通文本备注），原样保留
+        return content
+    if not isinstance(items, list):
+        return content
+
+    changed = False
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        if force_check_all and not item.get('checked'):
+            item['checked'] = True
+            item['completedAt'] = now_iso
+            changed = True
+            continue
+        if item.get('checked') and not item.get('completedAt'):
+            item['completedAt'] = now_iso
+            changed = True
+
+    if not changed:
+        return content
+    return json.dumps(items, ensure_ascii=False)
 
 
 class TaskDAO:
@@ -145,14 +191,53 @@ class TaskDAO:
     def update_task(self, task_id: str, user_id: str, update_data: Dict) -> bool:
         """更新任务
 
-        说明：当 status 被更新为 'completed' 时，会级联将所有子孙任务一并标记为
-        completed（仅更新当前未完成且未删除的子孙），并同步设置 completed_at /
-        updated_at，整个过程在同一事务中完成。
+        说明：
+        - 当 status 被更新为 'completed' 时，会级联将所有子孙任务一并标记为
+          completed（仅更新当前未完成且未删除的子孙），并同步设置 completed_at /
+          updated_at，整个过程在同一事务中完成。
+        - completed_at 兜底（避免各调用方各自补充导致漏写）：
+          * status='completed' 且 caller 未显式传 completed_at → 自动写入当前时间
+          * status 显式置为非 'completed' 且 caller 未显式传 completed_at → 清空为 None
+          * caller 显式传 completed_at（含 None）优先级最高，原样保留（用于数据导入等场景）
         """
         session = self._get_session()
         try:
-            update_data['updated_at'] = datetime.now().isoformat()
-            
+            now_iso = datetime.now().isoformat()
+            update_data['updated_at'] = now_iso
+
+            # completed_at 兜底：仅当 caller 未显式传 completed_at 时才自动补充。
+            # 注意用 `not in` 而不是 `not get(...)`，以保留 caller 显式传 None 的语义。
+            is_completing = False
+            if 'completed_at' not in update_data:
+                new_status = update_data.get('status')
+                if new_status == 'completed':
+                    update_data['completed_at'] = now_iso
+                    is_completing = True
+                elif new_status is not None and new_status != 'completed':
+                    update_data['completed_at'] = None
+            else:
+                is_completing = update_data.get('status') == 'completed'
+
+            # content 兜底：caller 显式传了 content（可能是 LLM 重写），归一化所有
+            # checked=true 的子项，缺 completedAt 的自动补 now，避免前端"已完成时间"为空。
+            if 'content' in update_data and update_data['content'] is not None:
+                update_data['content'] = _normalize_content_completed_at(
+                    update_data['content'], now_iso, force_check_all=False,
+                )
+            # 父任务被置为 completed 且 caller 没有覆盖 content：也要把当前 content
+            # 里所有未勾选的子项一并勾选并补 completedAt（语义对齐"父任务完成 → 检查事项也完成"）。
+            elif is_completing:
+                current = session.query(TaskModel.content).filter(
+                    TaskModel.id == task_id,
+                    TaskModel.user_id == user_id,
+                ).first()
+                if current and current[0]:
+                    new_content = _normalize_content_completed_at(
+                        current[0], now_iso, force_check_all=True,
+                    )
+                    if new_content != current[0]:
+                        update_data['content'] = new_content
+
             # 如果 due_date 被修改，重置 push_notified_date
             if 'due_date' in update_data:
                 update_data['push_notified_date'] = None
@@ -171,9 +256,16 @@ class TaskDAO:
             if update_data.get('status') == 'completed':
                 descendant_ids = self._collect_descendant_ids(task_id, session)
                 if descendant_ids:
+                    cascade_completed_at = update_data.get('completed_at') or now_iso
+                    # 子孙任务的 status/completed_at 走批量 update（同一 SQL 高效）；
+                    # content 因为每条都不一样，需要逐条归一化后再批量回写——这里
+                    # 先一次性查出所有需要回写 content 的子孙，再用 case-when 模式逐条 update。
+                    self._cascade_complete_descendants_content(
+                        descendant_ids, user_id, cascade_completed_at, session,
+                    )
                     cascade_data = {
                         'status': 'completed',
-                        'completed_at': update_data.get('completed_at') or datetime.now().isoformat(),
+                        'completed_at': cascade_completed_at,
                         'updated_at': update_data['updated_at'],
                     }
                     session.query(TaskModel).filter(
@@ -234,6 +326,35 @@ class TaskDAO:
                 next_frontier.append(child_id)
             frontier = next_frontier
         return descendant_ids
+
+    def _cascade_complete_descendants_content(
+        self, task_ids: List[str], user_id: str, completed_at_iso: str, session: Session,
+    ) -> None:
+        """级联完成场景下，对子孙任务的 content 逐条归一化（force_check_all=True）。
+
+        因为每条 task 的 content 都不一样，无法用单条 SQL 批量改写——这里查出
+        所有有 content 的子孙，逐条归一化后回写。仅修改有变更的，避免无谓写入。
+        外层 session 已开启事务，本方法不 commit。
+        """
+        if not task_ids:
+            return
+        rows = session.query(TaskModel.id, TaskModel.content).filter(
+            TaskModel.id.in_(task_ids),
+            TaskModel.user_id == user_id,
+            TaskModel.deleted_at == None,
+            TaskModel.status != 'completed',
+            TaskModel.content.isnot(None),
+            TaskModel.content != '',
+        ).all()
+        for tid, raw_content in rows:
+            new_content = _normalize_content_completed_at(
+                raw_content, completed_at_iso, force_check_all=True,
+            )
+            if new_content != raw_content:
+                session.query(TaskModel).filter(
+                    TaskModel.id == tid,
+                    TaskModel.user_id == user_id,
+                ).update({'content': new_content}, synchronize_session=False)
     
     def add_child_to_task(self, parent_id: str, child_id: str, user_id: str) -> bool:
         """向父任务的 child_ids 添加子任务 ID"""
@@ -682,8 +803,11 @@ class TaskDAO:
     def batch_update_status(self, task_ids: List[str], user_id: str, status: str) -> int:
         """批量更新任务状态
 
-        说明：当 status == 'completed' 时，会级联将所有传入任务的子孙任务一并标记为
-        completed（仅更新当前用户、未删除且未完成的子孙），整个过程在同一事务中完成。
+        说明：
+        - 当 status == 'completed' 时，会级联将所有传入任务的子孙任务一并标记为
+          completed（仅更新当前用户、未删除且未完成的子孙），整个过程在同一事务中完成。
+        - completed_at 兜底：completed → 写入当前时间；非 completed → 清空为 None，
+          与 update_task 的语义保持对称，避免"反完成"后还残留旧的 completed_at。
         返回值为本次实际被更新的任务总数（包含级联更新的子孙）。
         """
         session = self._get_session()
@@ -693,10 +817,21 @@ class TaskDAO:
                 'status': status,
                 'updated_at': now_iso
             }
-            
+
             if status == 'completed':
                 update_data['completed_at'] = now_iso
+            else:
+                # 反完成（如 completed → pending/in_progress）需清空 completed_at，
+                # 否则任务列表里"已完成时间"还会显示历史值，统计也会错乱。
+                update_data['completed_at'] = None
             
+            # content 兜底：批量完成场景下，把所有传入任务的 content 子项也一并勾选
+            # 并补 completedAt（与 update_task 单条完成的语义对齐）。仅在 completed 时处理。
+            if status == 'completed':
+                self._cascade_complete_descendants_content(
+                    list(task_ids), user_id, now_iso, session,
+                )
+
             result = session.query(TaskModel).filter(
                 TaskModel.id.in_(task_ids),
                 TaskModel.user_id == user_id
@@ -711,6 +846,10 @@ class TaskDAO:
                 # 排除已经在 task_ids 中的，避免重复 update
                 cascade_ids = list(all_descendants - set(task_ids))
                 if cascade_ids:
+                    # 先归一化子孙的 content（逐条处理，因为每条都不一样）
+                    self._cascade_complete_descendants_content(
+                        cascade_ids, user_id, now_iso, session,
+                    )
                     cascade_result = session.query(TaskModel).filter(
                         TaskModel.id.in_(cascade_ids),
                         TaskModel.user_id == user_id,

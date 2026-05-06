@@ -50,9 +50,9 @@ def _build_json_mode_prompt(user_id: str) -> str:
 params参考：
 - list_tasks: {status?, priority?, list_id?, tag?, due_date_start?, due_date_end?}
 - create_task: {title, priority?, due_date?, list_id?, tags?, content?}
-- update_task: {id, title?, status?, priority?, due_date?, content?}
-- delete_task: {id}
-- 其他实体同理
+- update_task: {task_id, title?, status?, priority?, due_date?, content?}
+- delete_task: {task_id}
+- 其他实体同理（id 字段名为 <entity>_id，例如 note_id/countdown_id/counter_id/list_id/tag_id）
 
 关键规则：
 1. 用户提到清单名（如"当周工作""生活"等）→ 从上方 lists 快照找到对应 id 填入 list_id
@@ -63,7 +63,7 @@ params参考：
 6. 无法识别→intent="unknown"
 7. 删除→needs_confirmation=true
 8. 非chitchat时reply留空
-	9. content是检查事项JSON字符串，格式: [{text:"项目名",checked:false}]
+	9. content是检查事项JSON字符串，格式: [{text:"项目名",checked:false}]，completedAt 由后端自动补，无需传
 """
     return base + json_instr
 
