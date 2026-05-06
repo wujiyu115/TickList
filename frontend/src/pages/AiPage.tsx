@@ -37,7 +37,12 @@ const AiPage: React.FC = () => {
     const updateAssistant = () => {
       setMessages(prev => {
         const updated = [...prev];
-        updated[updated.length - 1] = {
+        const lastIndex = updated.length - 1;
+        const prevMsg = updated[lastIndex];
+        // 只覆盖流式更新的字段，保留 pendingConfirmation/pendingDisambiguation 等
+        // 由独立 case 写入的二次交互状态，避免 done 等后续事件把它们抹掉。
+        updated[lastIndex] = {
+          ...prevMsg,
           role: 'assistant',
           content: assistantContent,
           actions: assistantActions,
