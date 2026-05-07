@@ -20,6 +20,7 @@ import {
 } from '@ant-design/icons';
 import Cherry from 'cherry-markdown';
 import 'cherry-markdown/dist/cherry-markdown.css';
+import { createTableFormulaHook } from '../utils/tableFormulaHook';
 import { Note, NoteFolder, Tag } from '../types';
 import { getNote, updateNote, deleteNote } from '../api/note';
 import { getNoteFolders } from '../api/note';
@@ -123,6 +124,12 @@ const NotePage: React.FC = () => {
         syntax: {
           table: {
             enableChart: false,
+          },
+        },
+        customSyntax: {
+          tableFormula: {
+            syntaxClass: createTableFormulaHook(),
+            before: 'table',
           },
         },
       },
