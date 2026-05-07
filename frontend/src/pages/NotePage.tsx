@@ -17,18 +17,13 @@ import {
   DeleteOutlined,
   TagOutlined,
 } from '@ant-design/icons';
-import { Editor } from '@bytemd/react';
-import gfm from '@bytemd/plugin-gfm';
-import highlight from '@bytemd/plugin-highlight';
-import breaks from '@bytemd/plugin-breaks';
-import 'bytemd/dist/index.css';
+import Cherry from 'cherry-markdown';
+import 'cherry-markdown/dist/cherry-markdown.css';
 import { Note, NoteFolder, Tag } from '../types';
 import { getNote, updateNote, deleteNote } from '../api/note';
 import { getNoteFolders } from '../api/note';
 import { getTags } from '../api/tag';
 import './NotePage.less';
-
-const bytemdPlugins = [gfm(), highlight(), breaks()];
 
 const NotePage: React.FC = () => {
   const [note, setNote] = useState<Note | null>(null);
@@ -42,6 +37,12 @@ const NotePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const note_id = searchParams.get('note_id');
+
+  // Cherry Markdown 实例与容器
+  const editorContainerRef = useRef<HTMLDivElement>(null);
+  const cherryRef = useRef<Cherry | null>(null);
+  // 标记是否由 Cherry 内部触发的 content 变更（避免循环更新）
+  const isInternalChangeRef = useRef(false);
 
   // 自动保存防抖定时器
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -90,6 +91,60 @@ const NotePage: React.FC = () => {
     fetchFolders();
     fetchTags();
   }, [fetchNote, fetchFolders, fetchTags]);
+
+  // 初始化 Cherry Markdown 编辑器
+  useEffect(() => {
+    if (!editorContainerRef.current || !note) return;
+
+    // 如果已有实例则先销毁
+    if (cherryRef.current) {
+      cherryRef.current.destroy();
+      cherryRef.current = null;
+    }
+
+
+    const cherry = new Cherry({
+      el: editorContainerRef.current,
+      value: content || '',
+      editor: {
+        defaultModel: 'edit&preview',
+      },
+      toolbars: {
+        toolbar: [
+          'bold', 'italic', 'strikethrough', '|',
+          'header', 'list', 'checklist', '|',
+          'quote', 'code', 'table', '|',
+          'link', 'image', 'hr', '|',
+          'togglePreview', 'switchModel',
+        ],
+      },
+      engine: {
+        syntax: {
+          table: {
+            enableChart: false,
+          },
+        },
+      },
+      externals: {
+        echarts: false
+      },
+      callback: {
+        afterChange: (markdownContent: string) => {
+          isInternalChangeRef.current = true;
+          setContent(markdownContent);
+        },
+      },
+    });
+
+    cherryRef.current = cherry;
+
+    return () => {
+      cherry.destroy();
+      cherryRef.current = null;
+    };
+    // 仅在 note 切换时重新初始化编辑器
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [note?.id]);
 
   // 自动保存
   const autoSave = useCallback(() => {
@@ -260,11 +315,7 @@ const NotePage: React.FC = () => {
 
         {/* Markdown 编辑器 */}
         <div className="note-editor-wrapper">
-          <Editor
-            value={content || ''}
-            plugins={bytemdPlugins}
-            onChange={(val) => setContent(val)}
-          />
+          <div ref={editorContainerRef} className="cherry-editor-container" />
         </div>
       </Card>
     </div>

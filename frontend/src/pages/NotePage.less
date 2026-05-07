@@ -53,44 +53,38 @@
   .note-editor-wrapper {
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
+    overflow: hidden;
     border: 1px solid #f0f0f0;
     border-radius: 8px;
 
-    .bytemd {
+    .cherry-editor-container {
+      height: 100%;
+    }
+
+    .cherry {
       height: 100% !important;
       border: none;
       border-radius: 8px;
       color: #262626;
       text-align: left;
 
-      .bytemd-toolbar {
+      .cherry-toolbar {
         background-color: #fafafa;
         border-bottom: 1px solid #f0f0f0;
         border-radius: 8px 8px 0 0;
       }
 
-      .bytemd-body {
-        background-color: #fff;
-        text-align: left;
-      }
-
-      .CodeMirror {
-        background-color: #fff;
-        color: #262626;
-        font-size: 14px;
-        line-height: 1.6;
-        text-align: left;
-      }
-
-      .bytemd-preview {
+      .cherry-editor {
         background-color: #fff;
         font-size: 14px;
         line-height: 1.6;
         text-align: left;
       }
 
-      .markdown-body {
+      .cherry-previewer {
+        background-color: #fff;
+        font-size: 14px;
+        line-height: 1.6;
         text-align: left;
       }
     }
@@ -152,10 +146,10 @@
     .note-editor-wrapper {
       border-radius: 6px;
 
-      .bytemd {
+      .cherry {
         border-radius: 6px;
 
-        .bytemd-toolbar {
+        .cherry-toolbar {
           border-radius: 6px 6px 0 0;
         }
       }

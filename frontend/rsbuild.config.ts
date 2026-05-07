@@ -32,6 +32,8 @@ export default defineConfig({
       root: 'dist',
       js: '',
       css: '',
+      font: 'fonts',
+      svg: 'fonts',
     },
     filename: {
       js: '[name].js',
