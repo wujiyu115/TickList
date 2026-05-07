@@ -115,8 +115,8 @@ const NotePage: React.FC = () => {
           'bold', 'italic', 'strikethrough', '|',
           'header', 'list', 'checklist', '|',
           'quote', 'code', 'table', '|',
-          'link', 'image', 'hr', '|',
-          'togglePreview', 'switchModel',
+          'link', 'wordCount', 'hr', '|',
+          'togglePreview', 'switchModel', "search"
         ],
       },
       engine: {
