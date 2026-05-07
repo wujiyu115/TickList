@@ -12,29 +12,19 @@
     }
   }
 
-  // 工具栏样式
-  .note-toolbar {
+  // 标题行样式（标题 + 更多按钮）
+  .note-title-wrapper {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #f0f0f0;
-
-    .pin-active {
-      color: #faad14;
-    }
-  }
-
-  // 标题输入框样式
-  .note-title-wrapper {
-    margin-bottom: 16px;
+    gap: 8px;
 
     .note-title-input {
+      flex: 1;
       font-size: 24px;
       font-weight: 600;
       color: #262626;
-      
+
       &:hover {
         background-color: #fafafa;
       }
@@ -45,6 +35,27 @@
 
       &::placeholder {
         color: #bfbfbf;
+      }
+    }
+
+    .note-more-btn {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #595959;
+      font-size: 20px;
+      border: 1px solid #d9d9d9;
+      border-radius: 8px;
+      background: #fafafa;
+      transition: all 0.2s;
+
+      &:hover {
+        color: #1677ff;
+        border-color: #1677ff;
+        background: #e6f4ff;
       }
     }
   }
@@ -100,13 +111,6 @@
       }
     }
 
-    .note-toolbar {
-      margin-bottom: 12px;
-      padding-bottom: 10px;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
     .note-title-wrapper {
       margin-bottom: 12px;
 
@@ -123,15 +127,6 @@
     .note-container {
       .ant-card-body {
         padding: 12px;
-      }
-    }
-
-    .note-toolbar {
-      margin-bottom: 10px;
-      padding-bottom: 8px;
-
-      .ant-select {
-        width: 120px !important;
       }
     }
 

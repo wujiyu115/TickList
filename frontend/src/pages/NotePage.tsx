@@ -5,17 +5,18 @@ import {
   Empty,
   Input,
   Button,
-  Select,
-  Popconfirm,
+  Modal,
   message,
-  Space,
-  Tooltip,
+  Dropdown,
 } from 'antd';
+import type { MenuProps } from 'antd';
 import {
   PushpinOutlined,
   PushpinFilled,
   DeleteOutlined,
   TagOutlined,
+  FolderOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
 import Cherry from 'cherry-markdown';
 import 'cherry-markdown/dist/cherry-markdown.css';
@@ -218,18 +219,95 @@ const NotePage: React.FC = () => {
     }
   };
 
-  // 删除笔记
-  const handleDelete = async () => {
-    if (!note) return;
-    try {
-      await deleteNote(note.id);
-      message.success('删除成功');
-      navigate('/notes');
-    } catch (error) {
-      console.error('Failed to delete note:', error);
-      message.error('删除失败');
-    }
+  // 删除笔记（带 Modal 确认）
+  const handleDeleteConfirm = () => {
+    Modal.confirm({
+      title: '确定删除这个笔记吗？',
+      okText: '确定',
+      cancelText: '取消',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        if (!note) return;
+        try {
+          await deleteNote(note.id);
+          message.success('删除成功');
+          navigate('/notes');
+        } catch (error) {
+          console.error('Failed to delete note:', error);
+          message.error('删除失败');
+        }
+      },
+    });
   };
+
+  // 构建「更多」下拉菜单
+  const moreMenuItems: MenuProps['items'] = [
+    {
+      key: 'pin',
+      icon: note?.is_pinned ? <PushpinFilled /> : <PushpinOutlined />,
+      label: note?.is_pinned ? '取消置顶' : '置顶',
+      onClick: handleTogglePin,
+    },
+    {
+      key: 'tags',
+      icon: <TagOutlined />,
+      label: '标签',
+      children: tags.map((tag) => ({
+        key: `tag-${tag.id}`,
+        label: (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                backgroundColor: tag.color || '#d9d9d9',
+                flexShrink: 0,
+              }}
+            />
+            {tag.name}
+            {selectedTags.includes(tag.id) && ' ✓'}
+          </span>
+        ),
+        onClick: () => {
+          const newTags = selectedTags.includes(tag.id)
+            ? selectedTags.filter((id) => id !== tag.id)
+            : [...selectedTags, tag.id];
+          handleTagsChange(newTags);
+        },
+      })),
+    },
+    {
+      key: 'folder',
+      icon: <FolderOutlined />,
+      label: '移动到文件夹',
+      children: [
+        {
+          key: 'folder-none',
+          label: '不归属文件夹',
+          onClick: () => handleMoveToFolder(null),
+        },
+        ...folders.map((folder) => ({
+          key: `folder-${folder.id}`,
+          label: (
+            <span>
+              {folder.name}
+              {note?.folder_id === folder.id && ' ✓'}
+            </span>
+          ),
+          onClick: () => handleMoveToFolder(folder.id),
+        })),
+      ],
+    },
+    { type: 'divider' as const },
+    {
+      key: 'delete',
+      icon: <DeleteOutlined />,
+      label: '删除',
+      danger: true,
+      onClick: handleDeleteConfirm,
+    },
+  ];
 
   if (!note_id || !note) {
     return (
@@ -247,61 +325,7 @@ const NotePage: React.FC = () => {
   return (
     <div className="note-page">
       <Card className="note-container" loading={loading}>
-        {/* 顶部工具栏 */}
-        <div className="note-toolbar">
-          <Space size="middle">
-            <Tooltip title={note.is_pinned ? '取消置顶' : '置顶'}>
-              <Button
-                type="text"
-                icon={note.is_pinned ? <PushpinFilled /> : <PushpinOutlined />}
-                onClick={handleTogglePin}
-                className={note.is_pinned ? 'pin-active' : ''}
-              />
-            </Tooltip>
-
-            <span style={{ color: 'var(--ant-color-text-secondary)', fontSize: 13 }}>标签</span>
-            <Select
-              mode="multiple"
-              value={selectedTags}
-              onChange={handleTagsChange}
-              placeholder="添加标签"
-              style={{ minWidth: 150 }}
-              options={tags.map(tag => ({ value: tag.id, label: tag.name }))}
-              tagRender={(props) => (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '0 4px' }}>
-                  <TagOutlined style={{ fontSize: 12, color: tags.find(t => t.id === props.value)?.color }} />
-                  {props.label}
-                </span>
-              )}
-            />
-
-            <span style={{ color: 'var(--ant-color-text-secondary)', fontSize: 13 }}>文件夹</span>
-            <Select
-              value={note.folder_id}
-              onChange={handleMoveToFolder}
-              placeholder="移动到文件夹"
-              style={{ width: 150 }}
-              allowClear
-            >
-              {folders.map((folder) => (
-                <Option key={folder.id} value={folder.id}>
-                  {folder.name}
-                </Option>
-              ))}
-            </Select>
-
-            <Popconfirm
-              title="确定删除这个笔记吗？"
-              onConfirm={handleDelete}
-              okText="确定"
-              cancelText="取消"
-            >
-              <Button type="text" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
-          </Space>
-        </div>
-
-        {/* 标题输入框 */}
+        {/* 标题行：标题 + 更多按钮 */}
         <div className="note-title-wrapper">
           <Input
             value={title}
@@ -311,6 +335,9 @@ const NotePage: React.FC = () => {
             bordered={false}
             maxLength={100}
           />
+          <Dropdown menu={{ items: moreMenuItems }} trigger={['click']} placement="bottomRight">
+            <Button type="text" icon={<MoreOutlined style={{ fontSize: 18 }} />} className="note-more-btn" />
+          </Dropdown>
         </div>
 
         {/* Markdown 编辑器 */}
