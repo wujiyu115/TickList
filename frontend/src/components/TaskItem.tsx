@@ -114,24 +114,43 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
     }
   }, [children, task, addTask, refreshTasks]);
 
-  // 子任务拖拽是否可用
-  const isSubtaskDraggable = supportsHover && depth > 0 && task.status !== 'completed';
+  // 任意任务都可拖拽（除已完成任务外）
+  const isDraggable = supportsHover && task.status !== 'completed';
 
-  // 查找当前任务的父任务 ID
-  const findParentId = useCallback((): string | undefined => {
-    return allTasks.find(t => (t.child_ids || []).includes(task.id))?.id;
-  }, [allTasks, task.id]);
+  // 查找指定任务的父任务 ID
+  const findParentIdOf = useCallback((targetId: string): string | undefined => {
+    return allTasks.find(t => (t.child_ids || []).includes(targetId))?.id;
+  }, [allTasks]);
+
+  // 获取指定父任务下的同级任务列表（按 order 排序）；parentId 为 undefined 时返回顶级任务
+  const getSiblingsOf = useCallback((parentId: string | undefined): Task[] => {
+    if (parentId) {
+      const parent = allTasks.find(t => t.id === parentId);
+      if (!parent) return [];
+      return ((parent.child_ids || [])
+        .map(id => allTasks.find(t => t.id === id))
+        .filter(Boolean) as Task[])
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    }
+    // 顶级任务：未被任何任务的 child_ids 引用
+    const childIdSet = new Set<string>(
+      allTasks.reduce<string[]>((acc, t) => acc.concat(t.child_ids || []), [])
+    );
+    return allTasks
+      .filter(t => !childIdSet.has(t.id))
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }, [allTasks]);
 
   const handleSubtaskDragStart = useCallback((e: React.DragEvent) => {
     e.stopPropagation();
     setDragStartX(e.clientX);
     setDragSource({
       taskId: task.id,
-      parentId: findParentId(),
+      parentId: findParentIdOf(task.id),
       index: 0,
     });
     e.dataTransfer.effectAllowed = 'move';
-  }, [task.id, findParentId, setDragSource, setDragStartX]);
+  }, [task.id, findParentIdOf, setDragSource, setDragStartX]);
 
   const handleSubtaskDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -165,29 +184,52 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
       return;
     }
 
-    // 从 allTasks 中查找 dragTarget 对应的任务，获取其父任务
-    const targetTask = allTasks.find(t => t.id === dragTarget.taskId);
-    if (!targetTask) {
-      clearDrag();
-      return;
-    }
-    const targetParentId = allTasks.find(t => (t.child_ids || []).includes(dragTarget.taskId))?.id;
+    const sourceId = dragSource.taskId;
+    const targetId = dragTarget.taskId;
+    const { type, position } = dragTarget;
 
     try {
-      if (dragTarget.type === 'child') {
-        // child 模式：变为目标任务的子任务
-        await moveTask(dragSource.taskId, dragTarget.taskId);
+      if (type === 'child') {
+        // child 模式：变为目标任务的子任务（追加到目标任务的子任务列表末尾）
+        await moveTask(sourceId, targetId);
         message.success('已移动为子任务');
       } else {
-        // sibling 模式：与目标任务同级（移动到目标任务的父任务下）
-        if (targetParentId) {
-          await moveTask(dragSource.taskId, targetParentId);
-          message.success('已移动为同级任务');
-        } else {
-          // 目标任务是顶级任务，变为独立任务
-          await moveTask(dragSource.taskId, undefined);
-          message.success('已移动为独立任务');
+        // sibling 模式：与目标任务同级，根据 position 插入到目标任务的上方或下方
+        const targetParentId = findParentIdOf(targetId);
+        const sourceParentId = dragSource.parentId;
+
+        // 1. 如果父级不同，先换父
+        if (sourceParentId !== targetParentId) {
+          await moveTask(sourceId, targetParentId);
         }
+
+        // 2. 计算插入后的新 order：取目标父级下的当前同级列表，重新排列后批量更新
+        // 注意：换父后 allTasks 还是旧数据，这里手工模拟换父后的同级列表
+        const oldSiblings = getSiblingsOf(targetParentId).filter(t => t.id !== sourceId);
+        const targetIdx = oldSiblings.findIndex(t => t.id === targetId);
+        if (targetIdx === -1) {
+          // 目标不在父级下（理论不应发生），回退仅换父
+          await refreshTasks();
+          message.success('已移动');
+          clearDrag();
+          return;
+        }
+
+        const insertIdx = position === 'above' ? targetIdx : targetIdx + 1;
+        const sourceTask = allTasks.find(t => t.id === sourceId);
+        if (!sourceTask) {
+          await refreshTasks();
+          clearDrag();
+          return;
+        }
+        const newSiblings = [
+          ...oldSiblings.slice(0, insertIdx),
+          sourceTask,
+          ...oldSiblings.slice(insertIdx),
+        ];
+        const reorderItems = newSiblings.map((t, i) => ({ id: t.id, order: (i + 1) * 10 }));
+        await reorderTasks(reorderItems);
+        message.success(sourceParentId === targetParentId ? '已重新排序' : '已移动');
       }
       await refreshTasks();
     } catch {
@@ -196,7 +238,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
     }
 
     clearDrag();
-  }, [dragSource, dragTarget, allTasks, clearDrag, refreshTasks]);
+  }, [dragSource, dragTarget, allTasks, findParentIdOf, getSiblingsOf, clearDrag, refreshTasks]);
 
   const handleSubtaskDragEnd = useCallback(() => {
     clearDrag();
