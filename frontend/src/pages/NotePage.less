@@ -83,6 +83,15 @@
         background-color: #fafafa;
         border-bottom: 1px solid #f0f0f0;
         border-radius: 8px 8px 0 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-wrap: nowrap;
+
+        .toolbar-left,
+        .toolbar-right {
+          flex-wrap: nowrap !important;
+          flex-shrink: 0;
+        }
       }
 
       .cherry-editor {
