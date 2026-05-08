@@ -165,8 +165,12 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
     const midY = rect.top + rect.height / 2;
     const position: 'above' | 'below' = e.clientY < midY ? 'above' : 'below';
 
-    const deltaX = e.clientX - dragStartX;
-    const type: 'sibling' | 'child' = deltaX > CHILD_DRAG_THRESHOLD ? 'child' : 'sibling';
+    // 用「鼠标 X 相对目标行内容起点」的偏移来判断 sibling/child，
+    // 避免受拖拽起点（手柄位置）影响导致总被判为 child。
+    // task-item-new 的 padding-left = depth * 24 + 12，再加上一些缓冲让判断更稳。
+    const contentStartX = rect.left + depth * 24 + 12;
+    const offsetX = e.clientX - contentStartX;
+    const type: 'sibling' | 'child' = offsetX > CHILD_DRAG_THRESHOLD ? 'child' : 'sibling';
 
     setDragTarget({
       taskId: task.id,
@@ -174,7 +178,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
       position,
       type,
     });
-  }, [dragSource, dragStartX, task.id, setDragTarget]);
+  }, [dragSource, task.id, depth, setDragTarget]);
 
   const handleSubtaskDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
