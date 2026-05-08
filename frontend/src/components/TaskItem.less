@@ -1,4 +1,38 @@
 .task-item-wrapper {
+  // 拖拽行：包裹拖拽手柄 + 任务行，两者横向并排
+  .subtask-drag-row {
+    display: flex;
+    align-items: stretch;
+    position: relative;
+
+    > :last-child {
+      flex: 1;
+      min-width: 0;
+    }
+
+    // 拖拽手柄：绝对定位悬浮在任务行最左侧，悬停时显示
+    .subtask-drag-handle {
+      position: absolute;
+      left: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--ant-color-text-quaternary);
+      cursor: grab;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 1;
+
+      &:active {
+        cursor: grabbing;
+      }
+    }
+
+    &:hover .subtask-drag-handle {
+      opacity: 1;
+    }
+  }
+
   .task-item-new {
     display: flex;
     align-items: flex-start;
