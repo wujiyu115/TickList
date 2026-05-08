@@ -170,7 +170,6 @@ const NotePage: React.FC = () => {
           'color'
         ],
         float: ['h1', 'h2', 'h3', 'checklist', 'quote', 'quickTable', 'code'],
-        sidebar: ['mobilePreview', 'copy', 'theme']
       },
       engine: {
         syntax: {
