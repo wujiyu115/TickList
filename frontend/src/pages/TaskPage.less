@@ -579,11 +579,20 @@
         }
 
         &.checklist-placeholder {
+          // 基础 .checklist-item 是 column 排列（为了配合 checklist-item-main + 完成时间）
+          // 占位项没有 checklist-item-main 包裹层，需要单独覆盖为横向排列
+          flex-direction: row;
+          align-items: center;
+          gap: 8px;
           border-bottom: none;
           opacity: 0.6;
 
           .ant-checkbox-disabled .ant-checkbox-inner {
             background: transparent;
+          }
+
+          .checklist-edit-input {
+            flex: 1;
           }
         }
       }
