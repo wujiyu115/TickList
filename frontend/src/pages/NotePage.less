@@ -118,6 +118,22 @@
         font-size: 20px;
       }
     }
+
+    .note-editor-wrapper {
+      .cherry {
+        .cherry-toolbar {
+          overflow-x: auto;
+          overflow-y: hidden;
+          flex-wrap: nowrap;
+
+          .toolbar-left,
+          .toolbar-right {
+            flex-wrap: nowrap !important;
+            flex-shrink: 0;
+          }
+        }
+      }
+    }
   }
 }
 
@@ -146,6 +162,16 @@
 
         .cherry-toolbar {
           border-radius: 6px 6px 0 0;
+          overflow-x: auto;
+          overflow-y: hidden;
+          flex-wrap: nowrap;
+          -webkit-overflow-scrolling: touch;
+
+          .toolbar-left,
+          .toolbar-right {
+            flex-wrap: nowrap !important;
+            flex-shrink: 0;
+          }
         }
       }
     }
