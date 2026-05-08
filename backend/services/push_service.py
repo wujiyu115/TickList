@@ -36,12 +36,24 @@ class PushService:
                 logger.error(f"Push failed for channel {channel.get('name')}: {e}")
     
     def _send_bark(self, config: dict, title: str, content: str):
-        """Bark 推送: POST {server_url} with JSON body"""
-        server_url = config.get('server_url', 'https://api.day.app/push')
+        """Bark 推送: POST {server_url}/{device_key} with JSON body
+
+        URL 智能拼接，兼容三种填写方式：
+        1. 仅基址：https://api.day.app  → 自动拼成 https://api.day.app/{device_key}
+        2. 完整 push 地址：https://api.day.app/push  → 原样使用，device_key 放 body
+        3. 已含 device_key：https://api.day.app/xxxxx  → 原样使用
+        """
+        server_url = (config.get('server_url') or 'https://api.day.app').rstrip('/')
         device_key = config.get('device_key', '')
         if not device_key:
             raise ValueError("Bark device_key is required")
-        
+
+        # 判断 URL 是否已包含 endpoint，避免重复拼接
+        last_segment = server_url.rsplit('/', 1)[-1] if '/' in server_url.split('://', 1)[-1] else ''
+        already_has_endpoint = last_segment in ('push',) or last_segment == device_key
+
+        target_url = server_url if already_has_endpoint else f"{server_url}/{device_key}"
+
         payload = {
             "device_key": device_key,
             "title": title,
@@ -51,9 +63,9 @@ class PushService:
             payload['sound'] = config['sound']
         if config.get('group'):
             payload['group'] = config['group']
-        
+
         resp = requests.post(
-            server_url,
+            target_url,
             json=payload,
             headers={"Content-Type": "application/json; charset=utf-8"},
             timeout=10
