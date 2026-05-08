@@ -144,14 +144,12 @@ const NotePage: React.FC = () => {
           '|',
           'hr',
           'br',
-          'toc',
-          '|',
-          'graph'
+          'graph',
         ],
         toolbarRight: [
           'togglePreview',
+          'switchModel',
           'export',
-          'settings',
           '|',
           'undo',
           'redo',
