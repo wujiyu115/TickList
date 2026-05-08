@@ -331,14 +331,14 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
       )}
       <div
         className="subtask-drag-row"
-        draggable={isSubtaskDraggable}
-        onDragStart={isSubtaskDraggable ? handleSubtaskDragStart : undefined}
-        onDragOver={depth > 0 ? handleSubtaskDragOver : undefined}
-        onDrop={depth > 0 ? handleSubtaskDrop : undefined}
-        onDragEnd={isSubtaskDraggable ? handleSubtaskDragEnd : undefined}
+        draggable={isDraggable}
+        onDragStart={isDraggable ? handleSubtaskDragStart : undefined}
+        onDragOver={handleSubtaskDragOver}
+        onDrop={handleSubtaskDrop}
+        onDragEnd={isDraggable ? handleSubtaskDragEnd : undefined}
         style={{ position: 'relative' }}
       >
-        {isSubtaskDraggable && (
+        {isDraggable && (
           <HolderOutlined className="subtask-drag-handle" />
         )}
       <Dropdown
