@@ -108,17 +108,69 @@ const NotePage: React.FC = () => {
     const cherry = new Cherry({
       el: editorContainerRef.current,
       value: content || '',
+      isPreviewOnly: false,
+      autoScrollByCursor: true,
+      forceAppend: true,
+      locale: 'zh_CN',
+      nameSpace: 'cherry',
+      autoScrollByHashAfterInit: false,
       editor: {
+        theme: 'default',
+        height: '100%',
         defaultModel: 'edit&preview',
+        convertWhenPaste: true,
+        keyMap: 'sublime',
+        writingStyle: 'normal',
+        showFullWidthMark: true,
+        showSuggestList: true,
+        maxUrlLength: -1
       },
       toolbars: {
         toolbar: [
-          'bold', 'italic', 'strikethrough', '|',
-          'header', 'list', 'checklist', '|',
-          'quote', 'code', 'table', '|',
-          'link', 'wordCount', 'hr', '|',
-          'togglePreview', 'switchModel', "search"
+          'bold',
+          'italic',
+          'strikethrough',
+          'underline',
+          '|',
+          'color',
+          'header',
+          'list',
+          'checklist',
+          '|',
+          'quote',
+          'quickTable',
+          'code',
+          'link',
+          '|',
+          'hr',
+          'br',
+          'toc',
+          '|',
+          'graph'
         ],
+        toolbarRight: [
+          'togglePreview',
+          'export',
+          'settings',
+          '|',
+          'undo',
+          'redo',
+          'fullScreen'
+        ],
+        bubble: [
+          'bold',
+          'italic',
+          'underline',
+          'strikethrough',
+          'sub',
+          'sup',
+          'quote',
+          'ruby',
+          'size',
+          'color'
+        ],
+        float: ['h1', 'h2', 'h3', 'checklist', 'quote', 'quickTable', 'code'],
+        sidebar: ['mobilePreview', 'copy', 'theme']
       },
       engine: {
         syntax: {
