@@ -80,7 +80,7 @@ class DatabaseConnection:
         migrations = {
             'tasks': [
                 ('push_due_notify', 'BOOLEAN DEFAULT 0'),
-                ('push_notified_date', 'VARCHAR(10)'),
+                ('push_notified_date', 'VARCHAR(32)'),
                 ('pomodoro_count', 'INTEGER DEFAULT 0'),
                 ('focus_duration', 'INTEGER DEFAULT 0'),
                 ('deleted_at', 'VARCHAR(50)'),
@@ -88,7 +88,7 @@ class DatabaseConnection:
             ],
             'countdowns': [
                 ('push_due_notify', 'BOOLEAN DEFAULT 0'),
-                ('push_notified_date', 'VARCHAR(10)'),
+                ('push_notified_date', 'VARCHAR(32)'),
             ],
             'user_settings': [
                 ('push_enabled', 'BOOLEAN DEFAULT 0'),

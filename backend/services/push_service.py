@@ -2,10 +2,7 @@
 
 import requests
 import json
-import logging
-
-logger = logging.getLogger(__name__)
-
+from utils.logger import logger
 
 class PushService:
     def send(self, user_id: str, title: str, content: str):

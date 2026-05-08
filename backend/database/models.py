@@ -42,7 +42,9 @@ class TaskModel(Base):
     is_pinned = Column(Boolean, default=False)
     order = Column(Integer, default=0)
     push_due_notify = Column(Boolean, default=False)
-    push_notified_date = Column(String(10), nullable=True, default=None)  # 格式 "YYYY-MM-DD"
+    # 任务推送已通知标记：精确到分钟，格式 "YYYY-MM-DDTHH:MM"
+    # （历史值可能为 "YYYY-MM-DD"，调度器按"是否相等"判断，不影响兼容）
+    push_notified_date = Column(String(32), nullable=True, default=None)
     pomodoro_count = Column(Integer, default=0)    # 累计番茄数
     focus_duration = Column(Integer, default=0)     # 累计专注秒数
     created_at = Column(String(50))
@@ -239,7 +241,8 @@ class CountdownModel(Base):
     repeat_annually = Column(Boolean, default=False)
     note = Column(Text)
     push_due_notify = Column(Boolean, default=False)
-    push_notified_date = Column(String(10), nullable=True, default=None)  # 格式 "YYYY-MM-DD"
+    # 倒数日按天粒度，格式 "YYYY-MM-DD"
+    push_notified_date = Column(String(32), nullable=True, default=None)
     created_at = Column(String(50))
     updated_at = Column(String(50))
     

@@ -9,7 +9,7 @@
 
 import json
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -294,16 +294,21 @@ class TestPushTestEndpoint:
 # ==========================================================================
 
 class TestSchedulerCollectTaskDue:
-    """SchedulerService._collect_task_due 测试"""
+    """SchedulerService._collect_task_due 测试（精度：分钟级）"""
 
     def _make_task(self, db_session, user_id, **overrides):
-        """辅助：创建一条任务并写入 DB"""
+        """辅助：创建一条任务并写入 DB
+
+        默认 due_date 为"1 分钟前的当天时间"，确保已经到点会被收集。
+        """
+        default_due = (datetime.now().replace(microsecond=0, second=0)
+                       - timedelta(minutes=1)).isoformat()
         task = TaskModel(
             id=str(uuid.uuid4()),
             title=overrides.get("title", "Test Task"),
             status=overrides.get("status", "pending"),
             user_id=user_id,
-            due_date=overrides.get("due_date", date.today().isoformat()),
+            due_date=overrides.get("due_date", default_due),
             push_due_notify=overrides.get("push_due_notify", True),
             push_notified_date=overrides.get("push_notified_date", None),
             deleted_at=overrides.get("deleted_at", None),
@@ -315,30 +320,69 @@ class TestSchedulerCollectTaskDue:
         return task
 
     def test_collect_task_due(self, db_session, test_user):
-        """到期任务应被收集"""
-        self._make_task(db_session, test_user.id, title="Due Today")
+        """已到期任务（分钟级）应被收集，消息含到期分钟标记"""
+        self._make_task(db_session, test_user.id, title="Due Now")
 
         svc = SchedulerService()
         messages, records = svc._collect_task_due(db_session)
 
         assert test_user.id in messages
         assert len(messages[test_user.id]) == 1
-        assert "Due Today" in messages[test_user.id][0]
+        text, marker = messages[test_user.id][0]
+        assert "Due Now" in text
+        # marker 形如 "YYYY-MM-DDTHH:MM"
+        assert len(marker) == 16 and marker[10] == "T"
         assert len(records) == 1
+        record_task, record_marker = records[0]
+        assert record_marker == marker
 
-    def test_collect_task_due_already_notified(self, db_session, test_user):
-        """已通知的任务（push_notified_date==今天）不重复收集"""
+    def test_collect_task_due_not_yet_reached(self, db_session, test_user):
+        """未到点的任务（同一天但时间在未来）不应被收集"""
+        future_due = (datetime.now().replace(microsecond=0, second=0)
+                      + timedelta(minutes=10)).isoformat()
         self._make_task(
             db_session, test_user.id,
-            title="Already Notified",
-            push_notified_date=date.today().isoformat(),
+            title="Future Today",
+            due_date=future_due,
         )
 
         svc = SchedulerService()
         messages, records = svc._collect_task_due(db_session)
 
-        user_msgs = messages.get(test_user.id, [])
-        assert len(user_msgs) == 0
+        assert messages.get(test_user.id, []) == []
+        assert records == []
+
+    def test_collect_task_due_already_notified(self, db_session, test_user):
+        """已通知的任务（push_notified_date == 该到期时间标记）不重复收集"""
+        due_dt = datetime.now().replace(microsecond=0, second=0) - timedelta(minutes=2)
+        marker = due_dt.strftime('%Y-%m-%dT%H:%M')
+        self._make_task(
+            db_session, test_user.id,
+            title="Already Notified",
+            due_date=due_dt.isoformat(),
+            push_notified_date=marker,
+        )
+
+        svc = SchedulerService()
+        messages, records = svc._collect_task_due(db_session)
+
+        assert messages.get(test_user.id, []) == []
+
+    def test_collect_task_due_with_timezone_iso(self, db_session, test_user):
+        """带时区的 ISO 字符串（如 2026-05-08T10:58:00+00:00）应被正确解析"""
+        # 构造一个"已到期 2 分钟"的本地时间，再附加本地时区偏移
+        local_dt = datetime.now().astimezone().replace(microsecond=0, second=0) - timedelta(minutes=2)
+        self._make_task(
+            db_session, test_user.id,
+            title="TZ Task",
+            due_date=local_dt.isoformat(),  # 带 +08:00 之类
+        )
+
+        svc = SchedulerService()
+        messages, records = svc._collect_task_due(db_session)
+
+        assert test_user.id in messages
+        assert any("TZ Task" in text for text, _ in messages[test_user.id])
 
     def test_collect_task_due_completed_excluded(self, db_session, test_user):
         """已完成任务被排除"""
@@ -351,8 +395,7 @@ class TestSchedulerCollectTaskDue:
         svc = SchedulerService()
         messages, records = svc._collect_task_due(db_session)
 
-        user_msgs = messages.get(test_user.id, [])
-        assert len(user_msgs) == 0
+        assert messages.get(test_user.id, []) == []
 
     def test_collect_task_due_deleted_excluded(self, db_session, test_user):
         """软删除的任务被排除"""
@@ -365,8 +408,7 @@ class TestSchedulerCollectTaskDue:
         svc = SchedulerService()
         messages, records = svc._collect_task_due(db_session)
 
-        user_msgs = messages.get(test_user.id, [])
-        assert len(user_msgs) == 0
+        assert messages.get(test_user.id, []) == []
 
     def test_collect_task_due_notify_disabled(self, db_session, test_user):
         """push_due_notify=False 的任务被排除"""
@@ -379,8 +421,7 @@ class TestSchedulerCollectTaskDue:
         svc = SchedulerService()
         messages, records = svc._collect_task_due(db_session)
 
-        user_msgs = messages.get(test_user.id, [])
-        assert len(user_msgs) == 0
+        assert messages.get(test_user.id, []) == []
 
 
 class TestCheckDueNotificationsFlow:
@@ -388,13 +429,17 @@ class TestCheckDueNotificationsFlow:
 
     @patch("services.push_service.push_service.send")
     def test_check_due_notifications_flow(self, mock_send, db_session, test_user):
-        """Mock push_service.send，验证完整调度流程"""
+        """Mock push_service.send，验证完整调度流程：
+        - 已到点的分钟级任务会触发推送
+        - 推送后 push_notified_date 被设置为该到期时间分钟标记
+        """
+        due_dt = datetime.now().replace(microsecond=0, second=0) - timedelta(minutes=1)
         task = TaskModel(
             id=str(uuid.uuid4()),
             title="Flow Test Task",
             status="pending",
             user_id=test_user.id,
-            due_date=date.today().isoformat(),
+            due_date=due_dt.isoformat(),
             push_due_notify=True,
             push_notified_date=None,
             deleted_at=None,
@@ -403,6 +448,7 @@ class TestCheckDueNotificationsFlow:
         )
         db_session.add(task)
         db_session.commit()
+        task_id = task.id
 
         svc = SchedulerService()
         svc.check_due_notifications()
@@ -411,3 +457,8 @@ class TestCheckDueNotificationsFlow:
         mock_send.assert_called()
         call_kwargs = mock_send.call_args
         assert call_kwargs[1]["user_id"] == test_user.id or call_kwargs[0][0] == test_user.id
+
+        # 校验已通知标记被写入（精度到分钟）
+        db_session.expire_all()
+        refreshed = db_session.query(TaskModel).filter(TaskModel.id == task_id).first()
+        assert refreshed.push_notified_date == due_dt.strftime('%Y-%m-%dT%H:%M')
