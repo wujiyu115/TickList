@@ -406,6 +406,54 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  // 在编辑/新增 Modal 内测试推送：从表单实时取值，无需先保存
+  const MODAL_TEST_KEY = '__modal_test__';
+  const handleTestChannelInModal = async () => {
+    try {
+      const values = await channelForm.validateFields();
+
+      let config: BarkConfig | CustomHttpConfig;
+      if (values.type === 'bark') {
+        config = {
+          device_key: values.device_key,
+          server_url: values.server_url,
+          sound: values.sound,
+          group: values.group,
+        };
+      } else {
+        let headers: Record<string, string> = {};
+        try {
+          headers = JSON.parse(values.headers || '{}');
+        } catch {
+          message.error('请求头 JSON 格式错误');
+          return;
+        }
+        config = {
+          url: values.url,
+          method: values.method,
+          headers,
+          body_template: values.body_template,
+        };
+      }
+
+      setTestingChannelId(MODAL_TEST_KEY);
+      try {
+        const result = await testPushChannel(values.type, config as any);
+        if (result.success) {
+          message.success('测试推送成功');
+        } else {
+          message.error(`测试失败: ${result.message}`);
+        }
+      } catch (e: any) {
+        message.error(`测试失败: ${e.message || '未知错误'}`);
+      } finally {
+        setTestingChannelId(null);
+      }
+    } catch {
+      // 表单校验失败，validateFields 已自动高亮错误项
+    }
+  };
+
   if (loading) {
     return (
       <div className="settings-page" style={{ justifyContent: 'center', alignItems: 'center' }}>
@@ -928,6 +976,18 @@ const SettingsPage: React.FC = () => {
         cancelText="取消"
         destroyOnClose
         width={520}
+        footer={(_, { OkBtn, CancelBtn }) => (
+          <>
+            <Button
+              loading={testingChannelId === MODAL_TEST_KEY}
+              onClick={handleTestChannelInModal}
+            >
+              测试推送
+            </Button>
+            <CancelBtn />
+            <OkBtn />
+          </>
+        )}
       >
         <Form form={channelForm} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item
