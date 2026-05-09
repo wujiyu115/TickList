@@ -54,11 +54,20 @@
   }
 
   .task-page-right {
-    width: 400px;
+    // PC 端任务详情面板：默认更宽，大屏进一步放大，超大屏封顶
+    width: 520px;
     flex-shrink: 0;
     border-left: 1px solid var(--ant-color-border);
     overflow: auto;
     background: var(--ant-color-bg-layout);
+
+    @media (min-width: 1600px) {
+      width: 600px;
+    }
+
+    @media (min-width: 1920px) {
+      width: 680px;
+    }
   }
 
   // 垃圾箱任务列表
