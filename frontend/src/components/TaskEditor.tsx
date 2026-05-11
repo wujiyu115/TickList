@@ -93,6 +93,18 @@ const formatFocusDuration = (seconds: number): string => {
   }
 };
 
+type ContentItem = { text: string; checked: boolean; completedAt?: string };
+
+function sortContentItems(items: ContentItem[]): ContentItem[] {
+  const unchecked = items.filter(i => !i.checked);
+  const checked = items.filter(i => i.checked).sort((a, b) => {
+    const ta = a.completedAt || '';
+    const tb = b.completedAt || '';
+    return tb.localeCompare(ta);
+  });
+  return [...unchecked, ...checked];
+}
+
 const TaskEditor: React.FC = () => {
   const { selectedTask, updateTaskData, selectTask, addTask, tasks, refreshTasks, deleteTaskData } = useTaskContext();
   const [editingTitle, setEditingTitle] = useState(false);
@@ -101,7 +113,7 @@ const TaskEditor: React.FC = () => {
   const [addingSubtask, setAddingSubtask] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
-  const [contentItems, setContentItems] = useState<Array<{text: string, checked: boolean, completedAt?: string}>>([]);
+  const [contentItems, setContentItems] = useState<ContentItem[]>([]);
   const [contentViewMode, setContentViewMode] = useState<'detail' | 'checklist'>('detail');
   const [editingCheckIdx, setEditingCheckIdx] = useState<number | null>(null);
   const [editingCheckText, setEditingCheckText] = useState('');
@@ -137,8 +149,9 @@ const TaskEditor: React.FC = () => {
       try {
         const parsed = selectedTask.content ? JSON.parse(selectedTask.content) : [];
         if (Array.isArray(parsed)) {
-          setContentItems(parsed);
-          setContentText(parsed.map((item: {text: string}) => item.text).join('\n'));
+          const sorted = sortContentItems(parsed);
+          setContentItems(sorted);
+          setContentText(sorted.map((item: {text: string}) => item.text).join('\n'));
         } else {
           setContentItems([]);
           setContentText('');
@@ -411,7 +424,7 @@ const TaskEditor: React.FC = () => {
 
   // 检查事项模式切换 checked
   const handleCheckToggle = (index: number) => {
-    const newItems = contentItems.map((item, idx) => {
+    const toggled = contentItems.map((item, idx) => {
       if (idx !== index) return item;
       const nowChecked = !item.checked;
       return {
@@ -420,9 +433,10 @@ const TaskEditor: React.FC = () => {
         completedAt: nowChecked ? new Date().toISOString() : undefined,
       };
     });
-    setContentItems(newItems);
-    setContentText(newItems.map(item => item.text).join('\n'));
-    updateTaskData(selectedTask.id, { content: JSON.stringify(newItems) });
+    const sorted = sortContentItems(toggled);
+    setContentItems(sorted);
+    setContentText(sorted.map(item => item.text).join('\n'));
+    updateTaskData(selectedTask.id, { content: JSON.stringify(sorted) });
   };
 
   // 删除检查事项
