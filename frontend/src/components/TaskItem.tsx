@@ -446,7 +446,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
               return (
                 <span className="task-list-tag" onClick={(e) => { e.stopPropagation(); navigate(`/?list_id=${list.id}`); }}>
                   <span className="task-list-dot" style={{ background: list.color }} />
-                  {list.name}
+                  <span style={{ color: list.font_color || undefined }}>{list.name}</span>
                 </span>
               );
             })()}

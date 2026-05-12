@@ -116,8 +116,10 @@ class TaskListModel(Base):
     type = Column(String(50), default='list')  # 'folder' | 'list'
     parent_id = Column(String(36))  # 父文件夹 ID
     color = Column(String(50), default='#1677ff')
+    font_color = Column(String(50), default=None)  # 字体颜色，None 时使用默认色
     order = Column(Integer, default=0)
     is_archived = Column(Boolean, default=False)
+    is_pinned = Column(Boolean, default=False)  # 是否置顶
     created_at = Column(String(50))
     updated_at = Column(String(50))
     

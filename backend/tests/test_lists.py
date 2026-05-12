@@ -24,6 +24,19 @@ def test_create_list(app_client, auth_headers):
     assert data["name"] == "Work"
 
 
+def test_create_list_with_font_color(app_client, auth_headers):
+    """创建清单时指定字体颜色"""
+    data = _create_list(app_client, auth_headers, name="Colored", font_color="#ff4d4f")
+    assert data["name"] == "Colored"
+    assert data["font_color"] == "#ff4d4f"
+
+
+def test_create_list_without_font_color(app_client, auth_headers):
+    """创建清单时不传 font_color 默认为 None"""
+    data = _create_list(app_client, auth_headers, name="No Color")
+    assert data["font_color"] is None
+
+
 def test_get_lists(app_client, auth_headers):
     """获取清单列表"""
     _create_list(app_client, auth_headers, name="List A")
@@ -52,6 +65,32 @@ def test_update_list(app_client, auth_headers):
     )
     assert resp.status_code == 200
     assert resp.json()["name"] == "New Name"
+
+
+def test_update_list_font_color(app_client, auth_headers):
+    """更新清单字体颜色"""
+    lst = _create_list(app_client, auth_headers, name="Color List")
+    # 设置 font_color
+    resp = app_client.put(
+        f"/api/lists/{lst['id']}",
+        json={"font_color": "#1890ff"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["font_color"] == "#1890ff"
+
+
+def test_update_list_clear_font_color(app_client, auth_headers):
+    """清除清单字体颜色"""
+    lst = _create_list(app_client, auth_headers, name="Clear Color", font_color="#ff4d4f")
+    # 将 font_color 设为 None 以清除
+    resp = app_client.put(
+        f"/api/lists/{lst['id']}",
+        json={"font_color": None},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["font_color"] is None
 
 
 def test_delete_list(app_client, auth_headers):
@@ -187,3 +226,53 @@ def test_get_folder_task_count(app_client, auth_headers):
     assert data['type'] == 'folder'
     assert data['sublist_count'] == 1
     assert data['task_count'] == 1
+
+
+def test_update_list_pin(app_client, auth_headers):
+    """测试将清单置顶"""
+    lst = _create_list(app_client, auth_headers, name="Pin Me")
+    resp = app_client.put(
+        f"/api/lists/{lst['id']}",
+        json={"is_pinned": True},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["is_pinned"] is True
+
+
+def test_update_list_unpin(app_client, auth_headers):
+    """测试取消置顶"""
+    lst = _create_list(app_client, auth_headers, name="Unpin Me")
+    # 先置顶
+    app_client.put(
+        f"/api/lists/{lst['id']}",
+        json={"is_pinned": True},
+        headers=auth_headers,
+    )
+    # 取消置顶
+    resp = app_client.put(
+        f"/api/lists/{lst['id']}",
+        json={"is_pinned": False},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["is_pinned"] is False
+
+
+def test_pinned_list_order(app_client, auth_headers):
+    """测试置顶清单排在前面"""
+    list_a = _create_list(app_client, auth_headers, name="List A", order=1)
+    list_b = _create_list(app_client, auth_headers, name="List B", order=2)
+    # 将 B 置顶
+    app_client.put(
+        f"/api/lists/{list_b['id']}",
+        json={"is_pinned": True},
+        headers=auth_headers,
+    )
+    # 获取清单列表
+    resp = app_client.get("/api/lists", headers=auth_headers)
+    assert resp.status_code == 200
+    lists = resp.json()["lists"]
+    # 找到 A 和 B 在列表中的位置
+    ids = [l["id"] for l in lists]
+    assert ids.index(list_b["id"]) < ids.index(list_a["id"])

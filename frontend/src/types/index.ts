@@ -166,8 +166,10 @@ export interface TaskList {
   type: 'folder' | 'list';
   parent_id?: string;
   color: string;
+  font_color?: string;  // 字体颜色
   order: number;
   is_archived: boolean;
+  is_pinned: boolean;  // 是否置顶
   created_at: string;
   updated_at: string;
 }
@@ -177,6 +179,7 @@ export interface TaskListCreateRequest {
   type?: 'folder' | 'list';
   parent_id?: string;
   color?: string;
+  font_color?: string;
   order?: number;
 }
 
@@ -184,8 +187,10 @@ export interface TaskListUpdateRequest {
   name?: string;
   parent_id?: string;
   color?: string;
+  font_color?: string;
   order?: number;
   is_archived?: boolean;
+  is_pinned?: boolean;
 }
 
 // 标签类型

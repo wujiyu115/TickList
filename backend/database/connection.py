@@ -100,6 +100,10 @@ class DatabaseConnection:
             'users': [
                 ('is_frozen', 'BOOLEAN DEFAULT 0'),
             ],
+            'task_lists': [
+                ('font_color', 'VARCHAR(50)'),
+                ('is_pinned', 'BOOLEAN DEFAULT 0'),
+            ],
         }
         
         with self.engine.connect() as conn:

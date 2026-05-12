@@ -19,6 +19,7 @@ class ListCreate(BaseModel):
     type: str = 'list'  # folder | list
     parent_id: Optional[str] = None
     color: str = '#1677ff'
+    font_color: Optional[str] = None
     order: int = 0
 
 
@@ -26,8 +27,10 @@ class ListUpdate(BaseModel):
     name: Optional[str] = None
     parent_id: Optional[str] = None
     color: Optional[str] = None
+    font_color: Optional[str] = None
     order: Optional[int] = None
     is_archived: Optional[bool] = None
+    is_pinned: Optional[bool] = None
 
 
 class ReorderItem(BaseModel):
@@ -50,6 +53,7 @@ async def create_list(
             type=data.type,
             parent_id=data.parent_id,
             color=data.color,
+            font_color=data.font_color,
             order=data.order
         )
         
@@ -132,11 +136,17 @@ async def update_list(
         if not existing:
             raise HTTPException(status_code=404, detail='清单不存在')
         
-        # 构建更新数据
+        # 构建更新数据（允许可空字段被显式设为 None）
+        nullable_fields = {'font_color'}
+        # 布尔字段：None 表示不更新，False 表示取消
+        bool_fields = {'is_archived', 'is_pinned'}
         update_data = {}
         for field, value in data.dict(exclude_unset=True).items():
-            if value is not None:
+            if value is not None or field in nullable_fields:
                 update_data[field] = value
+            elif field in bool_fields and value is None:
+                # bool 字段未显式设置时不更新（已被 exclude_unset 过滤）
+                pass
         
         success = list_dao.update_list(current_user_id, list_id, update_data)
         if not success:

@@ -140,7 +140,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ visible, onClose, par
                   background: l.color, 
                   marginRight: 8 
                 }} />
-                {l.name}
+                <span style={{ color: l.font_color || undefined }}>{l.name}</span>
               </Option>
             ))}
           </Select>

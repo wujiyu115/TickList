@@ -23,6 +23,7 @@ import {
   FileTextOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
+  PushpinOutlined,
   InboxOutlined as ArchiveOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
@@ -54,6 +55,12 @@ const colorOptions = [
   { value: '#eb2f96', label: '粉色' },
   { value: '#13c2c2', label: '青色' },
   { value: '#8c8c8c', label: '灰色' },
+];
+
+// 字体颜色选项（含默认选项）
+const fontColorOptions = [
+  { value: '', label: '默认' },
+  ...colorOptions,
 ];
 
 import { useLongPress } from '../hooks/useLongPress';
@@ -101,6 +108,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
   const [createType, setCreateType] = useState<'folder' | 'list'>('list');
   const [newListName, setNewListName] = useState('');
   const [newListColor, setNewListColor] = useState('#1677ff');
+  const [newListFontColor, setNewListFontColor] = useState('');
   const [createLoading, setCreateLoading] = useState(false);
   const [createParentId, setCreateParentId] = useState<string | null>(null); // 用于在文件夹下创建子清单
   const [hoveredFolderId, setHoveredFolderId] = useState<string | null>(null); // hover 的文件夹 id
@@ -109,6 +117,14 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteItem, setDeleteItem] = useState<TaskList | null>(null);
   const [mobileMenuKey, setMobileMenuKey] = useState<string | null>(null); // 移动端长按触发的菜单
+
+  // 编辑清单 Modal 状态
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingList, setEditingList] = useState<TaskList | null>(null);
+  const [editListName, setEditListName] = useState('');
+  const [editListColor, setEditListColor] = useState('');
+  const [editListFontColor, setEditListFontColor] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
   
   // 拖拽排序相关 refs
   const dragItemRef = useRef<{ id: string; parent_id: string | null; index: number } | null>(null);
@@ -407,6 +423,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
     setCreateType('list');
     setNewListName('');
     setNewListColor('#1677ff');
+    setNewListFontColor('');
     setCreateParentId(folderId);
     setCreateModalVisible(true);
   };
@@ -421,6 +438,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         setCreateType('list');
         setNewListName('');
         setNewListColor('#1677ff');
+        setNewListFontColor('');
         setCreateParentId(folderId);
         setCreateModalVisible(true);
       }
@@ -444,8 +462,19 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
       message.error(archive ? '归档失败' : '取消归档失败');
     }
   };
-
-  // 文件夹"..."菜单项
+  
+  // 处理置顶/取消置顶
+  const handleTogglePin = async (listId: string, currentPinned: boolean) => {
+    try {
+      await updateList(listId, { is_pinned: !currentPinned });
+      message.success(currentPinned ? '已取消置顶' : '已置顶');
+      loadLists();
+    } catch (e) {
+      message.error('操作失败');
+    }
+  };
+  
+  // 文件夹“...”菜单项
   const getFolderMoreMenuItems = (folder: TaskList): MenuProps['items'] => {
     const childrenCount = lists.filter(l => l.parent_id === folder.id).length;
     return [
@@ -457,6 +486,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           setCreateType('list');
           setNewListName('');
           setNewListColor('#1677ff');
+          setNewListFontColor('');
           setCreateParentId(folder.id);
           setCreateModalVisible(true);
         }
@@ -480,10 +510,49 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
     ];
   };
 
-  // 清单"..."菜单项
+  // 打开编辑清单 Modal
+  const handleOpenEditModal = (list: TaskList) => {
+    setEditingList(list);
+    setEditListName(list.name);
+    setEditListColor(list.color);
+    setEditListFontColor(list.font_color || '');
+    setEditModalVisible(true);
+  };
+  
+  // 保存编辑清单
+  const handleEditList = async () => {
+    if (!editingList) return;
+    if (!editListName.trim()) {
+      message.warning('请输入清单名称');
+      return;
+    }
+    setEditLoading(true);
+    try {
+      await updateList(editingList.id, {
+        name: editListName.trim(),
+        color: editListColor,
+        font_color: editListFontColor || undefined,
+      });
+      message.success('清单更新成功');
+      setEditModalVisible(false);
+      setEditingList(null);
+      loadLists();
+    } catch (e) {
+      message.error('更新失败');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+  
+  // 清单“...”菜单项
   const getListMoreMenuItems = (list: TaskList, isArchived = false): MenuProps['items'] => {
     if (isArchived) {
       return [
+        {
+          key: 'edit',
+          label: '编辑',
+          onClick: () => handleOpenEditModal(list)
+        },
         {
           key: 'unarchive',
           icon: <ArchiveOutlined />,
@@ -503,6 +572,17 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
       ];
     }
     return [
+      {
+        key: 'edit',
+        label: '编辑',
+        onClick: () => handleOpenEditModal(list)
+      },
+      {
+        key: 'togglePin',
+        label: list.is_pinned ? '取消置顶' : '置顶',
+        icon: <PushpinOutlined />,
+        onClick: () => handleTogglePin(list.id, list.is_pinned)
+      },
       {
         key: 'archive',
         icon: <ArchiveOutlined />,
@@ -971,6 +1051,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           setCreateType('list');
           setNewListName('');
           setNewListColor('#1677ff');
+          setNewListFontColor('');
           setCreateParentId(item.id);
           setCreateModalVisible(true);
         }
@@ -992,6 +1073,17 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
     return [
       ...moveItems,
       ...folderItems,
+      ...(item.type === 'list' ? [{
+        key: 'edit',
+        label: '编辑',
+        onClick: () => handleOpenEditModal(item)
+      }] : []),
+      ...(item.type === 'list' && !isArchived ? [{
+        key: 'togglePin',
+        label: item.is_pinned ? '取消置顶' : '置顶',
+        icon: <PushpinOutlined />,
+        onClick: () => handleTogglePin(item.id, item.is_pinned)
+      }] : []),
       archiveItem,
       {
         key: 'delete',
@@ -1090,7 +1182,8 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
             {isCollapsed ? <FolderOutlined /> : <FolderOpenOutlined />}
           </>
         ) : null}
-        <span className="list-name">{item.name}</span>
+        <span className="list-name" style={{ color: item.font_color || undefined }}>{item.name}</span>
+        {item.is_pinned && <PushpinOutlined style={{ fontSize: 12, color: '#8c8c8c', marginLeft: 4 }} />}
         {/* 文件夹 hover 操作按钮 - 只保留 "..." 菜单 */}
         {isFolder && (isFolderHovered || mobileMenuKey === `folder-${item.id}`) && (
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -1173,6 +1266,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         setCreateType('folder');
         setNewListName('');
         setNewListColor('#1677ff');
+        setNewListFontColor('');
         setCreateParentId(null); // 顶层
         setCreateModalVisible(true);
       }
@@ -1185,6 +1279,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         setCreateType('list');
         setNewListName('');
         setNewListColor('#1677ff');
+        setNewListFontColor('');
         setCreateParentId(null); // 顶层
         setCreateModalVisible(true);
       }
@@ -1203,6 +1298,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         name: newListName.trim(),
         type: createType,
         color: newListColor,
+        font_color: newListFontColor || undefined,
         parent_id: createParentId || undefined // 如果有 parent_id 则传递
       });
       const parentFolder = createParentId ? lists.find(l => l.id === createParentId) : null;
@@ -1212,6 +1308,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
       message.success(successMsg);
       setCreateModalVisible(false);
       setCreateParentId(null);
+      setNewListFontColor('');
       // 如果在文件夹下创建，确保文件夹展开
       if (createParentId) {
         setCollapsedFolders(prev => ({ ...prev, [createParentId]: false }));
@@ -1755,6 +1852,38 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
             )}
           />
         </div>
+        {createType === 'list' && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ marginBottom: 8 }}>字体颜色</div>
+            <Select
+              value={newListFontColor}
+              onChange={setNewListFontColor}
+              style={{ width: '100%' }}
+              options={fontColorOptions}
+              optionRender={(option) => (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {option.value ? (
+                    <span style={{ 
+                      width: 16, 
+                      height: 16, 
+                      borderRadius: 4, 
+                      background: option.value as string 
+                    }} />
+                  ) : (
+                    <span style={{ 
+                      width: 16, 
+                      height: 16, 
+                      borderRadius: 4, 
+                      background: '#f0f0f0',
+                      border: '1px solid #d9d9d9'
+                    }} />
+                  )}
+                  {option.label}
+                </div>
+              )}
+            />
+          </div>
+        )}
       </Modal>
 
       {/* 删除清单确认 Modal */}
@@ -1782,6 +1911,80 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           }
         }}
       />
+
+      {/* 编辑清单 Modal */}
+      <Modal
+        title="编辑清单"
+        open={editModalVisible}
+        onOk={handleEditList}
+        onCancel={() => {
+          setEditModalVisible(false);
+          setEditingList(null);
+        }}
+        confirmLoading={editLoading}
+        okText="保存"
+        cancelText="取消"
+      >
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8 }}>名称</div>
+          <Input
+            placeholder="请输入清单名称"
+            value={editListName}
+            onChange={e => setEditListName(e.target.value)}
+            onPressEnter={handleEditList}
+          />
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8 }}>颜色</div>
+          <Select
+            value={editListColor}
+            onChange={setEditListColor}
+            style={{ width: '100%' }}
+            options={colorOptions}
+            optionRender={(option) => (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: 4,
+                  background: option.value as string
+                }} />
+                {option.label}
+              </div>
+            )}
+          />
+        </div>
+        <div>
+          <div style={{ marginBottom: 8 }}>字体颜色</div>
+          <Select
+            value={editListFontColor}
+            onChange={setEditListFontColor}
+            style={{ width: '100%' }}
+            options={fontColorOptions}
+            optionRender={(option) => (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {option.value ? (
+                  <span style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: 4,
+                    background: option.value as string
+                  }} />
+                ) : (
+                  <span style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: 4,
+                    background: '#f0f0f0',
+                    border: '1px solid #d9d9d9'
+                  }} />
+                )}
+                {option.label}
+              </div>
+            )}
+          />
+        </div>
+      </Modal>
 
       {/* 新建/编辑标签 Modal */}
       <Modal

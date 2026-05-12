@@ -187,8 +187,10 @@ async def import_data(
                     type=list_data.get('type', 'list'),
                     parent_id=parent_id,
                     color=list_data.get('color', '#1677ff'),
+                    font_color=list_data.get('font_color', None),
                     order=list_data.get('order', 0),
                     is_archived=list_data.get('is_archived', False),
+                    is_pinned=list_data.get('is_pinned', False),
                     created_at=datetime.now().isoformat(),
                     updated_at=datetime.now().isoformat()
                 )

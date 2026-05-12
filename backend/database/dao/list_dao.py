@@ -100,8 +100,9 @@ class TaskListDAO:
             if type:
                 query = query.filter(TaskListModel.type == type)
             
-            # 按排序顺序、创建时间排序
+            # 置顶清单优先，再按排序顺序、创建时间排序
             lists = query.order_by(
+                desc(TaskListModel.is_pinned),
                 asc(TaskListModel.order),
                 desc(TaskListModel.created_at)
             ).offset(skip).limit(limit).all()

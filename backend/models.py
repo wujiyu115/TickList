@@ -248,8 +248,10 @@ class TaskList:
         type: str = 'list',  # 'folder' | 'list'
         parent_id: Optional[str] = None,
         color: str = '#1677ff',
+        font_color: Optional[str] = None,
         order: int = 0,
         is_archived: bool = False,
+        is_pinned: bool = False,
         created_at: Optional[datetime] = None,
         updated_at: Optional[datetime] = None
     ):
@@ -259,8 +261,10 @@ class TaskList:
         self.type = type
         self.parent_id = parent_id
         self.color = color
+        self.font_color = font_color
         self.order = order
         self.is_archived = is_archived
+        self.is_pinned = is_pinned
         self.created_at = created_at or datetime.now()
         self.updated_at = updated_at or datetime.now()
     
@@ -272,8 +276,10 @@ class TaskList:
             'type': self.type,
             'parent_id': self.parent_id,
             'color': self.color,
+            'font_color': self.font_color,
             'order': self.order,
             'is_archived': self.is_archived,
+            'is_pinned': self.is_pinned,
             'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else self.created_at,
             'updated_at': self.updated_at.isoformat() if isinstance(self.updated_at, datetime) else self.updated_at,
         }
