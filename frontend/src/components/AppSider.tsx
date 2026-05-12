@@ -56,14 +56,15 @@ const darkColors = [
 ];
 
 // 颜色网格选择器
+const allColors = [...lightColors, ...darkColors];
 const ColorPicker: React.FC<{
   value: string;
   onChange: (color: string) => void;
   showDefault?: boolean;
 }> = ({ value, onChange, showDefault = false }) => (
   <div className="color-picker-grid">
-    {showDefault && (
-      <div className="color-picker-section">
+    <div className="color-picker-row">
+      {showDefault && (
         <div
           className={`color-dot default-dot ${value === '' ? 'selected' : ''}`}
           onClick={() => onChange('')}
@@ -71,37 +72,17 @@ const ColorPicker: React.FC<{
         >
           {value === '' && <span className="color-dot-check">✓</span>}
         </div>
-      </div>
-    )}
-    <div className="color-picker-section">
-      <div className="color-picker-label">浅色</div>
-      <div className="color-picker-row">
-        {lightColors.map(color => (
-          <div
-            key={color}
-            className={`color-dot ${value === color ? 'selected' : ''}`}
-            style={{ background: color }}
-            onClick={() => onChange(color)}
-          >
-            {value === color && <span className="color-dot-check">✓</span>}
-          </div>
-        ))}
-      </div>
-    </div>
-    <div className="color-picker-section">
-      <div className="color-picker-label">深色</div>
-      <div className="color-picker-row">
-        {darkColors.map(color => (
-          <div
-            key={color}
-            className={`color-dot ${value === color ? 'selected' : ''}`}
-            style={{ background: color }}
-            onClick={() => onChange(color)}
-          >
-            {value === color && <span className="color-dot-check">✓</span>}
-          </div>
-        ))}
-      </div>
+      )}
+      {allColors.map(color => (
+        <div
+          key={color}
+          className={`color-dot ${value === color ? 'selected' : ''}`}
+          style={{ background: color }}
+          onClick={() => onChange(color)}
+        >
+          {value === color && <span className="color-dot-check">✓</span>}
+        </div>
+      ))}
     </div>
   </div>
 );
