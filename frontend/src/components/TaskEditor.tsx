@@ -1091,6 +1091,9 @@ const TaskEditor: React.FC = () => {
         )}
       </div>
 
+      {/* 仅当子任务列表非空时显示分隔线 */}
+      {childTasks.length > 0 && <div className="editor-divider" />}
+
       {/* 子任务列表 */}
       <div className="editor-subtasks">
         {childTasks.map((subtask, idx) => (
