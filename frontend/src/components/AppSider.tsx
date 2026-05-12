@@ -45,23 +45,66 @@ interface AppSiderProps {
   onTogglePanel?: () => void;
 }
 
-// 预定义颜色选项（清单用）
-const colorOptions = [
-  { value: '#ff4d4f', label: '红色' },
-  { value: '#faad14', label: '橙色' },
-  { value: '#52c41a', label: '绿色' },
-  { value: '#1677ff', label: '蓝色' },
-  { value: '#722ed1', label: '紫色' },
-  { value: '#eb2f96', label: '粉色' },
-  { value: '#13c2c2', label: '青色' },
-  { value: '#8c8c8c', label: '灰色' },
+// 浅色系
+const lightColors = [
+  '#ffccc7', '#ffd8bf', '#fff1b8', '#d9f7be', '#bae0ff', '#efdbff', '#ffd6e7', '#d9d9d9',
 ];
 
-// 字体颜色选项（含默认选项）
-const fontColorOptions = [
-  { value: '', label: '默认' },
-  ...colorOptions,
+// 深色系
+const darkColors = [
+  '#ff4d4f', '#fa8c16', '#faad14', '#52c41a', '#1677ff', '#722ed1', '#eb2f96', '#434343',
 ];
+
+// 颜色网格选择器
+const ColorPicker: React.FC<{
+  value: string;
+  onChange: (color: string) => void;
+  showDefault?: boolean;
+}> = ({ value, onChange, showDefault = false }) => (
+  <div className="color-picker-grid">
+    {showDefault && (
+      <div className="color-picker-section">
+        <div
+          className={`color-dot default-dot ${value === '' ? 'selected' : ''}`}
+          onClick={() => onChange('')}
+          title="默认"
+        >
+          {value === '' && <span className="color-dot-check">✓</span>}
+        </div>
+      </div>
+    )}
+    <div className="color-picker-section">
+      <div className="color-picker-label">浅色</div>
+      <div className="color-picker-row">
+        {lightColors.map(color => (
+          <div
+            key={color}
+            className={`color-dot ${value === color ? 'selected' : ''}`}
+            style={{ background: color }}
+            onClick={() => onChange(color)}
+          >
+            {value === color && <span className="color-dot-check">✓</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+    <div className="color-picker-section">
+      <div className="color-picker-label">深色</div>
+      <div className="color-picker-row">
+        {darkColors.map(color => (
+          <div
+            key={color}
+            className={`color-dot ${value === color ? 'selected' : ''}`}
+            style={{ background: color }}
+            onClick={() => onChange(color)}
+          >
+            {value === color && <span className="color-dot-check">✓</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
 
 import { useLongPress } from '../hooks/useLongPress';
 
@@ -1834,54 +1877,12 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         </div>
         <div>
           <div style={{ marginBottom: 8 }}>颜色</div>
-          <Select
-            value={newListColor}
-            onChange={setNewListColor}
-            style={{ width: '100%' }}
-            options={colorOptions}
-            optionRender={(option) => (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ 
-                  width: 16, 
-                  height: 16, 
-                  borderRadius: 4, 
-                  background: option.value as string 
-                }} />
-                {option.label}
-              </div>
-            )}
-          />
+          <ColorPicker value={newListColor} onChange={setNewListColor} />
         </div>
         {createType === 'list' && (
           <div style={{ marginTop: 16 }}>
             <div style={{ marginBottom: 8 }}>字体颜色</div>
-            <Select
-              value={newListFontColor}
-              onChange={setNewListFontColor}
-              style={{ width: '100%' }}
-              options={fontColorOptions}
-              optionRender={(option) => (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {option.value ? (
-                    <span style={{ 
-                      width: 16, 
-                      height: 16, 
-                      borderRadius: 4, 
-                      background: option.value as string 
-                    }} />
-                  ) : (
-                    <span style={{ 
-                      width: 16, 
-                      height: 16, 
-                      borderRadius: 4, 
-                      background: '#f0f0f0',
-                      border: '1px solid #d9d9d9'
-                    }} />
-                  )}
-                  {option.label}
-                </div>
-              )}
-            />
+            <ColorPicker value={newListFontColor} onChange={setNewListFontColor} showDefault />
           </div>
         )}
       </Modal>
@@ -1936,53 +1937,11 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         </div>
         <div style={{ marginBottom: 16 }}>
           <div style={{ marginBottom: 8 }}>颜色</div>
-          <Select
-            value={editListColor}
-            onChange={setEditListColor}
-            style={{ width: '100%' }}
-            options={colorOptions}
-            optionRender={(option) => (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: 4,
-                  background: option.value as string
-                }} />
-                {option.label}
-              </div>
-            )}
-          />
+          <ColorPicker value={editListColor} onChange={setEditListColor} />
         </div>
         <div>
           <div style={{ marginBottom: 8 }}>字体颜色</div>
-          <Select
-            value={editListFontColor}
-            onChange={setEditListFontColor}
-            style={{ width: '100%' }}
-            options={fontColorOptions}
-            optionRender={(option) => (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {option.value ? (
-                  <span style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: 4,
-                    background: option.value as string
-                  }} />
-                ) : (
-                  <span style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: 4,
-                    background: '#f0f0f0',
-                    border: '1px solid #d9d9d9'
-                  }} />
-                )}
-                {option.label}
-              </div>
-            )}
-          />
+          <ColorPicker value={editListFontColor} onChange={setEditListFontColor} showDefault />
         </div>
       </Modal>
 
@@ -2076,23 +2035,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         </div>
         <div>
           <div style={{ marginBottom: 8 }}>颜色</div>
-          <Select
-            value={newNoteFolderColor}
-            onChange={setNewNoteFolderColor}
-            style={{ width: '100%' }}
-            options={colorOptions}
-            optionRender={(option) => (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ 
-                  width: 16, 
-                  height: 16, 
-                  borderRadius: 4, 
-                  background: option.value as string 
-                }} />
-                {option.label}
-              </div>
-            )}
-          />
+          <ColorPicker value={newNoteFolderColor} onChange={setNewNoteFolderColor} />
         </div>
       </Modal>
 

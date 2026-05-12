@@ -77,3 +77,69 @@ input, textarea, select,
     font-size: inherit !important;
   }
 }
+
+// 颜色网格选择器
+.color-picker-grid {
+  .color-picker-section {
+    margin-bottom: 8px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .color-picker-label {
+    font-size: 12px;
+    color: var(--ant-color-text-secondary);
+    margin-bottom: 4px;
+  }
+
+  .color-picker-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .color-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s;
+    position: relative;
+    border: 2px solid transparent;
+
+    &:hover {
+      transform: scale(1.2);
+    }
+
+    &.selected {
+      border-color: var(--ant-color-primary);
+    }
+
+    &.default-dot {
+      background: var(--ant-color-bg-container);
+      border: 2px dashed var(--ant-color-border);
+
+      &.selected {
+        border-style: solid;
+        border-color: var(--ant-color-primary);
+      }
+    }
+
+    .color-dot-check {
+      font-size: 12px;
+      color: #fff;
+      font-weight: bold;
+      text-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  .default-dot .color-dot-check {
+    color: var(--ant-color-text);
+    text-shadow: none;
+  }
+}
