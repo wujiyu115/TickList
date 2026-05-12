@@ -1,10 +1,15 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, HashRouter } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import App from './App';
+import { isNativePlatform } from './utils/platform';
 import './index.less';
+
+// Native 端（Capacitor iOS/Android）使用 HashRouter，因为内置协议不支持 history 模式
+// Web 端保留 BrowserRouter 以维持现有路由与分享行为
+const Router = isNativePlatform() ? HashRouter : BrowserRouter;
 
 // 动态计算浏览器底栏高度，解决移动端底部地址栏遮挡工具栏问题
 // CSS 100vh 包含浏览器底栏区域，window.innerHeight 是真实可视高度，差值即底栏高度
@@ -32,9 +37,9 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <ConfigProvider locale={zhCN}>
-      <BrowserRouter>
+      <Router>
         <App />
-      </BrowserRouter>
+      </Router>
     </ConfigProvider>
   </React.StrictMode>
 );

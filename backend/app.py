@@ -78,8 +78,19 @@ def create_app():
             "http://127.0.0.1:5000"
         ]
     else:
-        allowed_origins = config.get('cors.allowed_origins', [])
-    
+        allowed_origins = list(config.get('cors.allowed_origins', []) or [])
+
+    # Capacitor iOS / Android app 的 origin（无论環境都放行，供移动端打包后访问）
+    native_origins = [
+        "capacitor://localhost",   # iOS WebView
+        "http://localhost",         # Android WebView
+        "https://localhost",        # Capacitor androidScheme=https
+        "ionic://localhost",        # 历史兼容
+    ]
+    for origin in native_origins:
+        if origin not in allowed_origins:
+            allowed_origins.append(origin)
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,

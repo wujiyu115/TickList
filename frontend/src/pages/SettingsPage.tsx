@@ -38,6 +38,8 @@ import { getSettings, updateSettings, testPushChannel } from '../api/settings';
 import { getLists } from '../api/list';
 import { exportData, importData, importDidaCsv } from '../api/data';
 import { ThemeContext } from '../App';
+import { isNativePlatform, getApiBaseUrl } from '../utils/platform';
+import { useNavigate } from 'react-router-dom';
 import './SettingsPage.less';
 
 // 配色方案定义（浅色 20 种在前、深色 20 种在后，同色系相邻）
@@ -151,6 +153,7 @@ const NAV_ITEMS = [
 ];
 
 const SettingsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('appearance');
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -526,6 +529,29 @@ const SettingsPage: React.FC = () => {
 
       {/* 右侧内容 */}
       <div className="settings-content">
+        {/* 移动端专属：服务器地址配置入口 */}
+        {isNativePlatform() && (
+          <div className="settings-section" style={{ marginBottom: 16 }}>
+            <div className="section-title">服务器地址</div>
+            <Card size="small" style={{ marginTop: 8 }}>
+              <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                <div style={{ color: 'var(--ant-color-text-secondary)', fontSize: 13 }}>
+                  当前连接：<Tag color="blue">{getApiBaseUrl() || '未配置'}</Tag>
+                </div>
+                <Button
+                  type="default"
+                  onClick={() => navigate('/server-config?mode=edit')}
+                >
+                  修改服务器地址
+                </Button>
+                <div style={{ color: 'var(--ant-color-text-tertiary)', fontSize: 12 }}>
+                  修改服务器后会自动退出当前登录。
+                </div>
+              </Space>
+            </Card>
+          </div>
+        )}
+
         {/* 外观设置 */}
         <div id="settings-appearance" className="settings-section">
           <div className="section-title">外观设置</div>

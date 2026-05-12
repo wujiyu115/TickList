@@ -8,6 +8,10 @@
     "dev": "rsbuild dev",
     "build": "rsbuild build",
     "build:dev": "NODE_ENV=development rsbuild build",
+    "build:mobile": "rsbuild build",
+    "cap:sync": "cap sync",
+    "cap:ios": "rsbuild build && cap sync ios && cap open ios",
+    "cap:android": "rsbuild build && cap sync android && cap open android",
     "preview": "rsbuild preview",
     "lint": "eslint --ext .js,.ts,.tsx .",
     "lint-fix": "eslint --ext .js,.ts,.tsx --fix .",
@@ -17,6 +21,9 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.3.7",
+    "@capacitor/android": "^8.3.3",
+    "@capacitor/core": "^8.3.3",
+    "@capacitor/ios": "^8.3.3",
     "@simplewebauthn/browser": "^13.3.0",
     "antd": "^5.0.0",
     "axios": "^1.6.0",
@@ -29,6 +36,7 @@
     "react-router-dom": "^6.10.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.3.3",
     "@rsbuild/core": "^1.2.0",
     "@rsbuild/plugin-less": "^1.2.0",
     "@rsbuild/plugin-react": "^1.2.0",

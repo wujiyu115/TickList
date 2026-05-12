@@ -7,10 +7,12 @@ import LoginPage from './pages/LoginPage';
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const ChangePasswordPage = lazy(() => import('./pages/ChangePasswordPage'));
 const PasskeyManagePage = lazy(() => import('./pages/PasskeyManagePage'));
+const ServerConfigPage = lazy(() => import('./pages/ServerConfigPage'));
 import { FocusProvider } from './contexts/FocusContext';
 import { getCurrentUser } from './api/auth';
 import { getSettings } from './api/settings';
 import { User, UserSettings } from './types';
+import { isNativePlatform, getApiBaseUrl } from './utils/platform';
 
 // 配色方案映射
 interface ThemeConfig {
@@ -108,7 +110,16 @@ const App: React.FC = () => {
   const [defaultViewPath, setDefaultViewPath] = useState<string | null>(null);
 
   useEffect(() => {
+    // Native 端未配置服务器地址：强制跳转配置页，不发出任何认证请求
+    if (isNativePlatform() && !getApiBaseUrl()) {
+      setLoading(false);
+      if (location.pathname !== '/server-config') {
+        navigate('/server-config?reason=missing', { replace: true });
+      }
+      return;
+    }
     checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkAuth = async () => {
@@ -202,6 +213,10 @@ const App: React.FC = () => {
         <FocusProvider>
         <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Spin size="large" /></div>}>
         <Routes>
+          <Route
+            path="/server-config"
+            element={<ServerConfigPage />}
+          />
           <Route
             path="/login"
             element={
