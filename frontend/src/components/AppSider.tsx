@@ -550,7 +550,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
       await updateList(editingList.id, {
         name: editListName.trim(),
         color: editListColor,
-        font_color: editListFontColor || undefined,
+        font_color: editListFontColor === '' ? null : editListFontColor,
       });
       message.success('清单更新成功');
       setEditModalVisible(false);
@@ -1317,7 +1317,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         name: newListName.trim(),
         type: createType,
         color: newListColor,
-        font_color: newListFontColor || undefined,
+        font_color: newListFontColor === '' ? null : (newListFontColor || undefined),
         parent_id: createParentId || undefined // 如果有 parent_id 则传递
       });
       const parentFolder = createParentId ? lists.find(l => l.id === createParentId) : null;
