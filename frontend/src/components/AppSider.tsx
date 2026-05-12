@@ -46,17 +46,12 @@ interface AppSiderProps {
 }
 
 // 浅色系
-const lightColors = [
-  '#ffccc7', '#ffd8bf', '#fff1b8', '#d9f7be', '#bae0ff', '#efdbff', '#ffd6e7', '#d9d9d9',
-];
-
-// 深色系
-const darkColors = [
+// 颜色列表
+const colorList = [
   '#ff4d4f', '#fa8c16', '#faad14', '#52c41a', '#1677ff', '#722ed1', '#eb2f96', '#434343',
 ];
 
 // 颜色网格选择器
-const allColors = [...lightColors, ...darkColors];
 const ColorPicker: React.FC<{
   value: string;
   onChange: (color: string) => void;
@@ -73,7 +68,7 @@ const ColorPicker: React.FC<{
           {value === '' && <span className="color-dot-check">✓</span>}
         </div>
       )}
-      {allColors.map(color => (
+      {colorList.map(color => (
         <div
           key={color}
           className={`color-dot ${value === color ? 'selected' : ''}`}
