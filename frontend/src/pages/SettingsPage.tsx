@@ -15,6 +15,7 @@ import {
   Tag,
   Space,
   Popconfirm,
+  Tooltip,
 } from 'antd';
 import {
   BgColorsOutlined,
@@ -39,16 +40,50 @@ import { exportData, importData, importDidaCsv } from '../api/data';
 import { ThemeContext } from '../App';
 import './SettingsPage.less';
 
-// 配色方案定义
+// 配色方案定义（浅色 20 种在前、深色 20 种在后，同色系相邻）
 const THEME_OPTIONS = [
+  // 浅色主题
   { key: 'default', name: '默认蓝', color: '#1677ff', isDark: false },
+  { key: 'sky', name: '天空蓝', color: '#69b1ff', isDark: false },
+  { key: 'geekblue', name: '极客蓝', color: '#2f54eb', isDark: false },
+  { key: 'indigo', name: '靖青', color: '#597ef7', isDark: false },
+  { key: 'cyan', name: '青蓝', color: '#13c2c2', isDark: false },
+  { key: 'mint', name: '薄荷', color: '#36cfc9', isDark: false },
   { key: 'green', name: '翠绿', color: '#52c41a', isDark: false },
-  { key: 'purple', name: '薰衣紫', color: '#722ed1', isDark: false },
+  { key: 'sage', name: '嫩绿', color: '#73d13d', isDark: false },
+  { key: 'lime', name: '青柠', color: '#7cb305', isDark: false },
+  { key: 'olive', name: '橄榄', color: '#5b8c00', isDark: false },
+  { key: 'yellow', name: '明黄', color: '#fadb14', isDark: false },
+  { key: 'gold', name: '鎏金', color: '#d48806', isDark: false },
   { key: 'orange', name: '活力橙', color: '#fa8c16', isDark: false },
+  { key: 'volcano', name: '火山', color: '#fa541c', isDark: false },
+  { key: 'red', name: '朱红', color: '#ff4d4f', isDark: false },
   { key: 'rose', name: '玫瑰红', color: '#eb2f96', isDark: false },
+  { key: 'magenta', name: '品红', color: '#c41d7f', isDark: false },
+  { key: 'purple', name: '薰衣紫', color: '#722ed1', isDark: false },
+  { key: 'lavender', name: '淡紫', color: '#b37feb', isDark: false },
   { key: 'minimal', name: '极简灰', color: '#8c8c8c', isDark: false },
+  // 深色主题
   { key: 'dark', name: '暗夜黑', color: '#1677ff', isDark: true },
   { key: 'midnight', name: '午夜蓝', color: '#4096ff', isDark: true },
+  { key: 'abyss', name: '深渊蓝', color: '#1d39c4', isDark: true },
+  { key: 'steel', name: '钢蓝', color: '#2f54eb', isDark: true },
+  { key: 'obsidian', name: '黑曜青', color: '#08979c', isDark: true },
+  { key: 'void', name: '虚空青', color: '#13c2c2', isDark: true },
+  { key: 'ocean', name: '深海', color: '#006d75', isDark: true },
+  { key: 'forest', name: '暗夜林', color: '#389e0d', isDark: true },
+  { key: 'emerald', name: '祖母绿', color: '#52c41a', isDark: true },
+  { key: 'neon', name: '霓虹绿', color: '#a0d911', isDark: true },
+  { key: 'sunset', name: '日落', color: '#faad14', isDark: true },
+  { key: 'amber', name: '琥珀', color: '#d48806', isDark: true },
+  { key: 'ember', name: '暗夜炽', color: '#ff7a45', isDark: true },
+  { key: 'magma', name: '岩浆', color: '#fa541c', isDark: true },
+  { key: 'crimson', name: '深红', color: '#cf1322', isDark: true },
+  { key: 'plum', name: '梅紫', color: '#c41d7f', isDark: true },
+  { key: 'orchid', name: '兰花', color: '#eb2f96', isDark: true },
+  { key: 'royal', name: '暗夜紫', color: '#9254de', isDark: true },
+  { key: 'nebula', name: '星云紫', color: '#b37feb', isDark: true },
+  { key: 'slate', name: '深炭灰', color: '#bfbfbf', isDark: true },
 ];
 
 // 语言选项
@@ -495,25 +530,37 @@ const SettingsPage: React.FC = () => {
         <div id="settings-appearance" className="settings-section">
           <div className="section-title">外观设置</div>
           
-          <div style={{ marginBottom: 16, color: '#666', fontSize: 14 }}>配色方案</div>
+          <div style={{ marginBottom: 12, color: 'var(--ant-color-text-secondary)', fontSize: 14 }}>配色方案</div>
+
+          <div className="theme-group-title">浅色主题</div>
           <div className="theme-grid">
-            {THEME_OPTIONS.map(theme => (
-              <div
-                key={theme.key}
-                className={`theme-card ${settings.theme === theme.key ? 'selected' : ''} ${theme.isDark ? 'dark-theme' : ''}`}
-                onClick={() => handleUpdateSetting('theme', theme.key)}
-              >
-                <div 
-                  className="theme-preview" 
-                  style={{ background: theme.color }}
-                />
-                <div className="theme-name">{theme.name}</div>
-                {settings.theme === theme.key && (
-                  <div className="theme-check">
-                    <CheckOutlined />
-                  </div>
-                )}
-              </div>
+            {THEME_OPTIONS.filter(t => !t.isDark).map(theme => (
+              <Tooltip title={theme.name} key={theme.key}>
+                <div
+                  className={`theme-card ${settings.theme === theme.key ? 'selected' : ''}`}
+                  onClick={() => handleUpdateSetting('theme', theme.key)}
+                  aria-label={theme.name}
+                  role="button"
+                >
+                  <div className="theme-preview" style={{ background: theme.color }} />
+                </div>
+              </Tooltip>
+            ))}
+          </div>
+
+          <div className="theme-group-title">深色主题</div>
+          <div className="theme-grid">
+            {THEME_OPTIONS.filter(t => t.isDark).map(theme => (
+              <Tooltip title={theme.name} key={theme.key}>
+                <div
+                  className={`theme-card dark-theme ${settings.theme === theme.key ? 'selected' : ''}`}
+                  onClick={() => handleUpdateSetting('theme', theme.key)}
+                  aria-label={theme.name}
+                  role="button"
+                >
+                  <div className="theme-preview" style={{ background: theme.color }} />
+                </div>
+              </Tooltip>
             ))}
           </div>
         </div>

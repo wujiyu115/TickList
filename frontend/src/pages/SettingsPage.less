@@ -56,70 +56,60 @@
       }
     }
 
-    // 配色方案卡片网格
+    // 配色方案分组小标题
+    .theme-group-title {
+      font-size: 13px;
+      color: var(--ant-color-text-secondary);
+      margin: 16px 0 8px;
+
+      &:first-of-type {
+        margin-top: 0;
+      }
+    }
+
+    // 配色方案卡片网格（20px 底板 + 15px 色块，名称走 Tooltip）
     .theme-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-
-      @media (max-width: 1200px) {
-        grid-template-columns: repeat(3, 1fr);
-      }
-
-      @media (max-width: 900px) {
-        grid-template-columns: repeat(2, 1fr);
-      }
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
 
       .theme-card {
-        border: 2px solid var(--ant-color-border);
-        border-radius: 8px;
-        padding: 12px;
+        width: 20px;
+        height: 20px;
+        border: 1px solid var(--ant-color-border);
+        border-radius: 4px;
         cursor: pointer;
-        transition: all 0.2s;
         position: relative;
+        background: var(--ant-color-bg-container);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
 
         &:hover {
-          border-color: var(--ant-color-border-secondary);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          border-color: var(--ant-color-primary);
+          transform: scale(1.1);
         }
 
         &.selected {
           border-color: var(--ant-color-primary);
+          box-shadow: 0 0 0 1px var(--ant-color-primary);
         }
 
         &.dark-theme {
           background: #1f1f1f;
+          border-color: #2a2a2a;
 
-          .theme-name {
-            color: rgba(255, 255, 255, 0.85);
+          &.selected {
+            border-color: var(--ant-color-primary);
           }
         }
 
         .theme-preview {
-          height: 48px;
-          border-radius: 4px;
-          margin-bottom: 8px;
-        }
-
-        .theme-name {
-          font-size: 13px;
-          color: var(--ant-color-text);
-          text-align: center;
-        }
-
-        .theme-check {
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          width: 20px;
-          height: 20px;
-          background: var(--ant-color-primary);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--ant-color-bg-container);
-          font-size: 12px;
+          width: 15px;
+          height: 15px;
+          border-radius: 2px;
         }
       }
     }
@@ -262,10 +252,6 @@
     .settings-content {
       padding: 12px 8px;
     }
-  }
-
-  .settings-page .settings-content .theme-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 
   .settings-page .settings-content .passkey-section .passkey-header {

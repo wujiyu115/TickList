@@ -20,12 +20,28 @@ interface ThemeConfig {
 }
 
 const THEME_COLORS: Record<string, ThemeConfig> = {
+  // 浅色主题（20 种）
   default: { color: '#1677ff', isDark: false },
+  sky: { color: '#69b1ff', isDark: false },
+  geekblue: { color: '#2f54eb', isDark: false },
+  indigo: { color: '#597ef7', isDark: false },
+  cyan: { color: '#13c2c2', isDark: false },
+  mint: { color: '#36cfc9', isDark: false },
   green: { color: '#52c41a', isDark: false },
-  purple: { color: '#722ed1', isDark: false },
+  sage: { color: '#73d13d', isDark: false },
+  lime: { color: '#7cb305', isDark: false },
+  olive: { color: '#5b8c00', isDark: false },
+  yellow: { color: '#fadb14', isDark: false },
+  gold: { color: '#d48806', isDark: false },
   orange: { color: '#fa8c16', isDark: false },
+  volcano: { color: '#fa541c', isDark: false },
+  red: { color: '#ff4d4f', isDark: false },
   rose: { color: '#eb2f96', isDark: false },
+  magenta: { color: '#c41d7f', isDark: false },
+  purple: { color: '#722ed1', isDark: false },
+  lavender: { color: '#b37feb', isDark: false },
   minimal: { color: '#8c8c8c', isDark: false },
+  // 深色主题（20 种）
   dark: { color: '#1677ff', isDark: true },
   midnight: {
     color: '#4096ff',
@@ -39,6 +55,24 @@ const THEME_COLORS: Record<string, ThemeConfig> = {
       colorBorder: '#1d3b5a',
     },
   },
+  abyss: { color: '#1d39c4', isDark: true },
+  steel: { color: '#2f54eb', isDark: true },
+  obsidian: { color: '#08979c', isDark: true },
+  void: { color: '#13c2c2', isDark: true },
+  ocean: { color: '#006d75', isDark: true },
+  forest: { color: '#389e0d', isDark: true },
+  emerald: { color: '#52c41a', isDark: true },
+  neon: { color: '#a0d911', isDark: true },
+  sunset: { color: '#faad14', isDark: true },
+  amber: { color: '#d48806', isDark: true },
+  ember: { color: '#ff7a45', isDark: true },
+  magma: { color: '#fa541c', isDark: true },
+  crimson: { color: '#cf1322', isDark: true },
+  plum: { color: '#c41d7f', isDark: true },
+  orchid: { color: '#eb2f96', isDark: true },
+  royal: { color: '#9254de', isDark: true },
+  nebula: { color: '#b37feb', isDark: true },
+  slate: { color: '#bfbfbf', isDark: true },
 };
 
 // 主题 Context
