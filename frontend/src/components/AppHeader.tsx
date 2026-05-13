@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Layout, Avatar, Dropdown, Space, Button, message, Modal } from 'antd';
-import { UserOutlined, LogoutOutlined, LockOutlined, KeyOutlined, CrownOutlined, MenuOutlined, FullscreenOutlined, FullscreenExitOutlined, RobotOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { Layout, Avatar, Dropdown, Space, Button, message, Modal, Input } from 'antd';
+import { UserOutlined, LogoutOutlined, LockOutlined, KeyOutlined, CrownOutlined, MenuOutlined, FullscreenOutlined, FullscreenExitOutlined, RobotOutlined, StarOutlined, StarFilled, DeleteOutlined } from '@ant-design/icons';
+import { useNavigate, useLocation } from 'react-router-dom';
 import type { MenuProps } from 'antd';
 import { User } from '../types';
 import { useAiContext } from '../contexts/AiContext';
+import { getBookmarks, addBookmark, removeBookmark, isBookmarked, getCurrentPath, Bookmark } from '../utils/bookmarks';
 
 const { Header } = Layout;
 
@@ -24,8 +25,92 @@ interface AppHeaderProps {
 
 const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onMenuClick }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { openPanel, panelVisible, closePanel } = useAiContext();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+
+  // 当路由变化时更新收藏状态
+  useEffect(() => {
+    const currentPath = getCurrentPath();
+    setBookmarked(isBookmarked(currentPath));
+    setBookmarks(getBookmarks());
+  }, [location]);
+
+  const handleToggleBookmark = () => {
+    const currentPath = getCurrentPath();
+    if (bookmarked) {
+      removeBookmark(currentPath);
+      setBookmarked(false);
+      setBookmarks(getBookmarks());
+      message.success('已取消收藏');
+    } else {
+      // 从路径中提取有意义的部分作为默认标题
+      const pathOnly = currentPath.split('?')[0].replace(/^\//, '');
+      const defaultTitle = pathOnly || 'Home';
+      Modal.confirm({
+        title: '收藏当前页面',
+        content: (
+          <Input
+            id="bookmark-title-input"
+            defaultValue={defaultTitle}
+            placeholder="输入收藏标题"
+            style={{ marginTop: 8 }}
+          />
+        ),
+        okText: '收藏',
+        cancelText: '取消',
+        onOk: () => {
+          const inputEl = document.getElementById('bookmark-title-input') as HTMLInputElement;
+          const title = inputEl?.value?.trim() || defaultTitle;
+          addBookmark(currentPath, title);
+          setBookmarked(true);
+          setBookmarks(getBookmarks());
+          message.success('已收藏');
+        },
+      });
+    }
+  };
+
+  const handleDeleteBookmark = (event: React.MouseEvent, url: string) => {
+    event.stopPropagation();
+    event.preventDefault();
+    removeBookmark(url);
+    setBookmarks(getBookmarks());
+    const currentPath = getCurrentPath();
+    setBookmarked(isBookmarked(currentPath));
+  };
+
+  const bookmarkMenuItems: MenuProps['items'] = [
+    {
+      key: 'toggle',
+      icon: bookmarked ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />,
+      label: bookmarked ? '取消收藏' : '收藏当前页面',
+      onClick: handleToggleBookmark,
+    },
+    ...(bookmarks.length > 0
+      ? [
+          { type: 'divider' as const },
+          ...bookmarks.map((item) => ({
+            key: item.url,
+            label: (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minWidth: 180, maxWidth: 260 }}>
+                <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
+                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+                  <div style={{ fontSize: 11, color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.url}</div>
+                </div>
+                <DeleteOutlined
+                  style={{ marginLeft: 8, color: '#ff4d4f', fontSize: 12, flexShrink: 0 }}
+                  onClick={(e) => handleDeleteBookmark(e, item.url)}
+                />
+              </div>
+            ),
+            onClick: () => navigate(item.url),
+          })),
+        ]
+      : []),
+  ];
 
   useEffect(() => {
     // 检测 PWA standalone 模式
@@ -130,6 +215,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onMenuClick }) =>
         style={{ fontSize: 18, width: 40, height: 40 }}
       />
       <Space style={{ marginLeft: 'auto', alignItems: 'center' }}>
+        <Dropdown menu={{ items: bookmarkMenuItems }} placement="bottomRight" trigger={['click']}>
+          <Button
+            type="text"
+            icon={bookmarked ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
+            style={{ fontSize: 18, width: 40, height: 40 }}
+            title="收藏"
+          />
+        </Dropdown>
         <Button
           type={panelVisible ? 'primary' : 'text'}
           icon={<RobotOutlined />}

@@ -1,6 +1,7 @@
 import axios from 'axios';
-import { message } from 'antd';
+import { message, Modal } from 'antd';
 import { getApiBaseUrl, isNativePlatform } from '../utils/platform';
+import { isBookmarked, removeBookmark, getCurrentPath } from '../utils/bookmarks';
 
 // Web 端：走相对路径 '/api'（同端口）
 // Native 端：baseURL 由用户在服务器配置页动态设置，运行时由请求拦截器读取
@@ -44,13 +45,30 @@ api.interceptors.response.use(
     }
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
-      // native 端使用 hash 路由
       if (isNativePlatform()) {
         window.location.replace('#/login');
       } else {
         window.location.href = '/login';
       }
       message.error('登录已过期，请重新登录');
+    } else if (error.response?.status === 404) {
+      const currentPath = getCurrentPath();
+      if (isBookmarked(currentPath)) {
+        Modal.confirm({
+          title: '资源不存在',
+          content: '当前收藏的页面对应资源已不存在，是否删除该收藏？',
+          okText: '删除收藏',
+          cancelText: '保留',
+          okButtonProps: { danger: true },
+          onOk: () => {
+            removeBookmark(currentPath);
+            message.success('已删除收藏');
+          },
+        });
+      }
+      if (error.response?.data?.message) {
+        message.error(error.response.data.message);
+      }
     } else if (error.response?.data?.message) {
       message.error(error.response.data.message);
     } else {
