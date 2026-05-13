@@ -4,6 +4,7 @@ import { ArrowLeftOutlined, KeyOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom';
 import { startRegistration, browserSupportsWebAuthn } from '@simplewebauthn/browser';
 import { getPasskeyRegisterOptions, verifyPasskeyRegister, getPasskeyCredentials, deletePasskeyCredential } from '../api/auth';
+import { isNativePlatform } from '../utils/platform';
 
 const { Title } = Typography;
 
@@ -12,7 +13,7 @@ const PasskeyManagePage: React.FC = () => {
   const [credentials, setCredentials] = useState<any[]>([]);
   const [credLoading, setCredLoading] = useState(false);
   const [registerLoading, setRegisterLoading] = useState(false);
-  const webauthnSupported = browserSupportsWebAuthn();
+  const webauthnSupported = !isNativePlatform() && browserSupportsWebAuthn();
 
   useEffect(() => {
     if (webauthnSupported) {

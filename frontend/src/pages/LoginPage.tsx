@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { startAuthentication, browserSupportsWebAuthn } from '@simplewebauthn/browser';
 import { User } from '../types';
 import { localLogin, getAuthConfig, getPasskeyLoginOptions, verifyPasskeyLogin } from '../api/auth';
+import { isNativePlatform } from '../utils/platform';
 
 const { Title, Paragraph } = Typography;
 
@@ -16,7 +17,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [registerEnabled, setRegisterEnabled] = useState(true);
-  const [webauthnSupported] = useState(() => browserSupportsWebAuthn());
+  const [webauthnSupported] = useState(() => !isNativePlatform() && browserSupportsWebAuthn());
 
   useEffect(() => {
     getAuthConfig()
