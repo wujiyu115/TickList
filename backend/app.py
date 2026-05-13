@@ -117,6 +117,11 @@ def create_app():
     app.include_router(note_router)
     app.include_router(ai_router)
     app.include_router(admin_router)
+
+    # 健康检查端点（必须在 SPA catch-all 之前注册）
+    @app.get("/api/health")
+    async def health_check():
+        return {"status": "ok", "message": "TickList API is running"}
     
     # 挂载静态文件
     if os.path.exists(static_folder):
@@ -203,7 +208,3 @@ async def shutdown_event():
     scheduler_service.shutdown()
     logger.info("Application shutdown complete")
 
-# 健康检查端点
-@app.get("/api/health")
-async def health_check():
-    return {"status": "ok", "message": "TickList API is running"}
