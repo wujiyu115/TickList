@@ -37,6 +37,7 @@ import {
   updateCountdown,
   deleteCountdown,
 } from '../api/countdown';
+import { scheduleCountdownNotification, cancelCountdownNotification } from '../services/notificationService';
 import './CountdownPage.less';
 
 const { Title, Text } = Typography;
@@ -164,6 +165,7 @@ const CountdownPage: React.FC = () => {
     try {
       await deleteCountdown(id);
       message.success('删除成功');
+      cancelCountdownNotification(id).catch(console.error);
       fetchCountdowns();
     } catch (error) {
       console.error('Failed to delete countdown:', error);
@@ -199,9 +201,17 @@ const CountdownPage: React.FC = () => {
       if (editingCountdown) {
         await updateCountdown(editingCountdown.id, data);
         message.success('更新成功');
+        if (data.push_due_notify) {
+          scheduleCountdownNotification({ ...editingCountdown, ...data, target_date: values.target_date.format('YYYY-MM-DD') } as Countdown).catch(console.error);
+        } else {
+          cancelCountdownNotification(editingCountdown.id).catch(console.error);
+        }
       } else {
-        await createCountdown(data as CountdownCreateRequest);
+        const created = await createCountdown(data as CountdownCreateRequest);
         message.success('创建成功');
+        if (data.push_due_notify) {
+          scheduleCountdownNotification(created).catch(console.error);
+        }
       }
 
       setModalVisible(false);

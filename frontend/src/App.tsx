@@ -13,6 +13,9 @@ import { getCurrentUser } from './api/auth';
 import { getSettings } from './api/settings';
 import { User, UserSettings } from './types';
 import { isNativePlatform, getApiBaseUrl } from './utils/platform';
+import { initNotifications, addNotificationListeners, syncAllTaskNotifications, syncAllCountdownNotifications } from './services/notificationService';
+import { getTasks } from './api/task';
+import { getCountdowns } from './api/countdown';
 
 // 配色方案映射
 interface ThemeConfig {
@@ -99,6 +102,20 @@ const getDefaultViewPath = (defaultView: string): string => {
   }
 };
 
+addNotificationListeners();
+
+const syncNotifications = () => {
+  initNotifications().then(async (granted) => {
+    if (!granted) return;
+    const [taskResp, cdResp] = await Promise.all([
+      getTasks({ status: 'pending,in_progress' }),
+      getCountdowns(),
+    ]);
+    await syncAllTaskNotifications(taskResp.tasks);
+    await syncAllCountdownNotifications(cdResp.countdowns);
+  }).catch(console.error);
+};
+
 const App: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -137,10 +154,10 @@ const App: React.FC = () => {
             setIsDark(themeConfig.isDark);
             setExtraToken(themeConfig.token);
           }
-          // 设置默认视图路径，仅在首次加载时使用
           if (settings.default_view) {
             setDefaultViewPath(getDefaultViewPath(settings.default_view));
           }
+          syncNotifications();
         } catch (e) {
           console.error('Failed to load settings:', e);
         }
@@ -175,7 +192,7 @@ const App: React.FC = () => {
         setIsDark(themeConfig.isDark);
         setExtraToken(themeConfig.token);
       }
-      // 登录成功后立即跳转到默认视图
+      syncNotifications();
       const targetPath = getDefaultViewPath(settings.default_view || 'tasks');
       navigate(targetPath, { replace: true });
     } catch (e) {

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, ReactNode } fr
 import { Task } from '../types';
 import { getTasks, createTask, updateTask, deleteTask as deleteTaskApi, restoreTask as restoreTaskApi, permanentDeleteTask as permanentDeleteTaskApi } from '../api/task';
 import { message } from 'antd';
+import { scheduleTaskNotification, cancelTaskNotification } from '../services/notificationService';
 
 interface TaskContextType {
   tasks: Task[];
@@ -69,6 +70,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
     try {
       const newTask = await createTask(taskData);
       message.success('任务创建成功');
+      scheduleTaskNotification(newTask).catch(console.error);
       await refreshTasks();
       return newTask;
     } catch (error: any) {
@@ -83,6 +85,14 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
     try {
       await updateTask(taskId, data);
       message.success('任务更新成功');
+      if (data.status === 'completed') {
+        cancelTaskNotification(taskId).catch(console.error);
+      } else if (data.reminder_time !== undefined) {
+        const existing = tasks.find(t => t.id === taskId);
+        if (existing) {
+          scheduleTaskNotification({ ...existing, ...data }).catch(console.error);
+        }
+      }
       await refreshTasks();
     } catch (error) {
       message.error('更新任务失败');
@@ -95,6 +105,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
     try {
       await deleteTaskApi(taskId);
       message.success('任务已删除');
+      cancelTaskNotification(taskId).catch(console.error);
       if (selectedTask?.id === taskId) {
         setSelectedTask(null);
       }
@@ -125,6 +136,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
     try {
       await permanentDeleteTaskApi(taskId);
       message.success('任务已永久删除');
+      cancelTaskNotification(taskId).catch(console.error);
       if (selectedTask?.id === taskId) {
         setSelectedTask(null);
       }
