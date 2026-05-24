@@ -1,0 +1,66 @@
+name: Build iOS IPA
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build_ipa:
+    runs-on: macos-15
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Install frontend dependencies
+      working-directory: frontend
+      run: npm ci
+
+    - name: Build frontend
+      working-directory: frontend
+      run: npx rsbuild build
+
+    - name: Capacitor sync iOS
+      working-directory: frontend
+      run: npx cap sync ios
+
+    - name: Xcode Archive
+      working-directory: frontend/ios/App
+      run: |
+        mkdir -p ../build/ios
+        xcodebuild archive \
+          -scheme App \
+          -configuration Release \
+          -archivePath ../build/ios/TickList.xcarchive \
+          -destination "generic/platform=iOS" \
+          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGN_ENTITLEMENTS="" \
+          | grep -E "^(Archive|Build|Signing|error:|warning:|\*\*)" || true
+
+    - name: Package unsigned IPA
+      working-directory: frontend
+      run: |
+        APP_PATH="build/ios/TickList.xcarchive/Products/Applications/App.app"
+        if [ ! -d "$APP_PATH" ]; then
+          APP_PATH=$(find build/ios/TickList.xcarchive -name "*.app" -type d | head -1)
+        fi
+        mkdir -p build/ios/ipa/Payload
+        cp -R "$APP_PATH" build/ios/ipa/Payload/
+        cd build/ios/ipa
+        zip -r -q ../TickList-unsigned.ipa Payload/
+
+    - name: Upload IPA artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: TickList-unsigned-ipa
+        path: frontend/build/ios/TickList-unsigned.ipa
+        retention-days: 30
