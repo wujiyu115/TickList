@@ -211,7 +211,7 @@ const App: React.FC = () => {
     >
       <ThemeContext.Provider value={{ primaryColor, isDark, setTheme }}>
         <FocusProvider>
-        <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Spin size="large" /></div>}>
+        <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}><Spin size="large" /></div>}>
         <Routes>
           <Route
             path="/server-config"

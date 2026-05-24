@@ -80,7 +80,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
   return (
     <AiProvider>
     <TaskProvider>
-      <Layout className="main-layout" style={{ height: '100vh' }} hasSider>
+      <Layout className="main-layout" style={{ height: '100dvh', minHeight: '100vh' }} hasSider>
         {!isMobile && (
           <AppSider
             user={user}

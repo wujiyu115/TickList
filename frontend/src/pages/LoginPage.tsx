@@ -75,7 +75,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      height: '100vh',
+      height: '100dvh',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
     }}>
       <Card style={{ width: '90vw', maxWidth: 400, textAlign: 'center' }}>
