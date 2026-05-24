@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+env:
+  ARCHIVE_PATH: ${{ github.workspace }}/frontend/build/ios/TickList.xcarchive
+
 jobs:
   build_ipa:
     runs-on: macos-15
@@ -36,11 +39,11 @@ jobs:
     - name: Xcode Archive
       working-directory: frontend/ios/App
       run: |
-        mkdir -p ../build/ios
+        mkdir -p ${{ env.ARCHIVE_PATH }}
         xcodebuild archive \
           -scheme App \
           -configuration Release \
-          -archivePath ../build/ios/TickList.xcarchive \
+          -archivePath "${{ env.ARCHIVE_PATH }}" \
           -destination "generic/platform=iOS" \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO \
@@ -49,15 +52,14 @@ jobs:
           | grep -E "^(Archive|Build|Signing|error:|warning:|\*\*)" || true
 
     - name: Package unsigned IPA
-      working-directory: frontend
       run: |
-        APP_PATH="build/ios/TickList.xcarchive/Products/Applications/App.app"
+        APP_PATH="${{ env.ARCHIVE_PATH }}/Products/Applications/App.app"
         if [ ! -d "$APP_PATH" ]; then
-          APP_PATH=$(find build/ios/TickList.xcarchive -name "*.app" -type d | head -1)
+          APP_PATH=$(find "${{ env.ARCHIVE_PATH }}" -name "*.app" -type d | head -1)
         fi
-        mkdir -p build/ios/ipa/Payload
-        cp -R "$APP_PATH" build/ios/ipa/Payload/
-        cd build/ios/ipa
+        mkdir -p ${{ github.workspace }}/frontend/build/ios/ipa/Payload
+        cp -R "$APP_PATH" ${{ github.workspace }}/frontend/build/ios/ipa/Payload/
+        cd ${{ github.workspace }}/frontend/build/ios/ipa
         zip -r -q ../TickList-unsigned.ipa Payload/
 
     - name: Upload IPA artifact
