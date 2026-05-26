@@ -22,7 +22,7 @@ from webauthn.helpers.structs import (
 )
 from webauthn.helpers import bytes_to_base64url, base64url_to_bytes
 
-from middleware.jwt_middleware import get_current_user, create_access_token
+from middleware.jwt_middleware import get_current_user, create_access_token, create_refresh_token
 from config.config_loader import config
 from database.dao.webauthn_dao import webauthn_dao
 from database.dao.user_dao import user_dao
@@ -231,28 +231,38 @@ async def login_verify(body: dict):
         datetime.now().isoformat(),
     )
 
-    # 生成 JWT Token（与 auth.py 登录逻辑一致）
+    # 生成 JWT Token（双 token 机制）
     try:
+        import uuid as _uuid
+        family_id = str(_uuid.uuid4())
+
         token_data = {"sub": user['id']}
         jwt_token = create_access_token(data=token_data)
 
-        # 从 JWT 中提取 JTI
-        from jose import jwt as jose_jwt
-        jwt_config = config.get_jwt_config()
-        decoded = jose_jwt.decode(
-            jwt_token,
-            jwt_config['secret_key'],
-            algorithms=[jwt_config['algorithm']],
-        )
-        jti = decoded.get('jti')
+        refresh_data = {"sub": user['id'], "family_id": family_id}
+        refresh_token = create_refresh_token(data=refresh_data)
 
-        # 存储 token 到 token_dao
-        token_dao.create_token(user['id'], jwt_token, jti)
+        from jose import jwt as jose_jwt
+        jwt_cfg = config.get_jwt_config()
+        access_decoded = jose_jwt.decode(jwt_token, jwt_cfg['secret_key'], algorithms=[jwt_cfg['algorithm']])
+        refresh_decoded = jose_jwt.decode(refresh_token, jwt_cfg['secret_key'], algorithms=[jwt_cfg['algorithm']])
+
+        token_dao.create_token(
+            user['id'], jwt_token, access_decoded.get('jti'),
+            token_type='access', family_id=family_id,
+            expires_hours=jwt_cfg['access_token_expire_hours']
+        )
+        token_dao.create_token(
+            user['id'], refresh_token, refresh_decoded.get('jti'),
+            token_type='refresh', family_id=family_id,
+            expires_days=jwt_cfg['refresh_token_expire_days']
+        )
 
         return {
             "success": True,
             "message": "登录成功",
             "token": jwt_token,
+            "refresh_token": refresh_token,
             "user": {
                 "id": user['id'],
                 "username": user['username'],
