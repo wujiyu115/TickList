@@ -39,6 +39,9 @@ class ChangePasswordRequest(BaseModel):
     old_password: str
     new_password: str
 
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
 class TokenInfo(BaseModel):
     id: str
     created_at: str
@@ -176,6 +179,72 @@ async def login_local(data: LoginRequest):
     except Exception as e:
         logger.error(f"Login failed: {e}")
         raise HTTPException(status_code=500, detail='登录失败，请稍后重试')
+
+@router.post('/api/auth/refresh')
+async def refresh_token(data: RefreshRequest):
+    """使用 refresh_token 换取新的 token 对"""
+    from middleware.jwt_middleware import verify_token
+    from jose import jwt as jose_jwt
+    import uuid as _uuid
+
+    # 1. 验证 refresh_token JWT 签名和过期
+    payload = verify_token(data.refresh_token)
+    if payload is None:
+        raise HTTPException(status_code=401, detail='refresh token 无效或已过期')
+
+    # 2. 检查 type claim
+    if payload.get('type') != 'refresh':
+        raise HTTPException(status_code=401, detail='非法的 token 类型')
+
+    jti = payload.get('jti')
+    user_id = payload.get('sub')
+    family_id = payload.get('family_id')
+
+    if not jti or not user_id or not family_id:
+        raise HTTPException(status_code=401, detail='refresh token 格式无效')
+
+    # 3. 从 DB 查找该 token（不检查过期/revoked，用于复用检测）
+    token_record = token_dao.find_token_by_jti_raw(jti)
+    if token_record is None:
+        raise HTTPException(status_code=401, detail='refresh token 不存在')
+
+    # 4. 复用检测：如果已 revoked，说明被重放攻击
+    if token_record.get('revoked'):
+        logger.warning(f"Refresh token reuse detected! family={family_id}, user={user_id}")
+        token_dao.deactivate_tokens_by_family(family_id)
+        raise HTTPException(status_code=401, detail='检测到异常，已吊销所有相关登录')
+
+    # 5. 验证 token_type
+    if token_record.get('token_type') != 'refresh':
+        raise HTTPException(status_code=401, detail='非法的 token 类型')
+
+    # 6. 标记旧 refresh_token 为 revoked
+    token_dao.deactivate_token_by_jti(jti)
+
+    # 7. 签发新的 access_token + refresh_token（同 family_id）
+    jwt_cfg = config.get_jwt_config()
+
+    new_access = create_access_token(data={"sub": user_id})
+    new_refresh = create_refresh_token(data={"sub": user_id, "family_id": family_id})
+
+    access_decoded = jose_jwt.decode(new_access, jwt_cfg['secret_key'], algorithms=[jwt_cfg['algorithm']])
+    refresh_decoded = jose_jwt.decode(new_refresh, jwt_cfg['secret_key'], algorithms=[jwt_cfg['algorithm']])
+
+    token_dao.create_token(
+        user_id, new_access, access_decoded.get('jti'),
+        token_type='access', family_id=family_id,
+        expires_hours=jwt_cfg['access_token_expire_hours']
+    )
+    token_dao.create_token(
+        user_id, new_refresh, refresh_decoded.get('jti'),
+        token_type='refresh', family_id=family_id,
+        expires_days=jwt_cfg['refresh_token_expire_days']
+    )
+
+    return {
+        'token': new_access,
+        'refresh_token': new_refresh,
+    }
 
 @router.get('/api/auth/me')
 async def get_current_user_info(current_user_id: str = Depends(get_current_user)):
