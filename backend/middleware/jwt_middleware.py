@@ -16,6 +16,7 @@ jwt_config = config.get_jwt_config()
 SECRET_KEY = jwt_config['secret_key']
 ALGORITHM = jwt_config['algorithm']
 ACCESS_TOKEN_EXPIRE_HOURS = jwt_config['access_token_expire_hours']
+REFRESH_TOKEN_EXPIRE_DAYS = jwt_config['refresh_token_expire_days']
 
 # 密码加密
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -31,13 +32,30 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     else:
         expire = datetime.utcnow() + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
     
-    to_encode.update({"exp": expire})
-    
+    to_encode.update({"exp": expire, "type": "access"})
+
     # 添加JTI（JWT ID）用于token撤销
     import uuid
     jti = str(uuid.uuid4())
     to_encode.update({"jti": jti})
     
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None):
+    """创建刷新令牌"""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+
+    to_encode.update({"exp": expire, "type": "refresh"})
+
+    import uuid
+    jti = str(uuid.uuid4())
+    to_encode.update({"jti": jti})
+
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
