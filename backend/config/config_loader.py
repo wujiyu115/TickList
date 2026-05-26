@@ -94,7 +94,8 @@ class ConfigLoader:
         return {
             'secret_key': self.get('jwt.secret_key', 'jwt-secret-string', 'JWT_SECRET_KEY'),
             'algorithm': self.get('jwt.algorithm', 'HS256'),
-            'access_token_expire_hours': self.get('jwt.access_token_expire_hours', 24)
+            'access_token_expire_hours': self.get('jwt.access_token_expire_hours', 2),
+            'refresh_token_expire_days': self.get('jwt.refresh_token_expire_days', 30),
         }
     
     def get_database_url(self) -> str:
