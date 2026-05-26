@@ -1,5 +1,6 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { isNativePlatform } from '../utils/platform';
+import { scheduleNotify, cancelNotify } from './notify';
 import { Task, Countdown } from '../types';
 
 function hashStringToId(str: string): number {
@@ -37,43 +38,24 @@ export function addNotificationListeners(): void {
 }
 
 export async function scheduleTaskNotification(task: Task): Promise<void> {
-  if (!isNativePlatform()) return;
   if (!task.reminder_time) return;
 
-  const id = taskNotificationId(task.id);
   const at = new Date(task.reminder_time);
-  if (at.getTime() <= Date.now()) return;
-
-  try {
-    await LocalNotifications.cancel({ notifications: [{ id }] });
-  } catch { /* may not exist */ }
-
-  await LocalNotifications.schedule({
-    notifications: [{
-      id,
-      title: '任务提醒',
-      body: task.title,
-      schedule: { at },
-      extra: { type: 'task', taskId: task.id },
-    }],
+  await scheduleNotify({
+    id: taskNotificationId(task.id),
+    title: '任务提醒',
+    body: task.title,
+    schedule: at,
+    extra: { type: 'task', taskId: task.id },
   });
 }
 
 export async function cancelTaskNotification(taskId: string): Promise<void> {
-  if (!isNativePlatform()) return;
-
-  try {
-    await LocalNotifications.cancel({
-      notifications: [{ id: taskNotificationId(taskId) }],
-    });
-  } catch { /* ignore */ }
+  await cancelNotify(taskNotificationId(taskId));
 }
 
 export async function scheduleCountdownNotification(countdown: Countdown): Promise<void> {
-  if (!isNativePlatform()) return;
   if (!countdown.push_due_notify) return;
-
-  const id = countdownNotificationId(countdown.id);
 
   let targetDate = new Date(countdown.target_date);
   if (countdown.repeat_annually) {
@@ -86,31 +68,18 @@ export async function scheduleCountdownNotification(countdown: Countdown): Promi
 
   const at = new Date(targetDate);
   at.setHours(9, 0, 0, 0);
-  if (at.getTime() <= Date.now()) return;
 
-  try {
-    await LocalNotifications.cancel({ notifications: [{ id }] });
-  } catch { /* may not exist */ }
-
-  await LocalNotifications.schedule({
-    notifications: [{
-      id,
-      title: '倒数日提醒',
-      body: `${countdown.title} — 就是今天！`,
-      schedule: { at },
-      extra: { type: 'countdown', countdownId: countdown.id },
-    }],
+  await scheduleNotify({
+    id: countdownNotificationId(countdown.id),
+    title: '倒数日提醒',
+    body: `${countdown.title} — 就是今天！`,
+    schedule: at,
+    extra: { type: 'countdown', countdownId: countdown.id },
   });
 }
 
 export async function cancelCountdownNotification(countdownId: string): Promise<void> {
-  if (!isNativePlatform()) return;
-
-  try {
-    await LocalNotifications.cancel({
-      notifications: [{ id: countdownNotificationId(countdownId) }],
-    });
-  } catch { /* ignore */ }
+  await cancelNotify(countdownNotificationId(countdownId));
 }
 
 export async function syncAllTaskNotifications(tasks: Task[]): Promise<void> {
