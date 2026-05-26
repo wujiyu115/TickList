@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 import bcrypt
 
-from middleware.jwt_middleware import get_current_user, create_access_token
+from middleware.jwt_middleware import get_current_user, create_access_token, create_refresh_token
 from utils.auth_utils import find_user_by_id, find_user_by_username, verify_password
 from utils.logger import logger
 from config.config_loader import config
@@ -18,6 +18,7 @@ router = APIRouter()
 class LoginResponse(BaseModel):
     user: dict = None
     token: str = None
+    refresh_token: str = None
     success: bool = True
     message: str = None
     error_code: int = None
@@ -129,24 +130,41 @@ async def login_local(data: LoginRequest):
         raise HTTPException(status_code=403, detail='账号已被冻结，请联系管理员')
     
     try:
-        # 3. 生成 JWT token
+        import uuid as _uuid
+        family_id = str(_uuid.uuid4())
+
+        # 生成 access_token
         token_data = {"sub": user['id']}
         jwt_token = create_access_token(data=token_data)
-        
-        # 4. 从JWT中提取JTI
+
+        # 生成 refresh_token
+        refresh_data = {"sub": user['id'], "family_id": family_id}
+        refresh_token = create_refresh_token(data=refresh_data)
+
+        # 从JWT中提取JTI
         from jose import jwt
-        jwt_config = config.get_jwt_config()
-        decoded = jwt.decode(jwt_token, jwt_config['secret_key'], algorithms=[jwt_config['algorithm']])
-        jti = decoded.get('jti')
-        
-        # 5. 存储 token 到 token_dao
-        token_dao.create_token(user['id'], jwt_token, jti)
-        
-        # 6. 返回登录信息
+        jwt_cfg = config.get_jwt_config()
+        access_decoded = jwt.decode(jwt_token, jwt_cfg['secret_key'], algorithms=[jwt_cfg['algorithm']])
+        refresh_decoded = jwt.decode(refresh_token, jwt_cfg['secret_key'], algorithms=[jwt_cfg['algorithm']])
+
+        # 存储两个 token
+        token_dao.create_token(
+            user['id'], jwt_token, access_decoded.get('jti'),
+            token_type='access', family_id=family_id,
+            expires_hours=jwt_cfg['access_token_expire_hours']
+        )
+        token_dao.create_token(
+            user['id'], refresh_token, refresh_decoded.get('jti'),
+            token_type='refresh', family_id=family_id,
+            expires_days=jwt_cfg['refresh_token_expire_days']
+        )
+
+        # 返回登录信息
         return LoginResponse(
             success=True,
             message='登录成功',
             token=jwt_token,
+            refresh_token=refresh_token,
             user={
                 'id': user['id'],
                 'username': user['username'],
@@ -154,7 +172,7 @@ async def login_local(data: LoginRequest):
                 'role_group': user.get('role_group', 'user')
             }
         )
-        
+
     except Exception as e:
         logger.error(f"Login failed: {e}")
         raise HTTPException(status_code=500, detail='登录失败，请稍后重试')
