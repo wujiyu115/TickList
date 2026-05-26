@@ -3,7 +3,7 @@
 import json
 import time
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from webauthn import (
@@ -233,11 +233,8 @@ async def login_verify(body: dict):
 
     # 生成 JWT Token（与 auth.py 登录逻辑一致）
     try:
-        access_token_expires = timedelta(hours=24)
         token_data = {"sub": user['id']}
-        jwt_token = create_access_token(
-            data=token_data, expires_delta=access_token_expires
-        )
+        jwt_token = create_access_token(data=token_data)
 
         # 从 JWT 中提取 JTI
         from jose import jwt as jose_jwt

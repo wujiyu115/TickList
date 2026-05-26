@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from datetime import timedelta
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 import bcrypt
@@ -131,11 +130,8 @@ async def login_local(data: LoginRequest):
     
     try:
         # 3. 生成 JWT token
-        access_token_expires = timedelta(hours=24)
         token_data = {"sub": user['id']}
-        jwt_token = create_access_token(
-            data=token_data, expires_delta=access_token_expires
-        )
+        jwt_token = create_access_token(data=token_data)
         
         # 4. 从JWT中提取JTI
         from jose import jwt
