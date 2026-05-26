@@ -1,4 +1,5 @@
 import { ToolAction } from '../types';
+import { tryRefreshToken } from './index';
 
 /**
  * SSE 事件类型，覆盖 legacy（text_delta/action 等）+ pipeline 三层新事件
@@ -90,6 +91,27 @@ export const sendAiChatStream = async (
   console.info('[AI][api] response', { status: response.status, ok: response.ok });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      const newToken = await tryRefreshToken();
+      if (newToken) {
+        const retryResponse = await fetch('/api/ai/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${newToken}`,
+          },
+          body: JSON.stringify({ message, conversation_id: conversationId }),
+        });
+        if (retryResponse.ok) {
+          await readSSEStream(retryResponse, onEvent);
+          console.info('[AI][api] stream end (after refresh)', { elapsedMs: Math.round(performance.now() - _t0) });
+          return;
+        }
+      }
+      onEvent({ type: 'error', content: '登录已过期，请重新登录' });
+      onEvent({ type: 'done' });
+      return;
+    }
     if (response.status === 429) {
       onEvent({ type: 'error', content: '消息频率超限，请稍后重试' });
     } else {
@@ -124,6 +146,26 @@ export const sendAiConfirmStream = async (
     body: JSON.stringify(payload),
   });
   if (!response.ok) {
+    if (response.status === 401) {
+      const newToken = await tryRefreshToken();
+      if (newToken) {
+        const retryResponse = await fetch('/api/ai/confirm', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${newToken}`,
+          },
+          body: JSON.stringify(payload),
+        });
+        if (retryResponse.ok) {
+          await readSSEStream(retryResponse, onEvent);
+          return;
+        }
+      }
+      onEvent({ type: 'error', content: '登录已过期，请重新登录' });
+      onEvent({ type: 'done' });
+      return;
+    }
     onEvent({ type: 'error', content: '确认请求失败，请稍后重试' });
     onEvent({ type: 'done' });
     return;
@@ -152,6 +194,26 @@ export const sendAiDisambiguateStream = async (
     body: JSON.stringify(payload),
   });
   if (!response.ok) {
+    if (response.status === 401) {
+      const newToken = await tryRefreshToken();
+      if (newToken) {
+        const retryResponse = await fetch('/api/ai/disambiguate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${newToken}`,
+          },
+          body: JSON.stringify(payload),
+        });
+        if (retryResponse.ok) {
+          await readSSEStream(retryResponse, onEvent);
+          return;
+        }
+      }
+      onEvent({ type: 'error', content: '登录已过期，请重新登录' });
+      onEvent({ type: 'done' });
+      return;
+    }
     onEvent({ type: 'error', content: '选择请求失败，请稍后重试' });
     onEvent({ type: 'done' });
     return;
