@@ -72,7 +72,7 @@ const readSSEStream = async (
 
 export const sendAiChatStream = async (
   message: string,
-  conversationId?: string,
+  conversationId: string | undefined,
   onEvent: (event: StreamEvent) => void,
 ): Promise<void> => {
   const token = localStorage.getItem('token');
