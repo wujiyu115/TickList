@@ -36,6 +36,7 @@ from routes.webauthn import router as webauthn_router
 from routes.note import router as note_router
 from routes.ai import router as ai_router
 from routes.admin import admin_router
+from routes.debug_log import router as debug_log_router
 
 # 导入中间件
 from middleware.logging_middleware import RequestLoggingMiddleware
@@ -117,6 +118,7 @@ def create_app():
     app.include_router(note_router)
     app.include_router(ai_router)
     app.include_router(admin_router)
+    app.include_router(debug_log_router)
 
     # 健康检查端点（必须在 SPA catch-all 之前注册）
     @app.get("/api/health")

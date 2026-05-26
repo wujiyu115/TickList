@@ -16,6 +16,7 @@ import { isNativePlatform, getApiBaseUrl } from './utils/platform';
 import { initNotifications, addNotificationListeners, syncAllTaskNotifications, syncAllCountdownNotifications } from './services/notificationService';
 import { getTasks } from './api/task';
 import { getCountdowns } from './api/countdown';
+import { remoteLog } from './services/remoteLog';
 
 // 配色方案映射
 interface ThemeConfig {
@@ -103,6 +104,15 @@ const getDefaultViewPath = (defaultView: string): string => {
 };
 
 addNotificationListeners();
+
+const cap = (window as any)?.Capacitor;
+remoteLog('app-init', {
+  isNative: isNativePlatform(),
+  capacitorExists: !!cap,
+  platform: cap?.getPlatform?.(),
+  pluginsAvailable: cap?.Plugins ? Object.keys(cap.Plugins) : [],
+  userAgent: navigator.userAgent,
+});
 
 const syncNotifications = () => {
   initNotifications().then(async (granted) => {

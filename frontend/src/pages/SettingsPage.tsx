@@ -37,6 +37,8 @@ import { UserSettings, TaskList, PushChannelConfig, BarkConfig, CustomHttpConfig
 import { getSettings, updateSettings, testPushChannel } from '../api/settings';
 import { getLists } from '../api/list';
 import { exportData, importData, importDidaCsv } from '../api/data';
+import { getDebugLogs, clearDebugLogs } from '../api/debugLog';
+import { setRemoteLogEnabled, isRemoteLogEnabled } from '../services/remoteLog';
 import { ThemeContext } from '../App';
 import { isNativePlatform, getApiBaseUrl } from '../utils/platform';
 import { useNavigate } from 'react-router-dom';
@@ -150,6 +152,7 @@ const NAV_ITEMS = [
   { key: 'notification', icon: BellOutlined, label: '通知设置' },
   { key: 'push', icon: SendOutlined, label: '推送通知' },
   { key: 'data', icon: DatabaseOutlined, label: '数据管理' },
+  { key: 'debug', icon: ExperimentOutlined, label: '调试日志' },
 ];
 
 const SettingsPage: React.FC = () => {
@@ -170,6 +173,11 @@ const SettingsPage: React.FC = () => {
   const [editingChannel, setEditingChannel] = useState<PushChannelConfig | null>(null);
   const [channelForm] = Form.useForm();
   const [testingChannelId, setTestingChannelId] = useState<string | null>(null);
+
+  // 调试日志状态
+  const [debugEnabled, setDebugEnabled] = useState(isRemoteLogEnabled());
+  const [debugLogs, setDebugLogs] = useState<any[]>([]);
+  const [debugLogsLoading, setDebugLogsLoading] = useState(false);
   
   
   const themeContext = useContext(ThemeContext);
@@ -960,19 +968,97 @@ const SettingsPage: React.FC = () => {
         {/* 数据管理 */}
         <div id="settings-data" className="settings-section data-section">
           <div className="section-title">数据管理</div>
-          
+
           <div className="data-actions">
             <div className="data-action-card" onClick={handleExport}>
               <ExportOutlined />
               <span className="action-title">导出数据</span>
               <span className="action-desc">将所有任务、清单、标签导出为 JSON 文件</span>
             </div>
-            
+
             <div className="data-action-card" onClick={() => setImportModalVisible(true)}>
               <ImportOutlined />
               <span className="action-title">导入数据</span>
               <span className="action-desc">支持 JSON 或滴答清单 CSV 备份文件</span>
             </div>
+          </div>
+        </div>
+
+        {/* 调试日志 */}
+        <div id="settings-debug" className="settings-section">
+          <div className="section-title">调试日志</div>
+
+          <div className="setting-item">
+            <div className="setting-label">
+              <span>远程调试日志</span>
+              <span className="setting-desc">开启后前端关键操作信息将发送到服务器</span>
+            </div>
+            <Switch
+              checked={debugEnabled}
+              onChange={(checked) => {
+                setDebugEnabled(checked);
+                setRemoteLogEnabled(checked);
+              }}
+            />
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <Space>
+              <Button
+                onClick={async () => {
+                  setDebugLogsLoading(true);
+                  try {
+                    const data = await getDebugLogs();
+                    setDebugLogs(data.logs || []);
+                  } catch {
+                    message.error('获取日志失败');
+                  } finally {
+                    setDebugLogsLoading(false);
+                  }
+                }}
+                loading={debugLogsLoading}
+              >
+                刷新日志
+              </Button>
+              <Button
+                danger
+                onClick={async () => {
+                  await clearDebugLogs();
+                  setDebugLogs([]);
+                  message.success('日志已清除');
+                }}
+              >
+                清除日志
+              </Button>
+            </Space>
+          </div>
+
+          <div style={{ marginTop: 12, maxHeight: 400, overflow: 'auto' }}>
+            {debugLogs.length === 0 ? (
+              <div style={{ color: 'var(--ant-color-text-tertiary)', padding: '16px 0' }}>
+                暂无日志{!debugEnabled && '（请先开启远程调试日志）'}
+              </div>
+            ) : (
+              <div style={{ fontSize: 12, fontFamily: 'monospace' }}>
+                {debugLogs.slice().reverse().map((log, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      padding: '6px 8px',
+                      borderBottom: '1px solid var(--ant-color-border-secondary)',
+                    }}
+                  >
+                    <div style={{ color: 'var(--ant-color-text-secondary)' }}>
+                      <Tag color="blue" style={{ fontSize: 11 }}>{log.tag}</Tag>
+                      {log.timestamp}
+                    </div>
+                    <pre style={{ margin: '4px 0 0', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                      {JSON.stringify(log.data, null, 2)}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

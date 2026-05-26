@@ -1,6 +1,7 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { isNativePlatform } from '../utils/platform';
 import { scheduleNotify, cancelNotify } from './notify';
+import { remoteLog } from './remoteLog';
 import { Task, Countdown } from '../types';
 
 function hashStringToId(str: string): number {
@@ -20,12 +21,19 @@ function countdownNotificationId(countdownId: string): number {
 }
 
 export async function initNotifications(): Promise<boolean> {
-  if (!isNativePlatform()) return false;
+  if (!isNativePlatform()) {
+    remoteLog('notification-init', { skipped: true, reason: 'not native platform' });
+    return false;
+  }
 
   const perm = await LocalNotifications.checkPermissions();
-  if (perm.display === 'granted') return true;
+  if (perm.display === 'granted') {
+    remoteLog('notification-init', { permission: 'already_granted' });
+    return true;
+  }
 
   const req = await LocalNotifications.requestPermissions();
+  remoteLog('notification-init', { permission: req.display });
   return req.display === 'granted';
 }
 

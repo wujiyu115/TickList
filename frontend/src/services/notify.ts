@@ -1,6 +1,7 @@
 import { message } from 'antd';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { isNativePlatform } from '../utils/platform';
+import { remoteLog } from './remoteLog';
 
 export interface NotifyOptions {
   title: string;
@@ -11,7 +12,18 @@ export interface NotifyOptions {
 }
 
 export async function notify(options: NotifyOptions): Promise<void> {
-  if (isNativePlatform()) {
+  const native = isNativePlatform();
+  const cap = (window as any)?.Capacitor;
+  remoteLog('notification', {
+    isNative: native,
+    capacitorExists: !!cap,
+    platform: cap?.getPlatform?.(),
+    pluginRegistered: !!cap?.Plugins?.LocalNotifications,
+    action: native ? 'schedule_local' : 'fallback_toast',
+    title: options.title,
+  });
+
+  if (native) {
     await LocalNotifications.schedule({
       notifications: [{
         id: options.id ?? Date.now(),
