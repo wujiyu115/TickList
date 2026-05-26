@@ -38,43 +38,51 @@ class TokenDAO:
         return {
             'id': model.id,
             'token': model.token,
-            'jti': model.id,  # 使用 id 作为 jti
+            'jti': model.id,
             'user_id': model.user_id,
             'token_type': model.token_type,
+            'family_id': model.family_id,
             'created_at': created_at,
             'expires_at': expires_at,
-            'is_active': not model.revoked  # revoked 取反
+            'is_active': not model.revoked
         }
     
-    def create_token(self, user_id: str, token: str, jti: str = None, expires_hours: int = 24) -> Dict:
+    def create_token(self, user_id: str, token: str, jti: str = None,
+                     token_type: str = 'access', family_id: str = None,
+                     expires_hours: int = None, expires_days: int = None) -> Dict:
         """创建并存储JWT token"""
         session = self._get_session()
         try:
             now = datetime.utcnow()
-            expires_at = now + timedelta(hours=expires_hours)
-            
-            # 如果没有提供jti，生成一个
+            if expires_days:
+                expires_at = now + timedelta(days=expires_days)
+            elif expires_hours:
+                expires_at = now + timedelta(hours=expires_hours)
+            else:
+                expires_at = now + timedelta(hours=24)
+
             if not jti:
                 jti = f'jti-{str(uuid.uuid4())[:8]}'
-            
-            token_id = jti  # 使用 jti 作为 id
-            
+
+            token_id = jti
+
             token_model = TokenModel(
                 id=token_id,
                 token=token,
                 user_id=user_id,
-                token_type='refresh',
+                token_type=token_type,
+                family_id=family_id,
                 created_at=now.isoformat(),
                 expires_at=expires_at.isoformat(),
                 revoked=False
             )
-            
+
             session.add(token_model)
             session.commit()
-            
-            logger.info(f"JWT token created successfully for user: {user_id}")
+
+            logger.info(f"JWT token ({token_type}) created for user: {user_id}")
             return self._model_to_dict(token_model)
-                
+
         except IntegrityError:
             session.rollback()
             logger.warning(f"JWT token already exists: {token[:20]}...")
@@ -117,6 +125,26 @@ class TokenDAO:
             return self._model_to_dict(token_model)
         except Exception as e:
             logger.error(f"Failed to find token by jti: {e}")
+            return None
+        finally:
+            session.close()
+
+    def find_token_by_jti_raw(self, jti: str) -> Optional[Dict]:
+        """根据JTI查找token记录（不检查过期和revoked，用于refresh复用检测）"""
+        session = self._get_session()
+        try:
+            token_model = session.query(TokenModel).filter(
+                TokenModel.id == jti
+            ).first()
+            if not token_model:
+                return None
+            result = self._model_to_dict(token_model)
+            result['revoked'] = token_model.revoked
+            result['family_id'] = token_model.family_id
+            result['token_type'] = token_model.token_type
+            return result
+        except Exception as e:
+            logger.error(f"Failed to find token by jti raw: {e}")
             return None
         finally:
             session.close()
@@ -238,15 +266,39 @@ class TokenDAO:
                 TokenModel.revoked == False
             ).update({'revoked': True})
             session.commit()
-            
+
             if result > 0:
                 logger.info(f"Deactivated {result} tokens for user: {user_id}")
-            
+
             return result
-            
+
         except Exception as e:
             session.rollback()
             logger.error(f"Failed to deactivate user tokens {user_id}: {e}")
+            return 0
+        finally:
+            session.close()
+
+    def deactivate_tokens_by_family(self, family_id: str) -> int:
+        """吊销整个 token 家族（复用检测时使用）"""
+        if not family_id:
+            return 0
+        session = self._get_session()
+        try:
+            result = session.query(TokenModel).filter(
+                TokenModel.family_id == family_id,
+                TokenModel.revoked == False
+            ).update({'revoked': True})
+            session.commit()
+
+            if result > 0:
+                logger.warning(f"Revoked {result} tokens in family: {family_id}")
+
+            return result
+
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Failed to deactivate token family {family_id}: {e}")
             return 0
         finally:
             session.close()
