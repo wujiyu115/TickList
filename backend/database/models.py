@@ -147,18 +147,20 @@ class TagModel(Base):
 class TokenModel(Base):
     """令牌表（用于刷新令牌或 API 密钥管理）"""
     __tablename__ = 'tokens'
-    
+
     id = Column(String(36), primary_key=True)
     user_id = Column(String(36), nullable=False, index=True)
     token = Column(String(500), nullable=False, unique=True)
-    token_type = Column(String(50), default='refresh')  # refresh/api_key
+    token_type = Column(String(50), default='access')  # access/refresh
+    family_id = Column(String(36), nullable=True, index=True)
     expires_at = Column(String(50))
     created_at = Column(String(50))
     revoked = Column(Boolean, default=False)
-    
+
     __table_args__ = (
         Index('idx_tokens_user', 'user_id'),
         Index('idx_tokens_token', 'token'),
+        Index('idx_tokens_family', 'family_id'),
     )
 
 

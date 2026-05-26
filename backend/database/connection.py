@@ -104,6 +104,9 @@ class DatabaseConnection:
                 ('font_color', 'VARCHAR(50)'),
                 ('is_pinned', 'BOOLEAN DEFAULT 0'),
             ],
+            'tokens': [
+                ('family_id', 'VARCHAR(36)'),
+            ],
         }
         
         with self.engine.connect() as conn:
