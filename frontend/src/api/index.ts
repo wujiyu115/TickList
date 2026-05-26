@@ -3,18 +3,15 @@ import { message, Modal } from 'antd';
 import { getApiBaseUrl, isNativePlatform } from '../utils/platform';
 import { isBookmarked, removeBookmark, getCurrentPath } from '../utils/bookmarks';
 
-// Web 端：走相对路径 '/api'（同端口）
-// Native 端：baseURL 由用户在服务器配置页动态设置，运行时由请求拦截器读取
 const api = axios.create({
   timeout: 30000,
 });
 
-// 请求拦截器：动态注入 baseURL + token；native 端未配置 API 地址时阻断请求并跳转配置页
+// 请求拦截器
 api.interceptors.request.use(
   (config) => {
     const baseUrl = getApiBaseUrl();
     if (!baseUrl) {
-      // 仅 Native 平台会走到这里（Web 端始终返回 '/api'）
       if (isNativePlatform() && !window.location.hash.includes('/server-config')) {
         window.location.replace('#/server-config?reason=missing');
       }
@@ -33,24 +30,98 @@ api.interceptors.request.use(
   }
 );
 
+// Refresh token 逻辑
+let isRefreshing = false;
+let failedQueue: Array<{ resolve: (token: string) => void; reject: (err: unknown) => void }> = [];
+
+function processQueue(error: unknown, token: string | null) {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (token) {
+      resolve(token);
+    } else {
+      reject(error);
+    }
+  });
+  failedQueue = [];
+}
+
+function doLogout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('refresh_token');
+  if (isNativePlatform()) {
+    window.location.replace('#/login');
+  } else {
+    window.location.href = '/login';
+  }
+  message.error('登录已过期，请重新登录');
+}
+
+export async function tryRefreshToken(): Promise<string | null> {
+  const refreshToken = localStorage.getItem('refresh_token');
+  if (!refreshToken) return null;
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await axios.post(`${baseUrl}/auth/refresh`, { refresh_token: refreshToken });
+    const { token, refresh_token } = res.data;
+    localStorage.setItem('token', token);
+    localStorage.setItem('refresh_token', refresh_token);
+    return token;
+  } catch {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
+    return null;
+  }
+}
+
 // 响应拦截器
 api.interceptors.response.use(
   (response) => {
     return response.data;
   },
-  (error) => {
-    // 取消请求（例如 native 未配置 API 地址），静默返回
+  async (error) => {
     if (axios.isCancel(error)) {
       return Promise.reject(error);
     }
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      if (isNativePlatform()) {
-        window.location.replace('#/login');
-      } else {
-        window.location.href = '/login';
+
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (!refreshToken) {
+        doLogout();
+        return Promise.reject(error);
       }
-      message.error('登录已过期，请重新登录');
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then((token) => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const newToken = await tryRefreshToken();
+        if (newToken) {
+          processQueue(null, newToken);
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return api(originalRequest);
+        } else {
+          processQueue(error, null);
+          doLogout();
+          return Promise.reject(error);
+        }
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        doLogout();
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     } else if (error.response?.status === 404) {
       const currentPath = getCurrentPath();
       if (isBookmarked(currentPath)) {
