@@ -23,6 +23,13 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: true,
   },
+  plugins: {
+    LocalNotifications: {
+      // iOS 前台时也展示通知横幅、角标、声音
+      smallIcon: 'ic_stat_icon_config_sample',
+      iconColor: '#4CAF50',
+    },
+  },
 };
 
 export default config;
