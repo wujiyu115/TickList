@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode } from 'react';
 import { message, Modal } from 'antd';
+import { notify } from '../services/notify';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useTimer, TimerPhase, TimerMode } from '../hooks/useTimer';
 import { getSettings } from '../api/settings';
@@ -188,11 +189,11 @@ export const FocusProvider: React.FC<FocusProviderProps> = ({ children }) => {
         }
         
         if (notificationEnabled) {
-          message.success('工作完成！休息一下吧 🎉');
+          notify({ title: '专注完成', body: '工作完成！休息一下吧 🎉' });
         }
       } else {
         if (notificationEnabled) {
-          message.info('休息结束，继续加油！💪');
+          notify({ title: '休息结束', body: '休息结束，继续加油！💪' });
         }
       }
     },

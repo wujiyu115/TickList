@@ -24,6 +24,7 @@
     "@capacitor/android": "^8.3.3",
     "@capacitor/core": "^8.3.3",
     "@capacitor/ios": "^8.3.3",
+    "@capacitor/local-notifications": "^8.1.0",
     "@simplewebauthn/browser": "^13.3.0",
     "antd": "^5.0.0",
     "axios": "^1.6.0",
