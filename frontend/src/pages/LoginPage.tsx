@@ -10,7 +10,7 @@ import { isNativePlatform } from '../utils/platform';
 const { Title, Paragraph } = Typography;
 
 interface LoginPageProps {
-  onLogin: (user: User, token: string) => void;
+  onLogin: (user: User, token: string, refreshToken?: string) => void;
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
@@ -35,7 +35,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     try {
       const response = await localLogin(values);
       if (response.success && response.token && response.user) {
-        onLogin(response.user as User, response.token);
+        onLogin(response.user as User, response.token, response.refresh_token);
       } else {
         message.error(response.message || '登录失败');
       }
@@ -55,7 +55,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       const verifyRes = await verifyPasskeyLogin(credential);
       const result = (verifyRes as any).data ?? verifyRes;
       if (result.token && result.user) {
-        onLogin(result.user as User, result.token);
+        onLogin(result.user as User, result.token, result.refresh_token);
       } else {
         message.error('Passkey 登录失败');
       }

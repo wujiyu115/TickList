@@ -93,6 +93,7 @@ export interface DailyStats {
 export interface LoginResponse {
   user: User;
   token: string;
+  refresh_token?: string;
   success: boolean;
   message?: string;
 }

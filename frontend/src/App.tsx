@@ -165,6 +165,7 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Auth check failed:', error);
       localStorage.removeItem('token');
+      localStorage.removeItem('refresh_token');
     } finally {
       setLoading(false);
     }
@@ -179,8 +180,11 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLogin = async (userData: User, token: string) => {
+  const handleLogin = async (userData: User, token: string, refreshToken?: string) => {
     localStorage.setItem('token', token);
+    if (refreshToken) {
+      localStorage.setItem('refresh_token', refreshToken);
+    }
     setUser(userData);
     message.success('登录成功');
     // 加载用户设置并跳转到默认视图
@@ -203,6 +207,7 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
     setUser(null);
     message.success('已退出登录');
   };
