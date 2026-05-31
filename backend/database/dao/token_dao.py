@@ -42,6 +42,8 @@ class TokenDAO:
             'user_id': model.user_id,
             'token_type': model.token_type,
             'family_id': model.family_id,
+            'name': model.name,
+            'last_used_at': model.last_used_at,
             'created_at': created_at,
             'expires_at': expires_at,
             'is_active': not model.revoked

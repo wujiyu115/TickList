@@ -151,8 +151,10 @@ class TokenModel(Base):
     id = Column(String(36), primary_key=True)
     user_id = Column(String(36), nullable=False, index=True)
     token = Column(String(500), nullable=False, unique=True)
-    token_type = Column(String(50), default='access')  # access/refresh
+    token_type = Column(String(50), default='access')  # access/refresh/pat
     family_id = Column(String(36), nullable=True, index=True)
+    name = Column(String(200), nullable=True)  # PAT display name
+    last_used_at = Column(String(50), nullable=True)  # ISO timestamp
     expires_at = Column(String(50))
     created_at = Column(String(50))
     revoked = Column(Boolean, default=False)
