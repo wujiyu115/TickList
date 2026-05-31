@@ -99,37 +99,56 @@ async def verify_agent_system_token(credentials: HTTPAuthorizationCredentials = 
         )
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """获取当前用户"""
+    """获取当前用户 — PAT (tkl_ prefix) or JWT"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
+    raw_token = credentials.credentials
+
+    # Branch on prefix — no fallback
+    if raw_token.startswith("tkl_"):
+        return await _auth_pat(raw_token, credentials_exception)
+    else:
+        return await _auth_jwt(raw_token, credentials_exception)
+
+
+async def _auth_pat(raw_token: str, credentials_exception: HTTPException) -> str:
+    """Authenticate via Personal Access Token"""
+    import hashlib
+    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+    pat = token_dao.find_pat_by_hash(token_hash)
+    if pat is None:
+        raise credentials_exception
+    token_dao.update_pat_last_used(pat['id'])
+    return pat['user_id']
+
+
+async def _auth_jwt(raw_token: str, credentials_exception: HTTPException) -> str:
+    """Authenticate via JWT (existing flow)"""
     try:
-        payload = verify_token(credentials.credentials)
+        payload = verify_token(raw_token)
         if payload is None:
             raise credentials_exception
-        
+
         user_id: str = payload.get("sub")
         if user_id is None:
             raise credentials_exception
-        
-        # 获取JTI（如果存在）
+
         jti: str = payload.get("jti")
         if jti:
-            # 检查token是否被撤销
             token_doc = token_dao.validate_token_by_jti(jti)
             if token_doc is None:
                 raise credentials_exception
         else:
-            # 兼容旧版本没有JTI的token
-            token_doc = token_dao.validate_token(credentials.credentials)
+            token_doc = token_dao.validate_token(raw_token)
             if token_doc is None:
                 raise credentials_exception
-        
+
         return user_id
-        
+
     except JWTError:
         raise credentials_exception
 

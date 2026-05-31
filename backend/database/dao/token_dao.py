@@ -305,6 +305,82 @@ class TokenDAO:
         finally:
             session.close()
     
+    def create_pat(self, user_id: str, token_hash: str, name: str, pat_id: str) -> Dict:
+        """Create a PAT record (stores hash, not plaintext)"""
+        session = self._get_session()
+        try:
+            now = datetime.utcnow()
+            token_model = TokenModel(
+                id=pat_id,
+                token=token_hash,
+                user_id=user_id,
+                token_type='pat',
+                name=name,
+                family_id=None,
+                created_at=now.isoformat(),
+                expires_at='9999-12-31T23:59:59',
+                revoked=False
+            )
+            session.add(token_model)
+            session.commit()
+            logger.info(f"PAT created for user: {user_id}, name: {name}")
+            return self._model_to_dict(token_model)
+        except IntegrityError:
+            session.rollback()
+            raise ValueError("PAT token hash collision")
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Failed to create PAT for user {user_id}: {e}")
+            raise
+        finally:
+            session.close()
+
+    def find_pat_by_hash(self, token_hash: str) -> Optional[Dict]:
+        """Find active PAT by its SHA-256 hash"""
+        session = self._get_session()
+        try:
+            token_model = session.query(TokenModel).filter(
+                TokenModel.token == token_hash,
+                TokenModel.token_type == 'pat',
+                TokenModel.revoked == False,
+            ).first()
+            return self._model_to_dict(token_model)
+        except Exception as e:
+            logger.error(f"Failed to find PAT by hash: {e}")
+            return None
+        finally:
+            session.close()
+
+    def list_user_pats(self, user_id: str) -> List[Dict]:
+        """List all active PATs for a user"""
+        session = self._get_session()
+        try:
+            tokens = session.query(TokenModel).filter(
+                TokenModel.user_id == user_id,
+                TokenModel.token_type == 'pat',
+                TokenModel.revoked == False,
+            ).order_by(TokenModel.created_at.desc()).all()
+            return [self._model_to_dict(t) for t in tokens]
+        except Exception as e:
+            logger.error(f"Failed to list PATs for user {user_id}: {e}")
+            return []
+        finally:
+            session.close()
+
+    def update_pat_last_used(self, pat_id: str) -> None:
+        """Update last_used_at timestamp for a PAT"""
+        session = self._get_session()
+        try:
+            session.query(TokenModel).filter(
+                TokenModel.id == pat_id
+            ).update({'last_used_at': datetime.utcnow().isoformat()})
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Failed to update PAT last_used: {e}")
+        finally:
+            session.close()
+
     def cleanup_expired_tokens(self) -> int:
         """清理过期的token"""
         session = self._get_session()

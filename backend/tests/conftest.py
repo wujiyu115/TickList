@@ -139,7 +139,26 @@ def app_client(db_session):
                 detail="Not authenticated",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        payload = verify_token(credentials.credentials)
+
+        raw_token = credentials.credentials
+
+        # PAT branch
+        if raw_token.startswith("tkl_"):
+            import hashlib
+            from database.dao.token_dao import token_dao
+            token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+            pat = token_dao.find_pat_by_hash(token_hash)
+            if pat is None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid PAT",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            token_dao.update_pat_last_used(pat['id'])
+            return pat['user_id']
+
+        # JWT branch (existing)
+        payload = verify_token(raw_token)
         if payload is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
