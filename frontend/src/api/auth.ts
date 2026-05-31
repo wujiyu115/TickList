@@ -53,3 +53,29 @@ export const getPasskeyCredentials = () =>
 
 export const deletePasskeyCredential = (id: string) =>
   api.delete(`/auth/webauthn/credentials/${id}`);
+
+// ===== Personal Access Token (PAT) API =====
+
+export interface PATItem {
+  id: string;
+  name: string;
+  created_at: string;
+  last_used_at: string | null;
+  token_preview: string;
+}
+
+export interface PATCreateResponse {
+  id: string;
+  name: string;
+  token: string;
+  created_at: string;
+}
+
+export const createPAT = (name: string): Promise<PATCreateResponse> =>
+  api.post('/auth/pat', { name });
+
+export const listPATs = (): Promise<PATItem[]> =>
+  api.get('/auth/pat');
+
+export const deletePAT = (id: string): Promise<void> =>
+  api.delete(`/auth/pat/${id}`);

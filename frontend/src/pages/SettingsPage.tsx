@@ -32,6 +32,8 @@ import {
   EditOutlined,
   DeleteOutlined,
   ExperimentOutlined,
+  KeyOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import { UserSettings, TaskList, PushChannelConfig, BarkConfig, CustomHttpConfig } from '../types';
 import { getSettings, updateSettings, testPushChannel } from '../api/settings';
@@ -39,6 +41,7 @@ import { getLists } from '../api/list';
 import { exportData, importData, importDidaCsv } from '../api/data';
 import { getDebugLogs, clearDebugLogs } from '../api/debugLog';
 import { setRemoteLogEnabled, isRemoteLogEnabled } from '../services/remoteLog';
+import { createPAT, listPATs, deletePAT, PATItem } from '../api/auth';
 import { ThemeContext } from '../App';
 import { isNativePlatform, getApiBaseUrl } from '../utils/platform';
 import { useNavigate } from 'react-router-dom';
@@ -151,6 +154,7 @@ const NAV_ITEMS = [
   { key: 'pomodoro', icon: ClockCircleOutlined, label: '番茄钟设置' },
   { key: 'notification', icon: BellOutlined, label: '通知设置' },
   { key: 'push', icon: SendOutlined, label: '推送通知' },
+  { key: 'token', icon: KeyOutlined, label: 'API Token' },
   { key: 'data', icon: DatabaseOutlined, label: '数据管理' },
   { key: 'debug', icon: ExperimentOutlined, label: '调试日志' },
 ];
@@ -178,6 +182,13 @@ const SettingsPage: React.FC = () => {
   const [debugEnabled, setDebugEnabled] = useState(isRemoteLogEnabled());
   const [debugLogs, setDebugLogs] = useState<any[]>([]);
   const [debugLogsLoading, setDebugLogsLoading] = useState(false);
+
+  // PAT 状态
+  const [pats, setPats] = useState<PATItem[]>([]);
+  const [patModalVisible, setPatModalVisible] = useState(false);
+  const [patName, setPatName] = useState('');
+  const [newPatToken, setNewPatToken] = useState<string | null>(null);
+  const [patLoading, setPatLoading] = useState(false);
   
   
   const themeContext = useContext(ThemeContext);
@@ -186,6 +197,7 @@ const SettingsPage: React.FC = () => {
   useEffect(() => {
     loadSettings();
     loadLists();
+    loadPats();
   }, []);
 
   const loadSettings = async () => {
@@ -213,6 +225,51 @@ const SettingsPage: React.FC = () => {
       setLists(data.lists || []);
     } catch (e) {
       console.error('Failed to load lists:', e);
+    }
+  };
+
+  const loadPats = async () => {
+    try {
+      const data = await listPATs();
+      setPats(data);
+    } catch (e) {
+      console.error('Failed to load PATs:', e);
+    }
+  };
+
+  const handleCreatePat = async () => {
+    if (!patName.trim()) {
+      message.warning('请输入Token名称');
+      return;
+    }
+    setPatLoading(true);
+    try {
+      const result = await createPAT(patName.trim());
+      setNewPatToken(result.token);
+      setPatName('');
+      loadPats();
+      message.success('Token已生成');
+    } catch (e) {
+      message.error('生成失败');
+    } finally {
+      setPatLoading(false);
+    }
+  };
+
+  const handleDeletePat = async (id: string) => {
+    try {
+      await deletePAT(id);
+      setPats(pats.filter(p => p.id !== id));
+      message.success('已撤销');
+    } catch (e) {
+      message.error('撤销失败');
+    }
+  };
+
+  const handleCopyToken = () => {
+    if (newPatToken) {
+      navigator.clipboard.writeText(newPatToken);
+      message.success('已复制到剪贴板');
     }
   };
 
@@ -963,6 +1020,96 @@ const SettingsPage: React.FC = () => {
               </Space>
             )}
           </div>
+        </div>
+
+        {/* API Token */}
+        <div id="settings-token" className="settings-section">
+          <div className="section-title">API Token</div>
+          <div style={{ marginBottom: 16 }}>
+            <span style={{ fontSize: 13, color: 'var(--ant-color-text-secondary)' }}>
+              生成长期有效的API Token，供外部工具（如Claude Code、Cursor）访问你的数据
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <Input
+              placeholder="Token名称（如 Claude Code）"
+              value={patName}
+              onChange={(e) => setPatName(e.target.value)}
+              onPressEnter={handleCreatePat}
+              style={{ maxWidth: 240 }}
+            />
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              loading={patLoading}
+              onClick={handleCreatePat}
+            >
+              生成
+            </Button>
+          </div>
+
+          {newPatToken && (
+            <Card size="small" style={{ marginBottom: 16, background: 'var(--ant-color-warning-bg)' }}>
+              <div style={{ marginBottom: 8, fontWeight: 500, color: 'var(--ant-color-warning)' }}>
+                Token仅显示一次，请立即复制保存
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <Input.TextArea
+                  value={newPatToken}
+                  readOnly
+                  autoSize={{ minRows: 1, maxRows: 2 }}
+                  style={{ fontFamily: 'monospace', fontSize: 12 }}
+                />
+                <Button icon={<CopyOutlined />} onClick={handleCopyToken}>
+                  复制
+                </Button>
+              </div>
+              <Button
+                type="link"
+                size="small"
+                style={{ marginTop: 8, padding: 0 }}
+                onClick={() => setNewPatToken(null)}
+              >
+                我已保存，关闭提示
+              </Button>
+            </Card>
+          )}
+
+          {pats.length === 0 ? (
+            <Card style={{ textAlign: 'center', padding: '24px 0' }}>
+              <div style={{ color: 'var(--ant-color-text-tertiary)' }}>暂无API Token</div>
+            </Card>
+          ) : (
+            <Space direction="vertical" style={{ width: '100%' }} size={8}>
+              {pats.map(pat => (
+                <Card key={pat.id} size="small" style={{ borderRadius: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <span style={{ fontWeight: 500 }}>{pat.name}</span>
+                      <span style={{ marginLeft: 12, fontSize: 12, color: 'var(--ant-color-text-tertiary)', fontFamily: 'monospace' }}>
+                        {pat.token_preview}
+                      </span>
+                      <div style={{ fontSize: 12, color: 'var(--ant-color-text-tertiary)', marginTop: 4 }}>
+                        创建于 {pat.created_at?.slice(0, 10)}
+                        {pat.last_used_at && ` · 上次使用 ${pat.last_used_at.slice(0, 10)}`}
+                      </div>
+                    </div>
+                    <Popconfirm
+                      title="确定撤销该Token吗？撤销后不可恢复"
+                      onConfirm={() => handleDeletePat(pat.id)}
+                      okText="撤销"
+                      cancelText="取消"
+                    >
+                      <Button type="text" size="small" danger icon={<DeleteOutlined />}>
+                        撤销
+                      </Button>
+                    </Popconfirm>
+                  </div>
+                </Card>
+              ))}
+            </Space>
+          )}
         </div>
 
         {/* 数据管理 */}
