@@ -106,6 +106,8 @@ class DatabaseConnection:
             ],
             'tokens': [
                 ('family_id', 'VARCHAR(36)'),
+                ('name', 'VARCHAR(200)'),
+                ('last_used_at', 'VARCHAR(50)'),
             ],
         }
         
