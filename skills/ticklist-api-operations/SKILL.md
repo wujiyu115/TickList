@@ -7,44 +7,32 @@ description: Use when needing to create, read, update, or delete lists and tasks
 
 ## 概述
 
-通过 TickList 的 REST API 管理清单和任务。所有操作需要 JWT Bearer Token 认证。
+通过 TickList 的 REST API 管理清单和任务。所有操作使用 PAT（Personal Access Token）认证。
 
-## 基础地址
+## 前置配置
 
+用户需在 shell 环境变量中配置（如 `~/.zshrc`）：
+
+```bash
+export TICKLIST_URL="https://your-ticklist-server.com"
+export TICKLIST_PAT="tkl_你的PAT令牌"
 ```
-https://ticklist.caddy.bestnewbee.com:5002
-```
 
-**健康检查：** `GET /api/health`
+PAT 令牌在 TickList 的 Settings → API Token 页面生成。
+
+**健康检查：** `GET $TICKLIST_URL/api/health`
 
 ## 认证
 
-所有 API 调用需要在 `Authorization` 请求头中携带 Bearer Token。
-
-### 前置配置
-
-用户需在 shell 环境变量中配置凭证（如 `~/.zshrc`）：
+所有 API 调用在 `Authorization` 请求头中携带 PAT：
 
 ```bash
-export TICKLIST_USERNAME="你的用户名"
-export TICKLIST_PASSWORD="你的密码"
+-H "Authorization: Bearer $TICKLIST_PAT"
 ```
 
-这样 AI 只能看到变量名，无法读取实际密码。
+无需登录步骤，PAT 可直接用于所有接口。
 
-### 登录获取 Token
-
-```bash
-curl -X POST https://ticklist.caddy.bestnewbee.com:5002/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d "{\"username\": \"$TICKLIST_USERNAME\", \"password\": \"$TICKLIST_PASSWORD\"}"
-```
-
-**返回：** `{"user": {...}, "token": "ACCESS_TOKEN", "refresh_token": "REFRESH_TOKEN"}`
-
-使用返回的 `token` 值作为后续所有请求的 Bearer Token。
-
-> **注意：** 永远不要让用户在对话中直接输入密码，始终通过环境变量读取。
+> **注意：** 永远不要让用户在对话中直接输入 token，始终通过环境变量 `$TICKLIST_PAT` 读取。
 
 ## 接口速查表
 
@@ -67,8 +55,8 @@ curl -X POST https://ticklist.caddy.bestnewbee.com:5002/api/auth/login \
 ### 创建清单
 
 ```bash
-curl -X POST https://ticklist.caddy.bestnewbee.com:5002/api/lists \
-  -H "Authorization: Bearer TOKEN" \
+curl -X POST $TICKLIST_URL/api/lists \
+  -H "Authorization: Bearer $TICKLIST_PAT" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "工作任务",
@@ -89,8 +77,8 @@ curl -X POST https://ticklist.caddy.bestnewbee.com:5002/api/lists \
 ### 获取所有清单
 
 ```bash
-curl https://ticklist.caddy.bestnewbee.com:5002/api/lists \
-  -H "Authorization: Bearer TOKEN"
+curl $TICKLIST_URL/api/lists \
+  -H "Authorization: Bearer $TICKLIST_PAT"
 ```
 
 **查询参数：** `type`（类型筛选）、`is_archived`（是否归档）、`skip`（跳过数量）、`limit`（返回数量）
@@ -98,8 +86,8 @@ curl https://ticklist.caddy.bestnewbee.com:5002/api/lists \
 ### 更新清单
 
 ```bash
-curl -X PUT https://ticklist.caddy.bestnewbee.com:5002/api/lists/{list_id} \
-  -H "Authorization: Bearer TOKEN" \
+curl -X PUT $TICKLIST_URL/api/lists/{list_id} \
+  -H "Authorization: Bearer $TICKLIST_PAT" \
   -H "Content-Type: application/json" \
   -d '{"name": "新名称", "color": "#ff4d4f"}'
 ```
@@ -109,8 +97,8 @@ curl -X PUT https://ticklist.caddy.bestnewbee.com:5002/api/lists/{list_id} \
 ### 删除清单
 
 ```bash
-curl -X DELETE "https://ticklist.caddy.bestnewbee.com:5002/api/lists/{list_id}?action=delete_tasks" \
-  -H "Authorization: Bearer TOKEN"
+curl -X DELETE "$TICKLIST_URL/api/lists/{list_id}?action=delete_tasks" \
+  -H "Authorization: Bearer $TICKLIST_PAT"
 ```
 
 **查询参数：**
@@ -122,8 +110,8 @@ curl -X DELETE "https://ticklist.caddy.bestnewbee.com:5002/api/lists/{list_id}?a
 ### 创建任务
 
 ```bash
-curl -X POST https://ticklist.caddy.bestnewbee.com:5002/api/tasks \
-  -H "Authorization: Bearer TOKEN" \
+curl -X POST $TICKLIST_URL/api/tasks \
+  -H "Authorization: Bearer $TICKLIST_PAT" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "完成周报",
@@ -154,8 +142,8 @@ curl -X POST https://ticklist.caddy.bestnewbee.com:5002/api/tasks \
 ### 获取任务列表
 
 ```bash
-curl "https://ticklist.caddy.bestnewbee.com:5002/api/tasks?list_id=LIST_ID&status=pending" \
-  -H "Authorization: Bearer TOKEN"
+curl "$TICKLIST_URL/api/tasks?list_id=LIST_ID&status=pending" \
+  -H "Authorization: Bearer $TICKLIST_PAT"
 ```
 
 **查询参数：** `status`（状态）、`exclude_status`（排除状态）、`list_id`（清单ID）、`tags`（标签，逗号分隔）、`is_pinned`（是否置顶）、`priority`（优先级，逗号分隔）、`keyword`（关键词）、`start_date`（开始日期）、`end_date`（结束日期）、`skip`（跳过数量）、`limit`（返回数量）
@@ -163,8 +151,8 @@ curl "https://ticklist.caddy.bestnewbee.com:5002/api/tasks?list_id=LIST_ID&statu
 ### 更新任务
 
 ```bash
-curl -X PUT https://ticklist.caddy.bestnewbee.com:5002/api/tasks/{task_id} \
-  -H "Authorization: Bearer TOKEN" \
+curl -X PUT $TICKLIST_URL/api/tasks/{task_id} \
+  -H "Authorization: Bearer $TICKLIST_PAT" \
   -H "Content-Type: application/json" \
   -d '{"status": "completed"}'
 ```
@@ -174,28 +162,27 @@ curl -X PUT https://ticklist.caddy.bestnewbee.com:5002/api/tasks/{task_id} \
 ### 删除任务
 
 ```bash
-curl -X DELETE https://ticklist.caddy.bestnewbee.com:5002/api/tasks/{task_id} \
-  -H "Authorization: Bearer TOKEN"
+curl -X DELETE $TICKLIST_URL/api/tasks/{task_id} \
+  -H "Authorization: Bearer $TICKLIST_PAT"
 ```
 
 ### 搜索任务
 
 ```bash
-curl "https://ticklist.caddy.bestnewbee.com:5002/api/tasks/search?keyword=周报" \
-  -H "Authorization: Bearer TOKEN"
+curl "$TICKLIST_URL/api/tasks/search?keyword=周报" \
+  -H "Authorization: Bearer $TICKLIST_PAT"
 ```
 
 ## 使用流程
 
-1. **获取凭证**：向用户询问账号密码或 Token（永远不要硬编码）
-2. **登录**：调用 `/api/auth/login` 获取 Token
-3. **验证连通性**：调用 `/api/health` 确认服务可用
-4. **执行操作**：使用 Bearer Token 执行增删改查
-5. **反馈结果**：将操作结果以可读格式展示给用户
+1. **检查环境变量**：确认 `$TICKLIST_URL` 和 `$TICKLIST_PAT` 已配置
+2. **验证连通性**：调用 `$TICKLIST_URL/api/health` 确认服务可用
+3. **执行操作**：使用 `$TICKLIST_PAT` 执行增删改查
+4. **反馈结果**：将操作结果以可读格式展示给用户
 
 ## 常见错误
 
-- **缺少认证头**：除 `/api/health` 和 `/api/auth/*` 外，所有端点都需要 Bearer Token
+- **缺少认证头**：除 `/api/health` 和 `/api/auth/*` 外，所有端点都需要 Bearer PAT
 - **日期格式错误**：必须使用 ISO 8601 格式并带时区（如 `2026-06-01T18:00:00+08:00`）
 - **删除清单未指定 action**：必须指定 `action=delete_tasks` 或 `action=move_tasks` 来处理清单中的任务
 - **创建子任务**：需要传 `parent_task_id`，排序序号会自动计算
