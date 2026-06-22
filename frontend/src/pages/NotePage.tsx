@@ -18,9 +18,7 @@ import {
   FolderOutlined,
   MoreOutlined,
 } from '@ant-design/icons';
-import Cherry from 'cherry-markdown';
-import 'cherry-markdown/dist/cherry-markdown.css';
-import { createTableFormulaHook } from '../utils/tableFormulaHook';
+import TiptapEditor from '../components/TiptapEditor';
 import { Note, NoteFolder, Tag } from '../types';
 import { getNote, updateNote, deleteNote } from '../api/note';
 import { getNoteFolders } from '../api/note';
@@ -39,12 +37,6 @@ const NotePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const note_id = searchParams.get('note_id');
-
-  // Cherry Markdown 实例与容器
-  const editorContainerRef = useRef<HTMLDivElement>(null);
-  const cherryRef = useRef<Cherry | null>(null);
-  // 标记是否由 Cherry 内部触发的 content 变更（避免循环更新）
-  const isInternalChangeRef = useRef(false);
 
   // 自动保存防抖定时器
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -93,115 +85,6 @@ const NotePage: React.FC = () => {
     fetchFolders();
     fetchTags();
   }, [fetchNote, fetchFolders, fetchTags]);
-
-  // 初始化 Cherry Markdown 编辑器
-  useEffect(() => {
-    if (!editorContainerRef.current || !note) return;
-
-    // 如果已有实例则先销毁
-    if (cherryRef.current) {
-      cherryRef.current.destroy();
-      cherryRef.current = null;
-    }
-
-
-    const cherry = new Cherry({
-      el: editorContainerRef.current,
-      value: content || '',
-      isPreviewOnly: false,
-      autoScrollByCursor: true,
-      forceAppend: true,
-      locale: 'zh_CN',
-      nameSpace: 'cherry',
-      autoScrollByHashAfterInit: false,
-      editor: {
-        theme: 'default',
-        height: '100%',
-        defaultModel: 'edit&preview',
-        convertWhenPaste: true,
-        keyMap: 'sublime',
-        writingStyle: 'normal',
-        showFullWidthMark: true,
-        showSuggestList: true,
-        maxUrlLength: -1
-      },
-      toolbars: {
-        toolbar: [
-          'bold',
-          'italic',
-          'strikethrough',
-          'underline',
-          '|',
-          'color',
-          'header',
-          'list',
-          'checklist',
-          '|',
-          'quote',
-          'quickTable',
-          'code',
-          'link',
-          '|',
-          'hr',
-          'br',
-          'graph',
-        ],
-        toolbarRight: [
-          'togglePreview',
-          'switchModel',
-          'export',
-          '|',
-          'undo',
-          'redo',
-          'fullScreen'
-        ],
-        bubble: [
-          'bold',
-          'italic',
-          'underline',
-          'strikethrough',
-          'sub',
-          'sup',
-          'quote',
-          'ruby',
-          'size',
-          'color'
-        ],
-        float: ['h1', 'h2', 'h3', 'checklist', 'quote', 'quickTable', 'code'],
-      },
-      engine: {
-        syntax: {
-          table: {
-            enableChart: false,
-          },
-        },
-        customSyntax: {
-          tableFormula: {
-            syntaxClass: createTableFormulaHook(),
-            before: 'table',
-          },
-        },
-      },
-      externals: {
-        echarts: false
-      },
-      callback: {
-        afterChange: (markdownContent: string) => {
-          isInternalChangeRef.current = true;
-          setContent(markdownContent);
-        },
-      },
-    });
-
-    cherryRef.current = cherry;
-
-    return () => {
-      cherry.destroy();
-      cherryRef.current = null;
-    };
-    // 仅在 note 切换时重新初始化编辑器
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [note?.id]);
 
   // 自动保存
   const autoSave = useCallback(() => {
@@ -398,7 +281,11 @@ const NotePage: React.FC = () => {
 
         {/* Markdown 编辑器 */}
         <div className="note-editor-wrapper">
-          <div ref={editorContainerRef} className="cherry-editor-container" />
+          <TiptapEditor
+            content={content || ''}
+            onChange={(md) => setContent(md)}
+            placeholder="开始编写笔记..."
+          />
         </div>
       </Card>
     </div>

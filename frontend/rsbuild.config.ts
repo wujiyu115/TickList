@@ -87,6 +87,13 @@ export default defineConfig({
             chunks: 'all',
             priority: 27,
           },
+          // Tiptap 编辑器
+          tiptap: {
+            test: /[\\/]node_modules[\\/](@tiptap|prosemirror-|tiptap-markdown|lowlight)[\\/]/,
+            name: 'tiptap-vendor',
+            chunks: 'all',
+            priority: 26,
+          },
           // Antd 其他组件
           antdOther: {
             test: /[\\/]node_modules[\\/](antd|@ant-design)[\\/]/,
