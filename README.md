@@ -46,7 +46,13 @@
 - ✅ 创建 / 编辑 / 删除倒数日事件
 
 ### 笔记
-- ✅ Markdown 所见即所得编辑器
+- ✅ Tiptap WYSIWYG 编辑器（类 Typora 单栏实时渲染）
+- ✅ 源码 Markdown 模式切换
+- ✅ 选中文本浮动工具栏（粗体/斜体/下划线/删除线/代码/链接）
+- ✅ 空行浮动菜单（标题/列表/引用/代码块/表格/分隔线）
+- ✅ 表格操作工具栏（插入/删除 行列）
+- ✅ 表格公式支持（SUM/AVG/COUNT/MAX/MIN）
+- ✅ 代码块语法高亮（lowlight）
 - ✅ 多层嵌套文件夹管理
 - ✅ 笔记置顶 / 颜色标记
 - ✅ 自动保存（1秒防抖）
@@ -79,8 +85,9 @@
 - ✅ 专注最短时长设置
 
 ### 账户与安全
-- ✅ 用户注册与登录（JWT 认证）
+- ✅ 用户注册与登录（JWT 认证 + Refresh Token 自动续期）
 - ✅ WebAuthn Passkeys 免密登录（指纹、面容、安全密钥）
+- ✅ 个人访问令牌（PAT）管理（创建、命名、撤销、最后使用时间追踪）
 - ✅ 修改密码（独立页面，入口在用户下拉菜单）
 - ✅ 管理员用户管理（查看用户列表、冻结/解冻、角色管理、重置密码、创建用户）
 - ✅ 注册开关控制（`REGISTER_ENABLED` 环境变量）
@@ -100,10 +107,13 @@
 - ✅ 删除操作二次确认
 - ✅ PC/移动端自适应面板
 
-### 其他
+### 多端支持
 - ✅ 全站移动端适配（响应式布局，小屏幕侧边栏 Drawer 弹出）
+- ✅ iOS / Android 原生应用（Capacitor）
+- ✅ iOS 安全区域适配（状态栏、底部指示条）
+- ✅ 本地通知推送（到期提醒）
 - ✅ 侧边栏面板折叠（持久化）
-- ✅ 到期提醒推送
+- ✅ 暗色模式
 
 ## 安装和运行
 
@@ -371,7 +381,7 @@ docker run -d \
 
 **后端**：FastAPI + SQLAlchemy（SQLite/MySQL） + JWT + bcrypt + py_webauthn + AI Pipeline（Claude/OpenAI/DeepSeek）
 
-**前端**：React 18 + TypeScript + Ant Design 5 + Rsbuild + Axios + @simplewebauthn/browser + SSE
+**前端**：React 18 + TypeScript + Ant Design 5 + Rsbuild + Tiptap + Capacitor + Axios + @simplewebauthn/browser + SSE
 
 ### 项目结构
 
@@ -401,7 +411,8 @@ ticklist/
 ├── frontend/                # 前端代码
 │   └── src/
 │       ├── api/            # API 调用（auth/task/calendar/focus/countdown/counter/data 等）
-│       ├── components/     # 组件（TaskList/KanbanView/CalendarView/PomodoroTimer 等）
+│       ├── components/     # 组件（TaskList/KanbanView/CalendarView/PomodoroTimer/TiptapEditor 等）
+│       ├── extensions/     # Tiptap 扩展（表格公式等）
 │       ├── contexts/       # 全局状态（TaskContext/FocusContext）
 │       ├── hooks/          # 自定义 Hook（useTimer）
 │       ├── layouts/        # 布局
