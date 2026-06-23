@@ -273,14 +273,24 @@ const CounterPage: React.FC = () => {
         label: (
           <Popconfirm
             title="确定删除这个计数器吗？"
-            onConfirm={(e) => handleDelete(counter.id, e as unknown as React.MouseEvent)}
+            onConfirm={(e) => {
+              e?.stopPropagation();
+              handleDelete(counter.id, e as unknown as React.MouseEvent);
+            }}
+            onCancel={(e) => e?.stopPropagation()}
             okText="确定"
             cancelText="取消"
           >
-            <span style={{ color: '#ff4d4f' }}>删除</span>
+            <span
+              style={{ color: '#ff4d4f' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              删除
+            </span>
           </Popconfirm>
         ),
         icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
+        onClick: (info: any) => info.domEvent?.stopPropagation(),
       },
     ];
 
