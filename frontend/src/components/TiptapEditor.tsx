@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { BubbleMenu, FloatingMenu } from '@tiptap/react/menus';
 import { StarterKit } from '@tiptap/starter-kit';
@@ -118,6 +118,20 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
     onChange(e.target.value);
   }, [onChange]);
 
+  const isInTable = editor?.isActive('table') ?? false;
+
+  const tableBubbleShouldShow = useMemo(() => {
+    return ({ editor: e }: { editor: any }) => {
+      return e.isActive('table');
+    };
+  }, []);
+
+  const textBubbleShouldShow = useMemo(() => {
+    return ({ editor: e, from, to }: { editor: any; from: number; to: number }) => {
+      return from !== to && !e.isActive('table');
+    };
+  }, []);
+
   if (!editor) return null;
 
   return (
@@ -142,8 +156,10 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
         />
       ) : (
       <>
+      {/* Text formatting bubble menu */}
       <BubbleMenu
         editor={editor}
+        shouldShow={textBubbleShouldShow}
         tippyOptions={{
           placement: 'top',
           popperOptions: {
@@ -155,54 +171,38 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
         }}
         className="tiptap-bubble-menu"
       >
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          className={editor.isActive('bold') ? 'is-active' : ''}
-          title="粗体"
-        >
-          B
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={editor.isActive('italic') ? 'is-active' : ''}
-          title="斜体"
-        >
-          <em>I</em>
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-          className={editor.isActive('underline') ? 'is-active' : ''}
-          title="下划线"
-        >
-          <u>U</u>
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleStrike().run()}
-          className={editor.isActive('strike') ? 'is-active' : ''}
-          title="删除线"
-        >
-          <s>S</s>
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleCode().run()}
-          className={editor.isActive('code') ? 'is-active' : ''}
-          title="行内代码"
-        >
-          {'</>'}
-        </button>
-        <button
-          type="button"
-          onClick={setLink}
-          className={editor.isActive('link') ? 'is-active' : ''}
-          title="链接"
-        >
-          🔗
-        </button>
+        <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'is-active' : ''} title="粗体">B</button>
+        <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'is-active' : ''} title="斜体"><em>I</em></button>
+        <button type="button" onClick={() => editor.chain().focus().toggleUnderline().run()} className={editor.isActive('underline') ? 'is-active' : ''} title="下划线"><u>U</u></button>
+        <button type="button" onClick={() => editor.chain().focus().toggleStrike().run()} className={editor.isActive('strike') ? 'is-active' : ''} title="删除线"><s>S</s></button>
+        <button type="button" onClick={() => editor.chain().focus().toggleCode().run()} className={editor.isActive('code') ? 'is-active' : ''} title="行内代码">{'</>'}</button>
+        <button type="button" onClick={setLink} className={editor.isActive('link') ? 'is-active' : ''} title="链接">🔗</button>
+      </BubbleMenu>
+
+      {/* Table operations bubble menu */}
+      <BubbleMenu
+        editor={editor}
+        shouldShow={tableBubbleShouldShow}
+        tippyOptions={{
+          placement: 'top',
+          maxWidth: 'none',
+          popperOptions: {
+            modifiers: [
+              { name: 'flip' },
+              { name: 'preventOverflow', options: { boundary: 'viewport', padding: 8, altAxis: true } },
+            ],
+          },
+        }}
+        className="tiptap-table-menu"
+      >
+        <button type="button" onClick={() => editor.chain().focus().addRowBefore().run()} title="上方插入行">↑行</button>
+        <button type="button" onClick={() => editor.chain().focus().addRowAfter().run()} title="下方插入行">↓行</button>
+        <button type="button" onClick={() => editor.chain().focus().addColumnBefore().run()} title="左侧插入列">←列</button>
+        <button type="button" onClick={() => editor.chain().focus().addColumnAfter().run()} title="右侧插入列">→列</button>
+        <span className="table-menu-divider" />
+        <button type="button" onClick={() => editor.chain().focus().deleteRow().run()} title="删除行" className="danger">✕行</button>
+        <button type="button" onClick={() => editor.chain().focus().deleteColumn().run()} title="删除列" className="danger">✕列</button>
+        <button type="button" onClick={() => editor.chain().focus().deleteTable().run()} title="删除表格" className="danger">✕表</button>
       </BubbleMenu>
 
       <FloatingMenu
