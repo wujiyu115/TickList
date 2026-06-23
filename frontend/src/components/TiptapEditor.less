@@ -5,6 +5,56 @@
   overflow: hidden;
 }
 
+// Mode toggle
+.tiptap-mode-toggle {
+  display: flex;
+  justify-content: flex-end;
+  padding: 6px 8px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+  flex-shrink: 0;
+
+  button {
+    border: 1px solid #d9d9d9;
+    background: #fff;
+    padding: 2px 10px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #595959;
+    border-radius: 4px;
+    transition: all 0.15s;
+
+    &:hover {
+      border-color: #1677ff;
+      color: #1677ff;
+    }
+
+    &.is-active {
+      background: #e6f4ff;
+      border-color: #91caff;
+      color: #1677ff;
+    }
+  }
+}
+
+// Source markdown editor
+.tiptap-source-editor {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  padding: 16px 20px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #262626;
+  background: #fff;
+  tab-size: 4;
+  -webkit-overflow-scrolling: touch;
+}
+
 .tiptap-editor-content {
   flex: 1;
   min-height: 0;
@@ -317,6 +367,33 @@
 
 // Dark mode
 html[data-theme='dark'] {
+  .tiptap-mode-toggle {
+    background: #1f1f1f;
+    border-bottom-color: #303030;
+
+    button {
+      background: #141414;
+      border-color: #434343;
+      color: rgba(255, 255, 255, 0.65);
+
+      &:hover {
+        border-color: #1677ff;
+        color: #1677ff;
+      }
+
+      &.is-active {
+        background: #111d2c;
+        border-color: #15395b;
+        color: #1677ff;
+      }
+    }
+  }
+
+  .tiptap-source-editor {
+    background: #141414;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
   .tiptap-editor-content .tiptap {
     color: rgba(255, 255, 255, 0.85);
 
@@ -419,6 +496,10 @@ html[data-theme='dark'] {
 
 // Responsive - tablet
 @media (max-width: 768px) {
+  .tiptap-source-editor {
+    padding: 12px 16px;
+  }
+
   .tiptap-editor-content .tiptap {
     padding: 12px 16px;
     font-size: 15px;
@@ -434,6 +515,11 @@ html[data-theme='dark'] {
 
 // Responsive - phone
 @media (max-width: 480px) {
+  .tiptap-source-editor {
+    padding: 10px 12px;
+    font-size: 16px;
+  }
+
   .tiptap-editor-content .tiptap {
     padding: 10px 12px;
     font-size: 16px; // prevent iOS zoom

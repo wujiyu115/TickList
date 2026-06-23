@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { BubbleMenu, FloatingMenu } from '@tiptap/react/menus';
 import { StarterKit } from '@tiptap/starter-kit';
@@ -32,6 +32,8 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
   placeholder = '',
   editable = true,
 }) => {
+  const [sourceMode, setSourceMode] = useState(false);
+  const [sourceText, setSourceText] = useState('');
   const lastContentRef = useRef<string>(content);
   const isInternalChangeRef = useRef(false);
 
@@ -97,10 +99,49 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   }, [editor]);
 
+  const toggleSourceMode = useCallback(() => {
+    if (!editor) return;
+    if (!sourceMode) {
+      const md = editor.storage.markdown.getMarkdown();
+      setSourceText(md);
+      setSourceMode(true);
+    } else {
+      lastContentRef.current = sourceText;
+      editor.commands.setContent(sourceText);
+      onChange(sourceText);
+      setSourceMode(false);
+    }
+  }, [editor, sourceMode, sourceText, onChange]);
+
+  const handleSourceChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setSourceText(e.target.value);
+    onChange(e.target.value);
+  }, [onChange]);
+
   if (!editor) return null;
 
   return (
     <div className="tiptap-editor-wrapper">
+      <div className="tiptap-mode-toggle">
+        <button
+          type="button"
+          onClick={toggleSourceMode}
+          className={sourceMode ? 'is-active' : ''}
+          title={sourceMode ? '切换到预览模式' : '切换到源码模式'}
+        >
+          {sourceMode ? '预览' : '源码'}
+        </button>
+      </div>
+
+      {sourceMode ? (
+        <textarea
+          className="tiptap-source-editor"
+          value={sourceText}
+          onChange={handleSourceChange}
+          spellCheck={false}
+        />
+      ) : (
+      <>
       <BubbleMenu
         editor={editor}
         tippyOptions={{
@@ -250,6 +291,8 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       </FloatingMenu>
 
       <EditorContent editor={editor} className="tiptap-editor-content" />
+      </>
+      )}
     </div>
   );
 };
