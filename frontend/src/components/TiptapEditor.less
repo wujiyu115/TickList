@@ -293,6 +293,8 @@
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   overflow: hidden;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
 
   button {
     border: none;
@@ -325,6 +327,15 @@
   }
 }
 
+// Tippy container override — prevent menu overflow
+[data-tippy-root] {
+  max-width: calc(100vw - 16px) !important;
+
+  .tippy-box {
+    max-width: 100% !important;
+  }
+}
+
 // Floating menu
 .tiptap-floating-menu {
   display: flex;
@@ -335,6 +346,15 @@
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   padding: 6px;
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+
+  .floating-menu-divider {
+    width: 1px;
+    background: #e8e8e8;
+    margin: 2px 2px;
+    align-self: stretch;
+  }
 
   button {
     border: 1px solid transparent;
@@ -476,6 +496,10 @@ html[data-theme='dark'] {
     border-color: #303030;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 
+    .floating-menu-divider {
+      background: #303030;
+    }
+
     button {
       color: rgba(255, 255, 255, 0.65);
 
@@ -541,9 +565,31 @@ html[data-theme='dark'] {
     }
   }
 
-  .tiptap-bubble-menu button,
-  .tiptap-floating-menu button {
-    min-width: 44px;
-    min-height: 44px;
+  .tiptap-bubble-menu {
+    max-width: calc(100vw - 16px);
+
+    button {
+      min-width: 34px;
+      min-height: 34px;
+      padding: 4px 6px;
+      font-size: 13px;
+    }
+  }
+
+  .tiptap-floating-menu {
+    max-width: 220px;
+    padding: 4px;
+    gap: 2px;
+
+    .floating-menu-divider {
+      display: none;
+    }
+
+    button {
+      min-width: 34px;
+      min-height: 34px;
+      padding: 4px 6px;
+      font-size: 12px;
+    }
   }
 }
