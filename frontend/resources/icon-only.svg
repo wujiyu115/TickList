@@ -1,0 +1,46 @@
+<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="iosA">
+      <path d="M392,512H120C53.7,512,0,458.3,0,392V120C0,53.7,53.7,0,120,0H392C458.3,0,512,53.7,512,120V392C512,458.3,458.3,512,392,512Z" clip-rule="evenodd"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#iosA)">
+    <rect width="512" height="512" fill="#142244"/>
+
+    <g opacity=".06" fill="#4a7ae8">
+      <circle cx="72" cy="68" r="18"/><circle cx="92" cy="60" r="22"/><circle cx="116" cy="65" r="16"/><circle cx="100" cy="75" r="14"/>
+    </g>
+    <g opacity=".045" fill="#7ba3f7">
+      <circle cx="380" cy="52" r="14"/><circle cx="398" cy="46" r="18"/><circle cx="418" cy="50" r="13"/><circle cx="405" cy="58" r="11"/>
+    </g>
+    <g opacity=".035" fill="#4a7ae8">
+      <circle cx="220" cy="105" r="12"/><circle cx="238" cy="98" r="16"/><circle cx="258" cy="102" r="11"/><circle cx="245" cy="110" r="10"/>
+    </g>
+    <g opacity=".05" fill="#7ba3f7">
+      <circle cx="440" cy="140" r="10"/><circle cx="454" cy="134" r="14"/><circle cx="470" cy="138" r="9"/>
+    </g>
+    <g opacity=".03" fill="#4a7ae8">
+      <circle cx="48" cy="170" r="11"/><circle cx="64" cy="164" r="15"/><circle cx="82" cy="168" r="10"/>
+    </g>
+
+    <polygon points="0,512 0,410 45,370 95,395 140,340 180,365 220,310 265,350 300,290 340,330 380,285 420,320 460,280 512,310 512,512" fill="#1a3460" opacity=".35"/>
+    <polygon points="0,512 0,440 35,405 80,425 115,380 155,400 195,355 240,385 270,340 310,370 350,325 395,360 430,310 470,345 512,300 512,512" fill="#1e3b6a" opacity=".3"/>
+    <polygon points="0,512 0,460 50,435 90,455 130,420 170,445 210,400 250,430 290,395 330,415 370,380 410,405 450,370 512,400 512,512" fill="#223f6e" opacity=".25"/>
+    <polyline points="20,385 60,350 100,372 145,318 185,348 225,295 260,335" fill="none" stroke="#4a7ae8" stroke-width="1" opacity=".1" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="280,310 320,265 355,300 395,255 430,290 470,250 512,275" fill="none" stroke="#7ba3f7" stroke-width="0.8" opacity=".08" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="140" cy="330" r="2.5" fill="#4a7ae8" opacity=".12"/>
+    <circle cx="300" cy="280" r="2" fill="#7ba3f7" opacity=".1"/>
+    <circle cx="430" cy="300" r="3" fill="#4a7ae8" opacity=".08"/>
+
+    <g transform="translate(256,256)">
+      <rect x="-92" y="-92" width="184" height="184" rx="26" fill="#2b5fcf" opacity=".2" transform="rotate(45)"/>
+    </g>
+    <g transform="translate(256,256)">
+      <rect x="-72" y="-72" width="144" height="144" rx="20" fill="#3d6dd4" opacity=".45" transform="rotate(45)"/>
+    </g>
+    <g transform="translate(256,256)">
+      <rect x="-54" y="-54" width="108" height="108" rx="15" fill="#4a7ae8" transform="rotate(45)"/>
+      <polyline points="-16,6 -3,19 24,-6" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </g>
+</svg>
