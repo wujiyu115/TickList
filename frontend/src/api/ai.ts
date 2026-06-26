@@ -1,5 +1,6 @@
 import { ToolAction } from '../types';
 import { tryRefreshToken } from './index';
+import { getApiBaseUrl } from '../utils/platform';
 
 /**
  * SSE 事件类型，覆盖 legacy（text_delta/action 等）+ pipeline 三层新事件
@@ -76,10 +77,11 @@ export const sendAiChatStream = async (
   onEvent: (event: StreamEvent) => void,
 ): Promise<void> => {
   const token = localStorage.getItem('token');
+  const baseUrl = getApiBaseUrl() || '';
   const _t0 = performance.now();
   console.info('[AI][api] send', { message: message.slice(0, 60), conversationId });
 
-  const response = await fetch('/api/ai/chat', {
+  const response = await fetch(`${baseUrl}/ai/chat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -94,7 +96,7 @@ export const sendAiChatStream = async (
     if (response.status === 401) {
       const newToken = await tryRefreshToken();
       if (newToken) {
-        const retryResponse = await fetch('/api/ai/chat', {
+        const retryResponse = await fetch(`${baseUrl}/ai/chat`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -137,7 +139,8 @@ export const sendAiConfirmStream = async (
   onEvent: (event: StreamEvent) => void,
 ): Promise<void> => {
   const token = localStorage.getItem('token');
-  const response = await fetch('/api/ai/confirm', {
+  const baseUrl = getApiBaseUrl() || '';
+  const response = await fetch(`${baseUrl}/ai/confirm`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -149,7 +152,7 @@ export const sendAiConfirmStream = async (
     if (response.status === 401) {
       const newToken = await tryRefreshToken();
       if (newToken) {
-        const retryResponse = await fetch('/api/ai/confirm', {
+        const retryResponse = await fetch(`${baseUrl}/ai/confirm`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -185,7 +188,8 @@ export const sendAiDisambiguateStream = async (
   onEvent: (event: StreamEvent) => void,
 ): Promise<void> => {
   const token = localStorage.getItem('token');
-  const response = await fetch('/api/ai/disambiguate', {
+  const baseUrl = getApiBaseUrl() || '';
+  const response = await fetch(`${baseUrl}/ai/disambiguate`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -197,7 +201,7 @@ export const sendAiDisambiguateStream = async (
     if (response.status === 401) {
       const newToken = await tryRefreshToken();
       if (newToken) {
-        const retryResponse = await fetch('/api/ai/disambiguate', {
+        const retryResponse = await fetch(`${baseUrl}/ai/disambiguate`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
