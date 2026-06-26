@@ -1,6 +1,6 @@
 # TickList - 任务管理系统
 
-基于 FastAPI + React + TypeScript 的全功能任务管理系统，支持多级嵌套任务、番茄专注、日历视图、看板视图、数据统计等功能。
+基于 FastAPI + React + TypeScript 的全功能任务管理系统，支持多级嵌套任务、番茄专注、AI 助手、日历视图、看板视图、笔记、计数器、多端同步等功能。
 
 ## 功能特性
 
@@ -22,6 +22,7 @@
 - ✅ 看板视图
 - ✅ 已完成任务视图（按日期分组、分页加载）
 - ✅ 日历视图（按月展示、按日查看）
+- ✅ 总结视图（任务/清单/标签 多维度概览）
 
 ### 筛选与过滤
 - ✅ 快速筛选（今天、最近7天、收集箱）
@@ -80,7 +81,7 @@
 - ✅ 滴答清单 CSV 导入（自动构建文件夹/清单层级、标签去重、优先级映射）
 
 ### 系统设置
-- ✅ 主题配色（8种方案）
+- ✅ 主题配色（40 种方案：20 亮色 + 20 暗色）
 - ✅ 默认任务视图设置
 - ✅ 专注最短时长设置
 
@@ -104,16 +105,23 @@
 - ✅ 各层超时可配，支持环境变量覆盖
 - ✅ 对话上下文保持（conversation_id）
 - ✅ 操作结果卡片展示（任务列表展开、倒数日列表等）
+- ✅ 多轮消歧义交互（候选列表选择）
 - ✅ 删除操作二次确认
-- ✅ PC/移动端自适应面板
+- ✅ 独立 AI 对话页面（移动端）+ 侧边面板（PC 端）
 
 ### 多端支持
 - ✅ 全站移动端适配（响应式布局，小屏幕侧边栏 Drawer 弹出）
 - ✅ iOS / Android 原生应用（Capacitor）
 - ✅ iOS 安全区域适配（状态栏、底部指示条）
-- ✅ 本地通知推送（到期提醒）
+- ✅ 本地通知推送（到期提醒，native 用原生通知 / web 用浏览器提示）
+- ✅ 首次启动服务器配置页（native 端动态设置 API 地址）
 - ✅ 侧边栏面板折叠（持久化）
-- ✅ 暗色模式
+- ✅ 暗色模式（20 种暗色主题）
+
+### CI/CD
+- ✅ GitHub Actions 自动构建 Docker 镜像
+- ✅ GitHub Actions 自动构建 iOS IPA（tag 触发）
+- ✅ GitHub Actions 自动构建 Android APK（tag 触发）
 
 ## 安装和运行
 
@@ -379,9 +387,11 @@ docker run -d \
 
 ### 技术栈
 
-**后端**：FastAPI + SQLAlchemy（SQLite/MySQL） + JWT + bcrypt + py_webauthn + AI Pipeline（Claude/OpenAI/DeepSeek）
+**后端**：FastAPI + SQLAlchemy（SQLite/MySQL） + JWT（Access + Refresh Token） + bcrypt + py_webauthn + AI Pipeline（Claude/OpenAI/DeepSeek）
 
-**前端**：React 18 + TypeScript + Ant Design 5 + Rsbuild + Tiptap + Capacitor + Axios + @simplewebauthn/browser + SSE
+**前端**：React 18 + TypeScript + Ant Design 5 + Rsbuild + Tiptap + Capacitor（iOS/Android） + Axios + @simplewebauthn/browser + SSE
+
+**CI/CD**：GitHub Actions（Docker 镜像 + iOS IPA + Android APK 自动构建）
 
 ### 项目结构
 
@@ -390,11 +400,11 @@ ticklist/
 ├── backend/                 # 后端代码
 │   ├── config/             # 配置模块
 │   ├── database/           # 数据库层
-│   │   ├── dao/            # 数据访问对象（task/list/tag/filter/focus/countdown/counter 等）
+│   │   ├── dao/            # 数据访问对象（task/list/tag/filter/focus/countdown/counter/note/pat 等）
 │   │   ├── connection.py   # 数据库连接（含自动迁移）
 │   │   └── models.py       # SQLAlchemy 模型
 │   ├── middleware/          # 中间件（JWT、日志）
-│   ├── routes/             # API 路由（auth/task/calendar/focus/countdown/counter/data 等）
+│   ├── routes/             # API 路由（auth/task/calendar/focus/countdown/counter/note/ai/pat/admin 等）
 │   ├── services/           # 后台服务（到期提醒调度、AI Pipeline）
 │   │   └── ai/             # AI 模块
 │   │       ├── pipeline/   # 三层 Pipeline（RuleHandler → JsonModeHandler → ToolsCallHandler）
@@ -409,15 +419,20 @@ ticklist/
 │   └── run_prod.py         # 生产环境启动
 │
 ├── frontend/                # 前端代码
+│   ├── ios/                # iOS 原生工程（Capacitor）
+│   ├── android/            # Android 原生工程（Capacitor）
 │   └── src/
-│       ├── api/            # API 调用（auth/task/calendar/focus/countdown/counter/data 等）
-│       ├── components/     # 组件（TaskList/KanbanView/CalendarView/PomodoroTimer/TiptapEditor 等）
+│       ├── api/            # API 调用（auth/task/calendar/focus/countdown/counter/note/ai/pat 等）
+│       ├── components/     # 组件（TaskList/KanbanView/CalendarView/PomodoroTimer/TiptapEditor/AiChatPanel 等）
 │       ├── extensions/     # Tiptap 扩展（表格公式等）
 │       ├── contexts/       # 全局状态（TaskContext/FocusContext）
 │       ├── hooks/          # 自定义 Hook（useTimer）
+│       ├── services/       # 通知服务（native 原生通知 / web message）
+│       ├── utils/          # 平台判断、API 地址管理
 │       ├── layouts/        # 布局
-│       └── pages/          # 页面（Task/Calendar/Pomodoro/Countdown/Counter/Statistics/Settings）
+│       └── pages/          # 页面（Task/Calendar/Pomodoro/Countdown/Counter/Note/AI/Summary/Statistics/Settings）
 │
+├── .github/workflows/       # CI/CD（Docker 镜像 / iOS IPA / Android APK）
 ├── Dockerfile              # Docker 构建（多阶段、跨架构优化）
 └── start_dev.sh            # 一键开发启动脚本
 ```
@@ -471,18 +486,6 @@ cd frontend && bun run test:ui
 
 - **后端**：使用 `conftest.py` 中的 fixtures（`app_client`、`auth_headers` 等），测试函数自动获取已认证的客户端实例
 - **前端**：MSW handlers 自动拦截 API 请求，mock 数据工厂在 `src/tests/mocks/data.ts` 中统一管理
-
-### 数据库索引
-
-系统使用 SQLAlchemy ORM，会自动管理以下索引以优化查询性能：
-- `user_id` - 用户数据查询
-- `status` - 状态过滤
-- `due_date` - 日期排序
-- `list_id` - 清单关联查询
-- `deleted_at` - 垃圾箱过滤
-- `(user_id, order)` - 任务排序
-- `(user_id, is_pinned)` - 置顶任务
-- `(user_id, deleted_at)` - 用户任务软删除过滤
 
 ## 许可证
 
