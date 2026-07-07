@@ -644,6 +644,11 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+    // Drawer 渲染在 #root 之外，拿不到全局的状态栏安全区 padding，
+    // 需在此单独补上顶部（状态栏/刘海）和底部（home indicator）安全区，
+    // 否则顶栏的关闭按钮会被顶到状态栏下方点不到。
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   }
 }
 
