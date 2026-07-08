@@ -302,7 +302,67 @@ class TestIncrementCounterRule:
         result = IncrementCounterRule().try_match(_ctx("喝水 +1"))
         assert result.status == ResolutionStatus.EXECUTABLE
         assert result.intent == "update_counter"
-        assert result.params == {"counter_id": "c1", "action": "increment"}
+        assert result.params == {"counter_id": "c1", "action": "increment", "amount": 1}
+
+    @patch("services.ai.pipeline.rules.counter_rules.counter_dao")
+    def test_plus_number_pattern(self, mock_dao):
+        mock_dao.get_user_counters.return_value = [{"id": "c1", "title": "喝水"}]
+        result = IncrementCounterRule().try_match(_ctx("喝水+3"))
+        assert result.status == ResolutionStatus.EXECUTABLE
+        assert result.params == {"counter_id": "c1", "action": "increment", "amount": 3}
+
+    @patch("services.ai.pipeline.rules.counter_rules.counter_dao")
+    def test_chinese_verb_arabic_number(self, mock_dao):
+        mock_dao.get_user_counters.return_value = [{"id": "c1", "title": "喝水"}]
+        result = IncrementCounterRule().try_match(_ctx("喝水加3"))
+        assert result.params == {"counter_id": "c1", "action": "increment", "amount": 3}
+
+    @patch("services.ai.pipeline.rules.counter_rules.counter_dao")
+    def test_chinese_verb_chinese_number(self, mock_dao):
+        mock_dao.get_user_counters.return_value = [{"id": "c1", "title": "喝水"}]
+        result = IncrementCounterRule().try_match(_ctx("喝水加三"))
+        assert result.params == {"counter_id": "c1", "action": "increment", "amount": 3}
+
+    @patch("services.ai.pipeline.rules.counter_rules.counter_dao")
+    def test_chinese_verb_with_unit(self, mock_dao):
+        mock_dao.get_user_counters.return_value = [{"id": "c1", "title": "喝水"}]
+        result = IncrementCounterRule().try_match(_ctx("喝水加三下"))
+        assert result.params == {"counter_id": "c1", "action": "increment", "amount": 3}
+
+    @patch("services.ai.pipeline.rules.counter_rules.counter_dao")
+    def test_fullwidth_plus(self, mock_dao):
+        mock_dao.get_user_counters.return_value = [{"id": "c1", "title": "喝水"}]
+        result = IncrementCounterRule().try_match(_ctx("喝水＋３"))
+        assert result.params == {"counter_id": "c1", "action": "increment", "amount": 3}
+
+    @patch("services.ai.pipeline.rules.counter_rules.counter_dao")
+    def test_bare_verb_means_one(self, mock_dao):
+        mock_dao.get_user_counters.return_value = [{"id": "c1", "title": "喝水"}]
+        result = IncrementCounterRule().try_match(_ctx("喝水加"))
+        assert result.params == {"counter_id": "c1", "action": "increment", "amount": 1}
+
+    @patch("services.ai.pipeline.rules.counter_rules.counter_dao")
+    def test_prefix_symbol_pattern(self, mock_dao):
+        mock_dao.get_user_counters.return_value = [{"id": "c1", "title": "喝水"}]
+        result = IncrementCounterRule().try_match(_ctx("+3 喝水"))
+        assert result.params == {"counter_id": "c1", "action": "increment", "amount": 3}
+
+    @patch("services.ai.pipeline.rules.counter_rules.counter_dao")
+    def test_false_positive_returns_none_or_pass(self, mock_dao):
+        mock_dao.get_user_counters.return_value = [{"id": "c1", "title": "喝水"}]
+        result = IncrementCounterRule().try_match(_ctx("任务加急"))
+        assert result is None or result.status == ResolutionStatus.PASS
+
+    @patch("services.ai.pipeline.rules.counter_rules.counter_dao")
+    def test_multi_match_disambiguation_carries_amount(self, mock_dao):
+        mock_dao.get_user_counters.return_value = [
+            {"id": "c1", "title": "喝水打卡"},
+            {"id": "c2", "title": "喝水提醒"},
+        ]
+        result = IncrementCounterRule().try_match(_ctx("喝水加3"))
+        assert result.status == ResolutionStatus.NEED_DISAMBIGUATION
+        assert result.params == {"action": "increment", "amount": 3}
+        assert len(result.candidates) == 2
 
     @patch("services.ai.pipeline.rules.counter_rules.counter_dao")
     def test_zero_match_pass(self, mock_dao):
@@ -310,13 +370,20 @@ class TestIncrementCounterRule:
         result = IncrementCounterRule().try_match(_ctx("不存在 +1"))
         assert result.status == ResolutionStatus.PASS
 
+
 class TestDecrementCounterRule:
     @patch("services.ai.pipeline.rules.counter_rules.counter_dao")
     def test_minus_one_pattern(self, mock_dao):
         mock_dao.get_user_counters.return_value = [{"id": "c1", "title": "喝水"}]
         result = DecrementCounterRule().try_match(_ctx("喝水 -1"))
         assert result.status == ResolutionStatus.EXECUTABLE
-        assert result.params == {"counter_id": "c1", "action": "decrement"}
+        assert result.params == {"counter_id": "c1", "action": "decrement", "amount": 1}
+
+    @patch("services.ai.pipeline.rules.counter_rules.counter_dao")
+    def test_minus_number_pattern(self, mock_dao):
+        mock_dao.get_user_counters.return_value = [{"id": "c1", "title": "喝水"}]
+        result = DecrementCounterRule().try_match(_ctx("喝水减三"))
+        assert result.params == {"counter_id": "c1", "action": "decrement", "amount": 3}
 
 class TestDeleteCounterRule:
     @patch("services.ai.pipeline.rules.counter_rules.counter_dao")
