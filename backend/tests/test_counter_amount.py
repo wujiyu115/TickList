@@ -86,3 +86,12 @@ class TestUpdateCounterAmount:
             {"counter_id": "c1", "action": "decrement", "amount": 2},
         )
         mock_dao.decrement_counter.assert_called_once_with("u1", "c1", 2)
+
+
+class TestUpdateCounterSchema:
+    def test_update_counter_has_amount_property(self):
+        from services.ai.tools_schema import TOOLS
+        tool = next(t for t in TOOLS if t["name"] == "update_counter")
+        props = tool["input_schema"]["properties"]
+        assert "amount" in props
+        assert props["amount"]["type"] == "integer"
