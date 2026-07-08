@@ -227,14 +227,18 @@ def _execute_tool(
                 counter_dao.update_counter(user_id, counter_id, {"title": title})
                 if not action:
                     return counter_dao.get_counter_by_id(user_id, counter_id)
-            if action == "increment":
-                existing = counter_dao.get_counter_by_id(user_id, counter_id)
-                result = counter_dao.increment_counter(user_id, counter_id, existing["step"])
-                return result
-            elif action == "decrement":
-                existing = counter_dao.get_counter_by_id(user_id, counter_id)
-                result = counter_dao.decrement_counter(user_id, counter_id, existing["step"])
-                return result
+            if action in ("increment", "decrement"):
+                amount = tool_input.get("amount")
+                # 只信任正整数数量；非法/缺省/<=0 一律回退到计数器步长(step)
+                try:
+                    amount = int(amount) if amount is not None else None
+                except (TypeError, ValueError):
+                    amount = None
+                if amount is None or amount <= 0:
+                    amount = counter_dao.get_counter_by_id(user_id, counter_id)["step"]
+                if action == "increment":
+                    return counter_dao.increment_counter(user_id, counter_id, amount)
+                return counter_dao.decrement_counter(user_id, counter_id, amount)
             elif action == "reset":
                 existing = counter_dao.get_counter_by_id(user_id, counter_id)
                 counter_dao.update_counter(user_id, counter_id, {"current_value": existing["initial_value"]})

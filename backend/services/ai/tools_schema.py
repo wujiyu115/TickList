@@ -196,6 +196,7 @@ TOOLS = [
             "properties": {
                 "counter_id": {"type": "string"},
                 "action": {"type": "string", "enum": ["increment", "decrement", "reset"]},
+                "amount": {"type": "integer", "description": "递增/递减的数量，不填则按计数器步长(step)"},
                 "title": {"type": "string"},
             },
             "required": ["counter_id"],
