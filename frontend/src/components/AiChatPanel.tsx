@@ -289,7 +289,9 @@ const AiChatPanel: React.FC = () => {
         <Tooltip title="新对话">
           <Button type="text" icon={<PlusOutlined />} size="small" onClick={newConversation} style={{ marginLeft: 8 }} />
         </Tooltip>
-        <Button type="text" icon={<CloseOutlined />} size="small" onClick={closePanel} style={{ marginLeft: 'auto' }} />
+        {!isMobile && (
+          <Button type="text" icon={<CloseOutlined />} size="small" onClick={closePanel} style={{ marginLeft: 'auto' }} />
+        )}
       </div>
 
       <div className="ai-messages">
