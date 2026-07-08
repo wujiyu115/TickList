@@ -87,6 +87,37 @@ class TestUpdateCounterAmount:
         )
         mock_dao.decrement_counter.assert_called_once_with("u1", "c1", 2)
 
+    @patch("services.ai.tools_executor.counter_dao")
+    def test_increment_negative_amount_falls_back_to_step(self, mock_dao):
+        mock_dao.get_counter_by_id.return_value = {"id": "c1", "step": 5}
+        mock_dao.increment_counter.return_value = {"id": "c1", "current_value": 5}
+        _execute_tool(
+            "u1", "update_counter",
+            {"counter_id": "c1", "action": "increment", "amount": -3},
+        )
+        mock_dao.increment_counter.assert_called_once_with("u1", "c1", 5)
+
+    @patch("services.ai.tools_executor.counter_dao")
+    def test_increment_zero_amount_falls_back_to_step(self, mock_dao):
+        mock_dao.get_counter_by_id.return_value = {"id": "c1", "step": 5}
+        mock_dao.increment_counter.return_value = {"id": "c1", "current_value": 5}
+        _execute_tool(
+            "u1", "update_counter",
+            {"counter_id": "c1", "action": "increment", "amount": 0},
+        )
+        mock_dao.increment_counter.assert_called_once_with("u1", "c1", 5)
+
+    @patch("services.ai.tools_executor.counter_dao")
+    def test_increment_amount_not_refetched_when_valid(self, mock_dao):
+        # When a valid amount is given, we should NOT waste a get_counter_by_id call
+        mock_dao.increment_counter.return_value = {"id": "c1", "current_value": 3}
+        _execute_tool(
+            "u1", "update_counter",
+            {"counter_id": "c1", "action": "increment", "amount": 3},
+        )
+        mock_dao.increment_counter.assert_called_once_with("u1", "c1", 3)
+        mock_dao.get_counter_by_id.assert_not_called()
+
 
 class TestUpdateCounterSchema:
     def test_update_counter_has_amount_property(self):
