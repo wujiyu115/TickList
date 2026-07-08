@@ -49,3 +49,40 @@ class TestParseAmount:
 
     def test_large_arabic_passes_through(self):
         assert parse_amount("100") == 100
+
+
+from unittest.mock import patch
+
+from services.ai.tools_executor import _execute_tool
+
+
+class TestUpdateCounterAmount:
+    @patch("services.ai.tools_executor.counter_dao")
+    def test_increment_with_explicit_amount(self, mock_dao):
+        mock_dao.get_counter_by_id.return_value = {"id": "c1", "step": 5}
+        mock_dao.increment_counter.return_value = {"id": "c1", "current_value": 3}
+        _execute_tool(
+            "u1", "update_counter",
+            {"counter_id": "c1", "action": "increment", "amount": 3},
+        )
+        mock_dao.increment_counter.assert_called_once_with("u1", "c1", 3)
+
+    @patch("services.ai.tools_executor.counter_dao")
+    def test_increment_without_amount_falls_back_to_step(self, mock_dao):
+        mock_dao.get_counter_by_id.return_value = {"id": "c1", "step": 5}
+        mock_dao.increment_counter.return_value = {"id": "c1", "current_value": 5}
+        _execute_tool(
+            "u1", "update_counter",
+            {"counter_id": "c1", "action": "increment"},
+        )
+        mock_dao.increment_counter.assert_called_once_with("u1", "c1", 5)
+
+    @patch("services.ai.tools_executor.counter_dao")
+    def test_decrement_with_explicit_amount(self, mock_dao):
+        mock_dao.get_counter_by_id.return_value = {"id": "c1", "step": 5}
+        mock_dao.decrement_counter.return_value = {"id": "c1", "current_value": 0}
+        _execute_tool(
+            "u1", "update_counter",
+            {"counter_id": "c1", "action": "decrement", "amount": 2},
+        )
+        mock_dao.decrement_counter.assert_called_once_with("u1", "c1", 2)

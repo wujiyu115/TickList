@@ -229,11 +229,15 @@ def _execute_tool(
                     return counter_dao.get_counter_by_id(user_id, counter_id)
             if action == "increment":
                 existing = counter_dao.get_counter_by_id(user_id, counter_id)
-                result = counter_dao.increment_counter(user_id, counter_id, existing["step"])
+                amount = tool_input.get("amount")
+                delta = amount if amount is not None else existing["step"]
+                result = counter_dao.increment_counter(user_id, counter_id, delta)
                 return result
             elif action == "decrement":
                 existing = counter_dao.get_counter_by_id(user_id, counter_id)
-                result = counter_dao.decrement_counter(user_id, counter_id, existing["step"])
+                amount = tool_input.get("amount")
+                delta = amount if amount is not None else existing["step"]
+                result = counter_dao.decrement_counter(user_id, counter_id, delta)
                 return result
             elif action == "reset":
                 existing = counter_dao.get_counter_by_id(user_id, counter_id)
