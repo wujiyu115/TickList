@@ -206,6 +206,37 @@ class TestQueryTasksRule:
     def test_unfinished_keyword(self):
         result = QueryTasksRule().try_match(_ctx("未完成的任务"))
         assert result.intent == "list_tasks"
+        assert result.params.get("exclude_status") == "completed"
+
+    def test_unfinished_without_de(self):
+        # 无"的"也应命中
+        result = QueryTasksRule().try_match(_ctx("未完成任务"))
+        assert result is not None
+        assert result.intent == "list_tasks"
+
+    def test_daiban_with_de(self):
+        # "待办的任务" 需要可选"的"
+        result = QueryTasksRule().try_match(_ctx("待办的任务"))
+        assert result is not None
+        assert result.intent == "list_tasks"
+
+    def test_completed_keyword(self):
+        # 状态词包含"完成"，此前被 _QUERY_NOT_VERB 误杀
+        result = QueryTasksRule().try_match(_ctx("已完成的任务"))
+        assert result is not None
+        assert result.intent == "list_tasks"
+        assert result.params.get("status") == "completed"
+
+    def test_time_window_with_unfinished_status(self):
+        # "本周未完成的任务"：时间窗口 + 状态修饰
+        result = QueryTasksRule().try_match(_ctx("本周未完成的任务"))
+        assert result is not None
+        assert result.intent == "list_tasks"
+        assert result.params.get("exclude_status") == "completed"
+
+    def test_complete_command_not_hijacked_as_query(self):
+        # "完成写日报" 是完成指令，QueryTasksRule 不应匹配
+        assert QueryTasksRule().try_match(_ctx("完成写日报")) is None
 
 from services.ai.pipeline.rules.note_rules import (
     CreateNoteRule,

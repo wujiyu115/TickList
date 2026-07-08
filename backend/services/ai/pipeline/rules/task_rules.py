@@ -80,9 +80,12 @@ _DELETE_PATTERN = _build_action_pattern("delete", with_modifier=True)
 _QUERY_PREFIX = r"(?:查(?:一下|查|看)?|看(?:一下|看|下)?|列(?:一下|出)?|显示|有(?:没有|什么|哪些)?|帮我(?:查|看|列)?)?"
 _QUERY_SUFFIX = r"(?:有(?:什么|哪些|啥)?|是(?:什么|啥|哪些)?|呢|吗|嘛|呀|啊|？|\?|！|!|。|\.)*"
 # 反向断言：从 _ACTION_VERBS 自动拼接所有动作动词，保证和动作规则同步演进。
+# 仅禁止 create/delete 指令动词出现在查询里。complete 动词（"完成"/"搞定"/
+# "做完"）会作为状态修饰词合法出现在"已完成/未完成的任务"中，不能一并禁止；
+# 真正的完成指令由 CompleteTaskRule 在本规则之前拦截。
 _QUERY_NOT_VERB = (
     r"(?!.*(?:"
-    + "|".join(v for verbs in _ACTION_VERBS.values() for v in verbs)
+    + "|".join(v for key in ("create", "delete") for v in _ACTION_VERBS[key])
     + r"))"
 )
 
@@ -141,7 +144,7 @@ _QUERY_TIME_WINDOW_PATTERN = re.compile(
     re.IGNORECASE,
 )
 _QUERY_UNFINISHED_PATTERN = re.compile(
-    rf"^{_QUERY_NOT_VERB}{_QUERY_PREFIX}(?:未完成|没做完|待办|没完成){_TASK_NOUN}\s*{_QUERY_SUFFIX}$",
+    rf"^{_QUERY_NOT_VERB}{_QUERY_PREFIX}(?:未完成|没做完|待办|没完成)的?{_TASK_NOUN}\s*{_QUERY_SUFFIX}$",
     re.IGNORECASE,
 )
 _QUERY_COMPLETED_PATTERN = re.compile(
