@@ -38,3 +38,14 @@ class TestParseAmount:
     def test_invalid_falls_back_to_one(self):
         assert parse_amount("abc") == 1
         assert parse_amount("百") == 1
+
+    def test_exotic_unicode_digit_does_not_crash(self):
+        # str.isdigit() is True for these but int() would raise ValueError
+        assert parse_amount("²") == 1
+        assert parse_amount("⑤") == 1
+
+    def test_fullwidth_digits(self):
+        assert parse_amount("３") == 3
+
+    def test_large_arabic_passes_through(self):
+        assert parse_amount("100") == 100
