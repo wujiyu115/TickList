@@ -64,8 +64,9 @@ class TestSendBark:
 
         mock_post.assert_called_once()
         call_kwargs = mock_post.call_args
-        # 验证 URL 为默认值
-        assert call_kwargs[0][0] == "https://api.day.app/push"
+        # 默认基址会智能拼接 device_key（见 _send_bark 文档）：
+        # https://api.day.app + /{device_key}
+        assert call_kwargs[0][0] == "https://api.day.app/test_key_123"
         # 验证 JSON payload
         payload = call_kwargs[1]["json"]
         assert payload["device_key"] == "test_key_123"
