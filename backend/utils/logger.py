@@ -115,24 +115,29 @@ class Logger:
         error_handler.suffix = "%Y-%m-%d"
         self.logger.addHandler(error_handler)
 
-    def debug(self, message):
-        self.logger.debug(message, stacklevel=2)
+    def debug(self, message, *args, **kwargs):
+        kwargs.setdefault("stacklevel", 2)
+        self.logger.debug(message, *args, **kwargs)
 
-    def info(self, message):
-        self.logger.info(message, stacklevel=2)
+    def info(self, message, *args, **kwargs):
+        kwargs.setdefault("stacklevel", 2)
+        self.logger.info(message, *args, **kwargs)
 
-    def warning(self, message):
-        self.logger.warning(message, stacklevel=2)
+    def warning(self, message, *args, **kwargs):
+        kwargs.setdefault("stacklevel", 2)
+        self.logger.warning(message, *args, **kwargs)
 
-    def error(self, message):
-        self.logger.error(message, stacklevel=2)
+    def error(self, message, *args, **kwargs):
+        kwargs.setdefault("stacklevel", 2)
+        self.logger.error(message, *args, **kwargs)
 
-    def critical(self, message):
-        self.logger.critical(message, stacklevel=2)
+    def critical(self, message, *args, **kwargs):
+        kwargs.setdefault("stacklevel", 2)
+        self.logger.critical(message, *args, **kwargs)
 
-    def log(self, level, message):
-        self.logger.log(level, message, stacklevel=2)
-        self.logger.log(..., stacklevel=2)
+    def log(self, level, message, *args, **kwargs):
+        kwargs.setdefault("stacklevel", 2)
+        self.logger.log(level, message, *args, **kwargs)
 
 
 def log_exception(
