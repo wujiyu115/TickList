@@ -29,6 +29,10 @@
   --tl-glow-a: 18%;
   --tl-glow-b: 8%;
   --tl-glow-c: 10%;
+  /* 磨砂玻璃薄膜（白色透明度，浮在景深底色上 = 通透玻璃感） */
+  --tl-glass:       rgba(255, 255, 255, 0.55);
+  --tl-glass-hover: rgba(255, 255, 255, 0.72);
+  --tl-glass-card:  rgba(255, 255, 255, 0.5);
 }
 
 html[data-theme='dark'] {
@@ -44,6 +48,9 @@ html[data-theme='dark'] {
   --tl-glow-a: 26%;
   --tl-glow-b: 12%;
   --tl-glow-c: 14%;
+  --tl-glass:       rgba(255, 255, 255, 0.06);
+  --tl-glass-hover: rgba(255, 255, 255, 0.10);
+  --tl-glass-card:  rgba(255, 255, 255, 0.05);
 }
 
 /* ---------- 2. 空间底色 + 景深光晕 ----------
@@ -99,9 +106,29 @@ body,
   -webkit-backdrop-filter: blur(3px);
 }
 
-/* ---------- 4. 卡片：柔和圆角 + 轻投影（不改底色，避免灰/白边） ---------- */
+/* ---------- 4. 卡片：柔和圆角 + 轻投影 ---------- */
 .ant-card:not(.tl-no-glass) {
   box-shadow: var(--tl-shadow-sm);
+}
+
+/* ---------- 4.5 外壳半透明玻璃：侧栏透出景深底色 ----------
+   用白色磨砂薄膜（--tl-glass）+ backdrop-filter，浮在 .main-layout 的
+   景深底色之上 = 通透玻璃；不用 bg-container（中性灰会发闷）。 */
+.icon-bar,
+.secondary-panel {
+  background: var(--tl-glass) !important;
+  backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
+  -webkit-backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
+}
+/* 顶栏同样磨砂透出 */
+.app-header {
+  background: var(--tl-glass) !important;
+  backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
+  -webkit-backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
+}
+/* 任务区容器透明，露出景深底色，让任务卡浮于其上 */
+.task-page {
+  background: transparent !important;
 }
 
 /* ---------- 5. 勾选框保持方形圆角（避免全局圆角 token 变成圆形） ---------- */
