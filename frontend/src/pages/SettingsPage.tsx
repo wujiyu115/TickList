@@ -91,6 +91,7 @@ const THEME_OPTIONS = [
   { key: 'royal', name: '暗夜紫', color: '#9254de', isDark: true },
   { key: 'nebula', name: '星云紫', color: '#b37feb', isDark: true },
   { key: 'slate', name: '深炭灰', color: '#bfbfbf', isDark: true },
+  { key: 'spaceglass', name: '空间玻璃', color: '#3ad6ea', isDark: true },
 ];
 
 // 语言选项

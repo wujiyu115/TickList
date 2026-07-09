@@ -79,6 +79,19 @@ const THEME_COLORS: Record<string, ThemeConfig> = {
   royal: { color: '#9254de', isDark: true },
   nebula: { color: '#b37feb', isDark: true },
   slate: { color: '#bfbfbf', isDark: true },
+  // 空间玻璃青（参考 Vision Pro 空间玻璃设计系统的电光青）
+  spaceglass: {
+    color: '#3ad6ea',
+    isDark: true,
+    token: {
+      colorBgContainer: '#0d1620',
+      colorBgElevated: '#111e2b',
+      colorBgLayout: '#070d15',
+      colorBgSpotlight: '#16293b',
+      colorBorderSecondary: '#173042',
+      colorBorder: '#1d3849',
+    },
+  },
 };
 
 // 主题 Context
@@ -236,6 +249,10 @@ const App: React.FC = () => {
         cssVar: true,
         token: {
           colorPrimary: primaryColor,
+          // 空间玻璃：更柔和的圆角节奏
+          borderRadius: 10,
+          borderRadiusLG: 16,
+          borderRadiusSM: 8,
           ...extraToken,
         },
         algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,

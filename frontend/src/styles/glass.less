@@ -1,0 +1,225 @@
+/* ============================================================
+   TickList — 空间玻璃视觉层 (Spatial Glass)
+   参考 Open Design「Vision Pro 空间玻璃」设计系统落地。
+   原则：
+   - 只做材质/光影/动效增强，不改布局与功能。
+   - 强调色一律沿用 antd 的 --ant-color-primary（跟随配色方案），
+     本层只新增中性玻璃 token（白色透明度），不写死主色。
+   - 玻璃 = backdrop-filter 模糊+饱和 + 顶部高光 + 柔和景深投影。
+   - 动效克制：仅 transform/opacity，带 prefers-reduced-motion 兜底。
+   ============================================================ */
+
+/* ---------- 1. 中性玻璃 token（不含主色，跟随明暗主题） ---------- */
+:root {
+  --tl-glass:        rgba(255, 255, 255, 0.60);
+  --tl-glass-2:      rgba(255, 255, 255, 0.72);
+  --tl-glass-strong: rgba(255, 255, 255, 0.85);
+  --tl-edge:         rgba(255, 255, 255, 0.90);   /* 顶部高光 */
+  --tl-edge-soft:    rgba(15, 30, 55, 0.06);      /* 内描边 */
+  --tl-blur: 22px;
+  --tl-sat: 160%;
+  --tl-glass-shadow:
+    inset 0 1px 0 var(--tl-edge),
+    inset 0 0 0 1px var(--tl-edge-soft),
+    0 22px 48px -30px rgba(30, 55, 90, 0.28);
+  --tl-glass-shadow-sm:
+    inset 0 1px 0 var(--tl-edge),
+    0 10px 24px -18px rgba(30, 55, 90, 0.24);
+  /* 玻璃表面底色：跟随 antd 提升面板色，仅加透明度 */
+  --tl-surface:  color-mix(in srgb, var(--ant-color-bg-elevated, #fff) 78%, transparent);
+  --tl-surface-2: color-mix(in srgb, var(--ant-color-bg-container, #fff) 70%, transparent);
+  --tl-bg-glow-opacity: 0.38;
+}
+
+html[data-theme='dark'] {
+  --tl-glass:        rgba(255, 255, 255, 0.06);
+  --tl-glass-2:      rgba(255, 255, 255, 0.09);
+  --tl-glass-strong: rgba(255, 255, 255, 0.14);
+  --tl-edge:         rgba(255, 255, 255, 0.26);
+  --tl-edge-soft:    rgba(255, 255, 255, 0.08);
+  --tl-glass-shadow:
+    inset 0 1px 0 var(--tl-edge),
+    inset 0 0 0 1px var(--tl-edge-soft),
+    0 24px 52px -28px rgba(0, 0, 0, 0.62);
+  --tl-glass-shadow-sm:
+    inset 0 1px 0 var(--tl-edge),
+    0 12px 26px -18px rgba(0, 0, 0, 0.55);
+  --tl-surface:  color-mix(in srgb, var(--ant-color-bg-elevated, #1f1f1f) 82%, transparent);
+  --tl-surface-2: color-mix(in srgb, var(--ant-color-bg-container, #141414) 74%, transparent);
+  --tl-bg-glow-opacity: 0.5;
+}
+
+/* ---------- 2. 空间环境背景（景深光晕，跟随主色） ---------- */
+body {
+  background: var(--ant-color-bg-layout, #f5f5f5);
+  position: relative;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--tl-bg-glow-opacity);
+  background:
+    radial-gradient(42% 38% at 84% 4%,
+      color-mix(in srgb, var(--ant-color-primary, #1677ff) 26%, transparent), transparent 70%),
+    radial-gradient(40% 42% at 6% 22%,
+      color-mix(in srgb, var(--ant-color-primary, #1677ff) 12%, transparent), transparent 72%),
+    radial-gradient(50% 44% at 22% 98%,
+      color-mix(in srgb, var(--ant-color-primary, #1677ff) 14%, transparent), transparent 74%);
+  transition: opacity 0.4s ease;
+}
+/* 让应用外壳透出景深；base 底色由 body 提供 */
+#root,
+.main-layout,
+.ant-layout,
+.main-layout .main-content {
+  background: transparent;
+}
+
+/* ---------- 3. 玻璃 mixin（模糊 + 饱和） ---------- */
+.tl-blur() {
+  backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
+  -webkit-backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
+}
+
+/* ---------- 4. 应用外壳玻璃化（图标栏 / 侧栏 / 顶栏） ---------- */
+.icon-bar,
+.secondary-panel {
+  background: var(--tl-surface-2) !important;
+  .tl-blur();
+  box-shadow: var(--tl-glass-shadow-sm);
+}
+.app-header {
+  background: var(--tl-surface-2) !important;
+  .tl-blur();
+}
+
+/* ---------- 5. 提升面板玻璃化（Modal / Drawer / Dropdown / Popover 等） ---------- */
+.ant-modal-content,
+.ant-drawer-content,
+.ant-dropdown-menu,
+.ant-popover-inner,
+.ant-select-dropdown,
+.ant-picker-dropdown .ant-picker-panel-container,
+.ant-picker-panel-container,
+.ant-notification-notice,
+.ant-message-notice-content,
+.ant-cascader-menus,
+.ant-color-picker-panel,
+.ant-menu-submenu-popup > .ant-menu {
+  background: var(--tl-surface) !important;
+  .tl-blur();
+  box-shadow: var(--tl-glass-shadow) !important;
+}
+
+/* 遮罩加一点点模糊，强化"玻璃悬浮"景深 */
+.ant-modal-mask,
+.ant-drawer-mask,
+.ant-image-preview-mask {
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+/* 卡片：轻玻璃 + 顶部高光（不含 no-glass 例外） */
+.ant-card:not(.ant-card-bordered-false):not(.tl-no-glass) {
+  background: var(--tl-surface) !important;
+  .tl-blur();
+  box-shadow: var(--tl-glass-shadow-sm);
+  border-color: var(--tl-edge-soft);
+}
+
+/* Segmented / Tooltip / FloatButton 精修 */
+.ant-segmented {
+  background: var(--tl-glass) !important;
+  .tl-blur();
+  box-shadow: inset 0 1px 0 var(--tl-edge);
+}
+.ant-tooltip-inner {
+  .tl-blur();
+  box-shadow: var(--tl-glass-shadow-sm);
+}
+.ant-float-btn .ant-float-btn-body {
+  .tl-blur();
+}
+
+/* 悬浮卡片微抬升 */
+.ant-card:not(.tl-no-glass):hover {
+  box-shadow: var(--tl-glass-shadow);
+}
+
+/* ---------- 6. 动效（克制：仅 transform / opacity） ---------- */
+@keyframes tl-view-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes tl-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes tl-pop {
+  0%   { transform: scale(0.55); }
+  60%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* 进入视图：上浮淡入（导航=空间重定向） */
+.task-page,
+.calendar-page,
+.countdown-page,
+.counter-page,
+.counter-detail-page,
+.note-page,
+.pomodoro-page,
+.settings-page,
+.summary-page,
+.ai-page,
+.admin-page,
+.statistics-page {
+  animation: tl-view-in 0.3s cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+/* 弹层进入淡入（补充 antd 默认动画的一致性，无副作用） */
+.ant-modal,
+.ant-drawer-content {
+  will-change: transform, opacity;
+}
+
+/* 勾选反馈：对勾弹入 */
+.ant-checkbox-checked .ant-checkbox-inner {
+  animation: tl-pop 0.28s cubic-bezier(0.2, 0.7, 0.3, 1.4);
+}
+
+/* 按压微反馈：可点击控件按下回弹 */
+.ant-btn:not(:disabled):active,
+.ant-segmented-item-label:active,
+.ant-float-btn:active,
+.icon-item:active,
+.filter-item:active,
+.list-item:active,
+.tag-item:active,
+.theme-card:active {
+  transform: scale(0.96);
+}
+.ant-btn,
+.icon-item,
+.filter-item,
+.list-item,
+.tag-item {
+  transition: transform 0.12s ease, background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task-page, .calendar-page, .countdown-page, .counter-page, .counter-detail-page,
+  .note-page, .pomodoro-page, .settings-page, .summary-page, .ai-page, .admin-page,
+  .statistics-page {
+    animation: tl-fade 0.18s ease both;
+  }
+  .ant-checkbox-checked .ant-checkbox-inner { animation: none; }
+  .ant-btn:not(:disabled):active,
+  .ant-segmented-item-label:active,
+  .ant-float-btn:active,
+  .icon-item:active, .filter-item:active, .list-item:active, .tag-item:active,
+  .theme-card:active { transform: none; }
+}
