@@ -43,14 +43,14 @@
     transition: background-color 0.2s, box-shadow 0.2s, border-color 0.2s;
     gap: 8px;
     min-height: 44px;
-    // 空间玻璃：任务行呈半透明玻璃卡片，浮于景深背景之上
-    border: 1px solid var(--tl-edge-soft);
+    // 空间玻璃：任务行呈卡片，浮于更深的景深底色之上
+    border: 1px solid var(--ant-color-border-secondary);
     border-radius: 12px;
     margin-bottom: 6px;
-    background-color: var(--tl-surface-2);
+    background-color: var(--ant-color-bg-container);
 
     &:hover {
-      background-color: var(--tl-glass-2);
+      background-color: var(--ant-color-bg-elevated);
       border-color: var(--ant-color-border);
       box-shadow: var(--tl-glass-shadow-sm);
     }
