@@ -33,6 +33,9 @@
   --tl-glass:       rgba(255, 255, 255, 0.55);
   --tl-glass-hover: rgba(255, 255, 255, 0.72);
   --tl-glass-card:  rgba(255, 255, 255, 0.5);
+  /* 卡片玻璃底：比悬浮层更通透，透出景深 + backdrop 模糊 = 半透明毛玻璃 */
+  --tl-card:        color-mix(in srgb, var(--ant-color-bg-elevated, #fff) 72%, transparent);
+  --tl-card-radius: 16px;
 }
 
 html[data-theme='dark'] {
@@ -50,7 +53,8 @@ html[data-theme='dark'] {
   --tl-glow-c: 14%;
   --tl-glass:       rgba(255, 255, 255, 0.06);
   --tl-glass-hover: rgba(255, 255, 255, 0.10);
-  --tl-glass-card:  rgba(255, 255, 255, 0.05);
+  --tl-glass-card:  rgba(255, 255, 255, 0.07);
+  --tl-card:        color-mix(in srgb, var(--ant-color-bg-elevated, #1f1f1f) 58%, transparent);
 }
 
 /* ---------- 2. 空间底色 + 景深光晕 ----------
@@ -105,15 +109,36 @@ html[data-theme='dark'] {
   -webkit-backdrop-filter: blur(3px);
 }
 
-/* ---------- 4. 卡片磨砂玻璃：半透明 + 模糊，透出景深底色 ----------
-   卡片位于 antd 变量作用域内，--ant-color-bg-elevated 可解析，
-   --tl-surface = 提升面板色加透明度 → 磨砂玻璃。 */
-.ant-card:not(.tl-no-glass) {
-  background: var(--tl-surface) !important;
+/* ---------- 4. 卡片磨砂玻璃：半透明 + 模糊 + 圆角，透出景深底色 ----------
+   全站"卡片"统一：--tl-glass-card 白色磨砂薄膜（与侧栏/日历同款，浮在景深底色上
+   = 融合的通透玻璃，而非 bg-elevated 深色底叠出的近黑方块）+ backdrop 模糊 + 16px 圆角。
+   含 antd Card 与各页面自定义卡片（倒数日/计数器/主题卡/数据卡/AI 卡…）。
+   用 !important 压过各 .less 里写死的浅色底（#fff/#fafafa 等，深色下本就是 bug）。 */
+.ant-card:not(.tl-no-glass),
+.countdown-card,
+.counter-card,
+.settings-page .theme-card,
+.settings-page .data-action-card,
+.ai-page .action-card,
+.ai-page .ai-pending-disambiguation,
+/* 番茄页统计卡（原紫/蓝渐变底板）与计数器详情信息/备注块，统一磨砂玻璃卡 */
+.pomodoro-right .stat-card,
+.pomodoro-right .stat-card.stat-card-purple,
+.pomodoro-right .stat-card.stat-card-blue,
+.counter-detail-page .counter-section .info-area,
+.counter-detail-page .counter-section .note-area {
+  background: var(--tl-glass-card) !important;
   backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
   -webkit-backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
-  box-shadow: var(--tl-shadow-sm);
-  border-color: var(--tl-edge-soft);
+  box-shadow: var(--tl-shadow-sm) !important;
+  border: 1px solid var(--tl-edge-soft) !important;
+  border-radius: var(--tl-card-radius) !important;
+}
+/* 倒数日/计数器卡片的置顶浅色渐变会盖掉玻璃，深色下发白，统一清掉 */
+.countdown-card.pinned,
+.counter-card.pinned,
+.counter-card.completed {
+  background: var(--tl-glass-card) !important;
 }
 
 /* ---------- 4.5 外壳半透明玻璃：侧栏透出景深底色 ----------
@@ -141,10 +166,41 @@ html[data-theme='dark'] {
 .pomodoro-container,
 .calendar-view,
 .summary-page,
-.settings-page {
+.settings-page,
+.statistics-page {
   background: var(--tl-glass) !important;
   backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
   -webkit-backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
+}
+/* 统计页原为裸 div（卡片直接浮在近黑景深底上 = 黑方块）。给它日历同款玻璃面板：
+   整块白霜薄膜 + 圆角 + 内边距，卡片浮于其上，与全站一致。 */
+.statistics-page {
+  min-height: 100%;
+  padding: 20px;
+  border-radius: var(--tl-card-radius);
+}
+/* 这些页面内部还有一层写死的实色面板（bg-container/bg-layout），会盖掉上面的
+   玻璃 → 清成透明，透出页面玻璃与景深底色，保持"统一毛玻璃"。 */
+.summary-page .summary-content,
+.settings-page .settings-content,
+.settings-page .settings-nav,
+/* 番茄页右侧统计面板原为实色 bg-layout 底板 → 透出容器玻璃与景深 */
+.pomodoro-right,
+.summary-page .toolbar {
+  background: transparent !important;
+}
+
+/* ---------- 4.7 页面级外壳容器：像 calendar 那样透明玻璃，融入侧栏 ----------
+   倒数日/计数器/笔记等把整个内容区填满的 ant-card 外壳，不该当"实色卡片"，
+   否则出现一大块不透明底、与侧栏不搭。改成 calendar-view 同款 --tl-glass 薄膜
+   （透出景深底色），去掉卡片的边框/阴影。用 .xxx.ant-card 提高优先级压过 §4。 */
+.countdown-container.ant-card,
+.counter-container.ant-card,
+.counter-detail-page .detail-container.ant-card,
+.note-page .note-container.ant-card {
+  background: var(--tl-glass) !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* ---------- 5. 勾选框保持方形圆角（避免全局圆角 token 变成圆形） ---------- */

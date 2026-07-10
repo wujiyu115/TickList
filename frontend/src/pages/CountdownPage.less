@@ -17,7 +17,7 @@
     align-items: center;
     margin-bottom: 24px;
     padding-bottom: 16px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--tl-edge-soft);
 
     .header-left {
       display: flex;
@@ -102,8 +102,9 @@
       text-align: center;
       padding: 20px 0;
       margin-bottom: 16px;
-      border-radius: 8px;
-      background: #fafafa;
+      border-radius: 10px;
+      // 主题自适应的半透明填充，替代写死的浅灰（深色下会变白块）
+      background: var(--ant-color-fill-quaternary);
 
       .days-number {
         display: block;
@@ -132,7 +133,7 @@
       }
 
       &.days-today {
-        background: linear-gradient(135deg, #fff7e6 0%, #fffbe6 100%);
+        background: color-mix(in srgb, #faad14 16%, transparent);
         
         .days-number {
           font-size: 36px;
@@ -146,14 +147,14 @@
       }
 
       &.days-past {
-        background: #f5f5f5;
-        
+        background: var(--ant-color-fill-tertiary);
+
         .days-number {
-          color: #8c8c8c;
+          color: var(--ant-color-text-tertiary);
         }
-        
+
         .days-text {
-          color: #8c8c8c;
+          color: var(--ant-color-text-tertiary);
         }
       }
     }

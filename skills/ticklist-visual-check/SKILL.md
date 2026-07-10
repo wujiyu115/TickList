@@ -7,7 +7,18 @@ description: Use to visually verify TickList frontend UI/CSS changes by driving 
 
 Screenshot the TickList frontend yourself so you can iterate on visual changes without asking the user for screenshots.
 
-Playwright is installed as a devDependency in `frontend/`. It uses the **system Google Chrome** (`channel: 'chrome'`) — the bundled browser download is not required.
+Playwright is installed as a devDependency in `frontend/`. `shot.mjs` uses Playwright's **bundled Chromium** by default (`npx playwright install chromium`) — no system Chrome needed. Set `TL_CHROME_CHANNEL=chrome` to use system Chrome instead.
+
+**WSL2 note:** headless Chromium needs `libgbm.so.1` (+ `libwayland-server`). If missing and `sudo apt` is unavailable, download the debs without root and extract them into `~/.cache/ticklist-pwlibs/` — `shot.mjs` auto-adds that dir to `LD_LIBRARY_PATH`:
+
+```bash
+cd /tmp && apt-get download libgbm1 libwayland-server0
+for d in *.deb; do dpkg-deb -x "$d" ./x; done
+mkdir -p ~/.cache/ticklist-pwlibs
+cp -a ./x/usr/lib/x86_64-linux-gnu/{libgbm.so*,libwayland-server.so*} ~/.cache/ticklist-pwlibs/
+```
+
+(`libdrm.so.2` is usually already present system-wide.) Do **not** try to drive Windows `chrome.exe` from WSL — Playwright's Linux node process talks to the browser over a stdio/CDP pipe that doesn't cross the WSL boundary cleanly, and Linux/Windows paths mismatch.
 
 ## Option A — real running app (preferred for real data / interactions)
 
@@ -43,5 +54,6 @@ node scripts/shot.mjs "file:///tmp/prev/index.html" /tmp/prev/shot.png
 
 ## Notes
 - Always Read the resulting PNG to confirm the change before committing/pushing.
-- backdrop-filter (glass blur) renders under `channel: 'chrome'`; avoid `--disable-gpu`.
+- backdrop-filter (glass blur) renders fine under bundled Chromium headless; avoid `--disable-gpu`.
+- To screenshot week/day/year sub-views, drive the "月" view dropdown with Playwright and click 周视图/日视图/年视图 (viewMode is local React state, no URL param).
 - Keep harness token values in sync with `THEME_COLORS` in `App.tsx`.

@@ -14,7 +14,18 @@
  *   TL_USER=admin TL_PASS=xxx node scripts/shot.mjs / /tmp/tasks.png
  *   node scripts/shot.mjs /pomodoro /tmp/pomo.png '{"theme":"dark","width":1440}'
  */
+import os from 'node:os';
+import path from 'node:path';
+import fs from 'node:fs';
 import { chromium } from 'playwright';
+
+// WSL2/无 GUI 环境：系统缺 libgbm 等库时，用本地解压的补充库目录（见 SKILL.md）。
+const extraLibs = path.join(os.homedir(), '.cache/ticklist-pwlibs');
+if (fs.existsSync(extraLibs)) {
+  process.env.LD_LIBRARY_PATH = process.env.LD_LIBRARY_PATH
+    ? `${extraLibs}:${process.env.LD_LIBRARY_PATH}`
+    : extraLibs;
+}
 
 const [, , urlArg = '/', outFile = '/tmp/ticklist-shot.png', optsArg = '{}'] = process.argv;
 const opts = JSON.parse(optsArg);
@@ -23,7 +34,10 @@ const url = urlArg.startsWith('http') ? urlArg : base.replace(/\/$/, '') + urlAr
 const width = opts.width || 1440;
 const height = opts.height || 900;
 
-const browser = await chromium.launch({ channel: 'chrome' });
+// 默认用 Playwright 自带 Chromium（WSL2 无系统 Chrome）；
+// 设 TL_CHROME_CHANNEL=chrome 可切回系统 Chrome。
+const channel = process.env.TL_CHROME_CHANNEL;
+const browser = await chromium.launch(channel ? { channel } : {});
 const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: opts.dpr || 1 });
 const page = await ctx.newPage();
 
