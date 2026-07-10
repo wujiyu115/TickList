@@ -144,9 +144,11 @@ const App: React.FC = () => {
   const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [primaryColor, setPrimaryColor] = useState('#1677ff');
-  const [isDark, setIsDark] = useState(false);
-  const [extraToken, setExtraToken] = useState<Record<string, string> | undefined>(undefined);
+  // 初始主题从上次缓存读取，使登录页也能套用用户配色方案（设置需登录后才拉取）
+  const cachedTheme = THEME_COLORS[localStorage.getItem('theme_key') || 'default'];
+  const [primaryColor, setPrimaryColor] = useState(cachedTheme?.color || '#1677ff');
+  const [isDark, setIsDark] = useState(cachedTheme?.isDark || false);
+  const [extraToken, setExtraToken] = useState<Record<string, string> | undefined>(cachedTheme?.token);
   const [defaultViewPath, setDefaultViewPath] = useState<string | null>(null);
 
   useEffect(() => {
@@ -162,6 +164,15 @@ const App: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const applyTheme = (themeKey: string) => {
+    const config = THEME_COLORS[themeKey];
+    if (!config) return;
+    setPrimaryColor(config.color);
+    setIsDark(config.isDark);
+    setExtraToken(config.token);
+    localStorage.setItem('theme_key', themeKey);
+  };
+
   const checkAuth = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -172,10 +183,7 @@ const App: React.FC = () => {
         try {
           const settings = await getSettings();
           if (settings.theme && THEME_COLORS[settings.theme]) {
-            const themeConfig = THEME_COLORS[settings.theme];
-            setPrimaryColor(themeConfig.color);
-            setIsDark(themeConfig.isDark);
-            setExtraToken(themeConfig.token);
+            applyTheme(settings.theme);
           }
           if (settings.default_view) {
             setDefaultViewPath(getDefaultViewPath(settings.default_view));
@@ -195,12 +203,7 @@ const App: React.FC = () => {
   };
 
   const setTheme = (themeKey: string) => {
-    const config = THEME_COLORS[themeKey];
-    if (config) {
-      setPrimaryColor(config.color);
-      setIsDark(config.isDark);
-      setExtraToken(config.token);
-    }
+    applyTheme(themeKey);
   };
 
   const handleLogin = async (userData: User, token: string, refreshToken?: string) => {
@@ -214,10 +217,7 @@ const App: React.FC = () => {
     try {
       const settings = await getSettings();
       if (settings.theme && THEME_COLORS[settings.theme]) {
-        const themeConfig = THEME_COLORS[settings.theme];
-        setPrimaryColor(themeConfig.color);
-        setIsDark(themeConfig.isDark);
-        setExtraToken(themeConfig.token);
+        applyTheme(settings.theme);
       }
       syncNotifications();
       const targetPath = getDefaultViewPath(settings.default_view || 'tasks');

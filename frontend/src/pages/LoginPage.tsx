@@ -6,6 +6,7 @@ import { startAuthentication, browserSupportsWebAuthn } from '@simplewebauthn/br
 import { User } from '../types';
 import { localLogin, getAuthConfig, getPasskeyLoginOptions, verifyPasskeyLogin } from '../api/auth';
 import { isNativePlatform } from '../utils/platform';
+import './LoginPage.less';
 
 const { Title, Paragraph } = Typography;
 
@@ -71,14 +72,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100dvh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-    }}>
-      <Card style={{ width: '90vw', maxWidth: 400, textAlign: 'center' }}>
+    <div className="login-page">
+      <Card className="login-card">
         <Title level={2}>TickList</Title>
         <Paragraph>任务管理系统</Paragraph>
         
