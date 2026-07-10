@@ -105,9 +105,15 @@ html[data-theme='dark'] {
   -webkit-backdrop-filter: blur(3px);
 }
 
-/* ---------- 4. 卡片：柔和圆角 + 轻投影 ---------- */
+/* ---------- 4. 卡片磨砂玻璃：半透明 + 模糊，透出景深底色 ----------
+   卡片位于 antd 变量作用域内，--ant-color-bg-elevated 可解析，
+   --tl-surface = 提升面板色加透明度 → 磨砂玻璃。 */
 .ant-card:not(.tl-no-glass) {
+  background: var(--tl-surface) !important;
+  backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
+  -webkit-backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
   box-shadow: var(--tl-shadow-sm);
+  border-color: var(--tl-edge-soft);
 }
 
 /* ---------- 4.5 外壳半透明玻璃：侧栏透出景深底色 ----------
@@ -128,6 +134,17 @@ html[data-theme='dark'] {
 /* 任务区容器透明，露出景深底色，让任务卡浮于其上 */
 .task-page {
   background: transparent !important;
+}
+
+/* ---------- 4.6 全站页面主面板磨砂玻璃：透出景深底色 ----------
+   这些是各页面填满内容区的实色容器（原 bg-container），改成白色磨砂薄膜。 */
+.pomodoro-container,
+.calendar-view,
+.summary-page,
+.settings-page {
+  background: var(--tl-glass) !important;
+  backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
+  -webkit-backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
 }
 
 /* ---------- 5. 勾选框保持方形圆角（避免全局圆角 token 变成圆形） ---------- */
