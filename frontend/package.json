@@ -13,6 +13,7 @@
     "cap:ios": "rsbuild build && npx cap sync ios && npx cap open ios",
     "cap:android": "rsbuild build && npx cap sync android && npx cap open android",
     "preview": "rsbuild preview",
+    "shot": "node scripts/shot.mjs",
     "lint": "eslint --ext .js,.ts,.tsx .",
     "lint-fix": "eslint --ext .js,.ts,.tsx --fix .",
     "test": "vitest",
@@ -72,6 +73,7 @@
     "jsdom": "^29.0.2",
     "less": "^3.13.1",
     "msw": "^2.13.3",
+    "playwright": "^1.61.1",
     "typescript": "^5.1.6",
     "vitest": "^4.1.4"
   },
