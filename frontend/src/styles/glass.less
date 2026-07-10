@@ -56,25 +56,24 @@ html[data-theme='dark'] {
 /* ---------- 2. 空间底色 + 景深光晕 ----------
    底色/光晕铺在 .main-layout（位于 antd Provider 内，--ant-color-* 一定解析），
    整窗一块连续的主题底色 + 随主色的极淡光晕。不要放到 body。 */
-.main-layout {
+/* 注意：antd 的 --ant-color-* 变量作用域从 .main-layout 起（html/body/#root 上取不到，
+   会退化成白色）。所以底色/光晕必须挂在 .main-layout（用 .main-layout.ant-layout 提高
+   优先级，压过 antd 自带的 .ant-layout{background} 与下面的透明规则）。 */
+.main-layout.ant-layout {
   position: relative;
   min-height: 100%;
-  background-color: var(--ant-color-bg-layout, #f5f5f5);
+  background-color: var(--ant-color-bg-layout);
   background-image:
     radial-gradient(46% 40% at 88% 0%,
-      color-mix(in srgb, var(--ant-color-primary, #1677ff) var(--tl-glow-a), transparent), transparent 66%),
+      color-mix(in srgb, var(--ant-color-primary) var(--tl-glow-a), transparent), transparent 66%),
     radial-gradient(44% 44% at 0% 18%,
-      color-mix(in srgb, var(--ant-color-primary, #1677ff) var(--tl-glow-b), transparent), transparent 68%),
+      color-mix(in srgb, var(--ant-color-primary) var(--tl-glow-b), transparent), transparent 68%),
     radial-gradient(54% 48% at 24% 100%,
-      color-mix(in srgb, var(--ant-color-primary, #1677ff) var(--tl-glow-c), transparent), transparent 72%);
+      color-mix(in srgb, var(--ant-color-primary) var(--tl-glow-c), transparent), transparent 72%);
 }
-/* body / #root 兜底一层主题底色，避免滚动回弹露出浏览器底色 */
-body,
-#root {
-  background: var(--ant-color-bg-layout, #f5f5f5);
-}
-/* 内层 Layout 与内容区透出 .main-layout 的底色 + 光晕 */
-.ant-layout,
+/* 只让"内层" Layout 与内容区透明，透出 .main-layout 的底色 + 光晕；
+   不要用裸 .ant-layout（那会连外层 .main-layout 一起清成透明 → 露出白色 #root）。 */
+.main-layout .ant-layout,
 .main-layout .main-content {
   background: transparent;
 }
