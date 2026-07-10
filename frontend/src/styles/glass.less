@@ -19,7 +19,8 @@
   --tl-blur: 20px;
   --tl-sat: 165%;
   /* 悬浮层玻璃底：跟随 antd 提升面板色，仅加透明度 */
-  --tl-surface:     color-mix(in srgb, var(--ant-color-bg-elevated, #fff) 82%, transparent);
+  --tl-surface:     linear-gradient(0deg, var(--tl-glass-card), var(--tl-glass-card)),
+                    color-mix(in srgb, var(--ant-color-bg-elevated, #fff) 62%, transparent);
   --tl-shadow:
     inset 0 1px 0 var(--tl-edge),
     0 22px 48px -30px rgba(30, 55, 90, 0.30);
@@ -41,7 +42,8 @@
 html[data-theme='dark'] {
   --tl-edge:        rgba(255, 255, 255, 0.10);
   --tl-edge-soft:   rgba(255, 255, 255, 0.05);
-  --tl-surface:     color-mix(in srgb, var(--ant-color-bg-elevated, #1f1f1f) 86%, transparent);
+  --tl-surface:     linear-gradient(0deg, var(--tl-glass-card), var(--tl-glass-card)),
+                    color-mix(in srgb, var(--ant-color-bg-elevated, #1f1f1f) 60%, transparent);
   --tl-shadow:
     inset 0 1px 0 var(--tl-edge),
     0 24px 52px -28px rgba(0, 0, 0, 0.62);
@@ -201,6 +203,38 @@ html[data-theme='dark'] {
   background: var(--tl-glass) !important;
   border: none !important;
   box-shadow: none !important;
+}
+
+/* ---------- 4.8 内联控件/表面组件：全站统一白霜玻璃膜，去实色 navy 底 ----------
+   输入框/选择器/日期选择/分段器/单选按钮等原用 bg-container（深色下=实色 navy 块）。
+   统一改成 --tl-glass-card 白霜薄膜（与卡片/侧栏同材质）。仅改背景，保留边框/聚焦高亮。
+   禁用态与主色选中态排除在外（保持可辨识）。 */
+.ant-input:not(:disabled),
+.ant-input-affix-wrapper:not(.ant-input-affix-wrapper-disabled),
+.ant-input-number:not(.ant-input-number-disabled),
+.ant-select:not(.ant-select-disabled):not(.ant-select-customize-input) .ant-select-selector,
+.ant-picker:not(.ant-picker-disabled),
+.ant-segmented,
+.ant-radio-button-wrapper:not(.ant-radio-button-wrapper-checked):not(.ant-radio-button-wrapper-disabled) {
+  background: var(--tl-glass-card) !important;
+}
+.ant-input:not(:disabled):hover,
+.ant-input-affix-wrapper:not(.ant-input-affix-wrapper-disabled):hover,
+.ant-input-number:not(.ant-input-number-disabled):hover,
+.ant-select:not(.ant-select-disabled):not(.ant-select-customize-input):hover .ant-select-selector,
+.ant-picker:not(.ant-picker-disabled):hover {
+  background: var(--tl-glass-hover) !important;
+}
+/* 表格/列表：容器与单元格透明，透出所在卡片玻璃；表头给一层薄霜区分 */
+.ant-table,
+.ant-table-tbody > tr > td,
+.ant-list,
+.ant-list-item,
+.ant-list-split .ant-list-item {
+  background: transparent !important;
+}
+.ant-table-thead > tr > th {
+  background: var(--tl-glass-card) !important;
 }
 
 /* ---------- 5. 勾选框保持方形圆角（避免全局圆角 token 变成圆形） ---------- */
