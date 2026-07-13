@@ -124,7 +124,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
         {isMobile && (
           <Drawer
             placement="left"
-            width={showSiderPanel ? 280 : 'fit-content'}
+            width={showSiderPanel ? 280 : 52}
             open={drawerVisible}
             onClose={() => setDrawerVisible(false)}
             className={`mobile-sider-drawer${showSiderPanel ? '' : ' icon-only'}`}

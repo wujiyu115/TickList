@@ -196,6 +196,13 @@ html[data-theme='dark'] {
   padding: 20px;
   border-radius: var(--tl-card-radius);
 }
+/* 日历/番茄专注：与倒数日/计数器一致的圆角磨砂卡片（原为满铺无圆角，
+   番茄页更因内层实色底读作纯黑）。加圆角 + overflow 裁切内层面板。 */
+.calendar-view,
+.pomodoro-container {
+  border-radius: var(--tl-card-radius);
+  overflow: hidden;
+}
 /* 这些页面内部还有一层写死的实色面板（bg-container/bg-layout），会盖掉上面的
    玻璃 → 清成透明，透出页面玻璃与景深底色，保持"统一毛玻璃"。 */
 .summary-page .summary-content,
