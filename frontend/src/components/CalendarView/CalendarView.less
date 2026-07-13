@@ -778,3 +778,12 @@
     }
   }
 }
+
+// 日历任务气泡：纯中性底不掺色。saturate 会提饱和、tl-shadow 是主色辉光，均清除，
+// 只留中性 blur + 可调 alpha（改 85% 数值即调浓淡）
+.calendar-task-popover .ant-popover-inner {
+  background: color-mix(in srgb, var(--ant-color-bg-elevated, #1f1f1f) 85%, transparent) !important;
+  backdrop-filter: blur(var(--tl-blur));
+  -webkit-backdrop-filter: blur(var(--tl-blur));
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35) !important;
+}

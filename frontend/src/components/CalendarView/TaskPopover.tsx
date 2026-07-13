@@ -136,6 +136,7 @@ const TaskPopover: React.FC<TaskPopoverProps> = ({
       trigger="hover"
       placement="right"
       mouseEnterDelay={0.3}
+      overlayClassName="calendar-task-popover"
     >
       <div className="task-popover-trigger">{children}</div>
     </Popover>
