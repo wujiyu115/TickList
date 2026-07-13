@@ -18,11 +18,8 @@
   --tl-edge-soft:   rgba(15, 30, 55, 0.06);
   --tl-blur: 20px;
   --tl-sat: 165%;
-  /* 悬浮层玻璃底：不透明的主题提升面板色 + 白霜膜。
-     不透半透（否则透出深色景深底 = 发黑，且被 saturate 放大成蓝），
-     悬浮层统一呈现所选主题的本色面板。 */
-  --tl-surface:     linear-gradient(0deg, var(--tl-glass-card), var(--tl-glass-card)),
-                    var(--ant-color-bg-elevated, #fff);
+  /* 悬浮层强调染色：主色掺入面板底的比例（浮层比外壳略淡） */
+  --tl-tint: 6%;
   --tl-shadow:
     inset 0 1px 0 var(--tl-edge),
     0 22px 48px -30px rgba(30, 55, 90, 0.30);
@@ -36,16 +33,13 @@
   --tl-glass:       rgba(255, 255, 255, 0.55);
   --tl-glass-hover: rgba(255, 255, 255, 0.72);
   --tl-glass-card:  rgba(255, 255, 255, 0.5);
-  /* 卡片玻璃底：比悬浮层更通透，透出景深 + backdrop 模糊 = 半透明毛玻璃 */
-  --tl-card:        color-mix(in srgb, var(--ant-color-bg-elevated, #fff) 72%, transparent);
   --tl-card-radius: 16px;
 }
 
 html[data-theme='dark'] {
   --tl-edge:        rgba(255, 255, 255, 0.10);
   --tl-edge-soft:   rgba(255, 255, 255, 0.05);
-  --tl-surface:     linear-gradient(0deg, var(--tl-glass-card), var(--tl-glass-card)),
-                    var(--ant-color-bg-elevated, #1f1f1f);
+  --tl-tint: 10%;
   --tl-shadow:
     inset 0 1px 0 var(--tl-edge),
     0 24px 52px -28px rgba(0, 0, 0, 0.62);
@@ -58,7 +52,6 @@ html[data-theme='dark'] {
   --tl-glass:       rgba(255, 255, 255, 0.06);
   --tl-glass-hover: rgba(255, 255, 255, 0.10);
   --tl-glass-card:  rgba(255, 255, 255, 0.07);
-  --tl-card:        color-mix(in srgb, var(--ant-color-bg-elevated, #1f1f1f) 58%, transparent);
 }
 
 /* ---------- 2. 空间底色 + 景深光晕 ----------
@@ -103,7 +96,14 @@ html[data-theme='dark'] {
 .ant-notification-notice,
 .ant-message-notice-content,
 .ant-tooltip-inner {
-  background: var(--tl-surface) !important;
+  /* 直接在浮层元素上引用 antd 变量：这些 var() 在“使用处”解析，
+     而浮层带 .css-var-* 作用域 → --ant-color-* 可解析成所选主题本色。
+     （不可经 :root 定义的中间变量转手：:root 上 --ant-color-* 为空，
+     会退化成 #1f1f1f 中性黑，与主题不一致 —— 之前的 bug 根因。）
+     掺入少量主色，使浮层与外壳景深光晕同调，不再显黑。 */
+  background:
+    linear-gradient(0deg, var(--tl-glass-card), var(--tl-glass-card)),
+    color-mix(in srgb, var(--ant-color-primary) var(--tl-tint), var(--ant-color-bg-elevated, #1f1f1f)) !important;
   backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
   -webkit-backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
   box-shadow: var(--tl-shadow) !important;
@@ -115,7 +115,7 @@ html[data-theme='dark'] {
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
 }
-/* 头部/标题透明，继承 §3 的不透明 --tl-surface 面板底（避免蓝色选区/光晕透出）。 */
+/* 头部/标题透明，继承 §3 的不透明面板底（避免蓝色选区/光晕透出）。 */
 .ant-modal-header,
 .ant-modal-title {
   background: transparent !important;
