@@ -162,7 +162,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
     return (
       <div style={{ width: 220, maxHeight: 350, overflow: 'auto' }}>
         {/* 搜索框 */}
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--tl-edge-soft, var(--ant-color-border-secondary))' }}>
           <Input
             placeholder="搜索"
             prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
@@ -181,11 +181,11 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            color: !task.list_id ? '#1890ff' : 'inherit',
-            background: !task.list_id ? '#e6f7ff' : 'transparent',
+            color: !task.list_id ? 'var(--ant-color-primary)' : 'inherit',
+            background: !task.list_id ? 'var(--ant-color-primary-bg)' : 'transparent',
           }}
           onClick={() => handleMoveToList(null)}
-          onMouseEnter={(e) => { if (task.list_id) e.currentTarget.style.background = '#f5f5f5'; }}
+          onMouseEnter={(e) => { if (task.list_id) e.currentTarget.style.background = 'var(--ant-color-bg-text-hover)'; }}
           onMouseLeave={(e) => { if (task.list_id) e.currentTarget.style.background = 'transparent'; }}
         >
           <InboxOutlined />
@@ -203,11 +203,11 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
               display: 'flex',
               alignItems: 'center',
               gap: 8,
-              color: task.list_id === list.id ? '#1890ff' : 'inherit',
-              background: task.list_id === list.id ? '#e6f7ff' : 'transparent',
+              color: task.list_id === list.id ? 'var(--ant-color-primary)' : 'inherit',
+              background: task.list_id === list.id ? 'var(--ant-color-primary-bg)' : 'transparent',
             }}
             onClick={() => handleMoveToList(list.id)}
-            onMouseEnter={(e) => { if (task.list_id !== list.id) e.currentTarget.style.background = '#f5f5f5'; }}
+            onMouseEnter={(e) => { if (task.list_id !== list.id) e.currentTarget.style.background = 'var(--ant-color-bg-text-hover)'; }}
             onMouseLeave={(e) => { if (task.list_id !== list.id) e.currentTarget.style.background = 'transparent'; }}
           >
             <UnorderedListOutlined />
@@ -240,7 +240,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
                   gap: 8,
                 }}
                 onClick={() => toggleFolder(folder.id)}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#f5f5f5'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--ant-color-bg-text-hover)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
               >
                 <FolderOutlined style={{ color: folder.color || '#faad14' }} />
@@ -270,11 +270,11 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
                       display: 'flex',
                       alignItems: 'center',
                       gap: 8,
-                      color: task.list_id === list.id ? '#1890ff' : 'inherit',
-                      background: task.list_id === list.id ? '#e6f7ff' : 'transparent',
+                      color: task.list_id === list.id ? 'var(--ant-color-primary)' : 'inherit',
+                      background: task.list_id === list.id ? 'var(--ant-color-primary-bg)' : 'transparent',
                     }}
                     onClick={() => handleMoveToList(list.id)}
-                    onMouseEnter={(e) => { if (task.list_id !== list.id) e.currentTarget.style.background = '#f5f5f5'; }}
+                    onMouseEnter={(e) => { if (task.list_id !== list.id) e.currentTarget.style.background = 'var(--ant-color-bg-text-hover)'; }}
                     onMouseLeave={(e) => { if (task.list_id !== list.id) e.currentTarget.style.background = 'transparent'; }}
                   >
                     <UnorderedListOutlined />
@@ -297,7 +297,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
     return (
       <div style={{ width: 220 }}>
         {/* 搜索框 */}
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--tl-edge-soft, var(--ant-color-border-secondary))' }}>
           <Input
             placeholder="输入标签"
             prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
@@ -311,7 +311,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
         {/* 标签列表 */}
         <div style={{ maxHeight: 250, overflow: 'auto', padding: '4px 0' }}>
           {filteredTags.length === 0 ? (
-            <div style={{ padding: '12px', textAlign: 'center', color: '#999' }}>
+            <div style={{ padding: '12px', textAlign: 'center', color: 'var(--ant-color-text-tertiary)' }}>
               暂无标签
             </div>
           ) : (
@@ -324,16 +324,16 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  background: selectedTags.includes(tag.name) ? '#e6f7ff' : 'transparent',
+                  background: selectedTags.includes(tag.name) ? 'var(--ant-color-primary-bg)' : 'transparent',
                 }}
                 onClick={() => toggleTag(tag.name)}
-                onMouseEnter={(e) => { if (!selectedTags.includes(tag.name)) e.currentTarget.style.background = '#f5f5f5'; }}
+                onMouseEnter={(e) => { if (!selectedTags.includes(tag.name)) e.currentTarget.style.background = 'var(--ant-color-bg-text-hover)'; }}
                 onMouseLeave={(e) => { if (!selectedTags.includes(tag.name)) e.currentTarget.style.background = 'transparent'; }}
               >
-                <TagOutlined style={{ color: tag.color || '#1890ff' }} />
+                <TagOutlined style={{ color: tag.color || 'var(--ant-color-primary)' }} />
                 <span style={{ flex: 1 }}>{tag.name}</span>
                 {selectedTags.includes(tag.name) && (
-                  <CheckOutlined style={{ color: '#1890ff' }} />
+                  <CheckOutlined style={{ color: 'var(--ant-color-primary)' }} />
                 )}
               </div>
             ))
@@ -343,7 +343,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
         {/* 保存/取消按钮 */}
         <div style={{ 
           padding: '8px 12px', 
-          borderTop: '1px solid #f0f0f0',
+          borderTop: '1px solid var(--tl-edge-soft, var(--ant-color-border-secondary))',
           display: 'flex',
           gap: 8,
           justifyContent: 'flex-end',
@@ -705,7 +705,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
         />
         <div style={{ maxHeight: 300, overflow: 'auto' }}>
           {filtered.length === 0 ? (
-            <div style={{ padding: 12, textAlign: 'center', color: '#999' }}>暂无可选任务</div>
+            <div style={{ padding: 12, textAlign: 'center', color: 'var(--ant-color-text-tertiary)' }}>暂无可选任务</div>
           ) : (
             filtered.map(t => (
               <div
@@ -716,7 +716,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
                   borderRadius: 4,
                 }}
                 onClick={() => handleMakeChild(t.id)}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#f5f5f5'}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--ant-color-bg-text-hover)'}
                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
               >
                 {t.title}

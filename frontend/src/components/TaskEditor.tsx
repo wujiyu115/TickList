@@ -647,11 +647,11 @@ const TaskEditor: React.FC = () => {
         marginBottom: 8
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <ClockCircleOutlined style={{ color: '#1890ff' }} />
+          <ClockCircleOutlined style={{ color: 'var(--ant-color-primary)' }} />
           <span>准时</span>
         </div>
         <CloseOutlined 
-          style={{ cursor: 'pointer', color: '#999' }}
+          style={{ cursor: 'pointer', color: 'var(--ant-color-text-tertiary)' }}
           onClick={() => setReminderPanelVisible(false)}
         />
       </div>
@@ -666,12 +666,12 @@ const TaskEditor: React.FC = () => {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            color: option.disabled ? '#ccc' : (tempReminder === option.key ? '#1890ff' : '#333'),
-            backgroundColor: tempReminder === option.key ? '#e6f7ff' : 'transparent',
+            color: option.disabled ? 'var(--ant-color-text-quaternary)' : (tempReminder === option.key ? 'var(--ant-color-primary)' : 'var(--ant-color-text)'),
+            backgroundColor: tempReminder === option.key ? 'var(--ant-color-primary-bg)' : 'transparent',
           }}
         >
           <span>{option.label}</span>
-          {tempReminder === option.key && <CheckOutlined style={{ color: '#1890ff' }} />}
+          {tempReminder === option.key && <CheckOutlined style={{ color: 'var(--ant-color-primary)' }} />}
         </div>
       ))}
 
@@ -791,7 +791,7 @@ const TaskEditor: React.FC = () => {
       </div>
 
       {/* 时区显示 */}
-      <div style={{ padding: '8px 12px', color: '#666', fontSize: 13 }}>
+      <div style={{ padding: '8px 12px', color: 'var(--ant-color-text-secondary)', fontSize: 13 }}>
         北京, UTC+08:00
       </div>
 
@@ -814,10 +814,10 @@ const TaskEditor: React.FC = () => {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <ClockCircleOutlined style={{ color: '#1890ff' }} />
+            <ClockCircleOutlined style={{ color: 'var(--ant-color-primary)' }} />
             <span>{getReminderLabel()}</span>
           </div>
-          <span style={{ color: '#999' }}>&gt;</span>
+          <span style={{ color: 'var(--ant-color-text-tertiary)' }}>&gt;</span>
         </div>
       )}
 
@@ -885,7 +885,7 @@ const TaskEditor: React.FC = () => {
           >
             <span className="date-reminder" style={{ cursor: 'pointer' }}>
               {selectedTask.start_time || selectedTask.due_date ? (
-                <span style={{ color: '#1890ff' }}>
+                <span style={{ color: 'var(--ant-color-primary)' }}>
                   {formatDateDisplay(selectedTask.start_time, selectedTask.due_date)}
                 </span>
               ) : (
@@ -901,7 +901,7 @@ const TaskEditor: React.FC = () => {
             <span className="focus-info" style={{ 
               marginLeft: 12,
               fontSize: 12,
-              color: '#999',
+              color: 'var(--ant-color-text-tertiary)',
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6
