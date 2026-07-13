@@ -1,5 +1,8 @@
 .main-layout {
   min-height: 100%;
+  // 安全区留白挂在 layout 上（而非 #root），让刘海条露出 .main-layout 的主题底色+景深，
+  // 随主题/配色自适应，而非 body 的默认白底。
+  padding-top: env(safe-area-inset-top, 0px);
 
   .main-content {
     background: var(--ant-color-bg-layout);
