@@ -643,7 +643,7 @@ const TaskEditor: React.FC = () => {
         alignItems: 'center', 
         justifyContent: 'space-between',
         padding: '8px 16px',
-        borderBottom: '1px solid #f0f0f0',
+        borderBottom: '1px solid var(--tl-edge-soft, var(--ant-color-border-secondary))',
         marginBottom: 8
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -679,7 +679,7 @@ const TaskEditor: React.FC = () => {
         display: 'flex', 
         gap: 12, 
         padding: '12px 16px',
-        borderTop: '1px solid #f0f0f0',
+        borderTop: '1px solid var(--tl-edge-soft, var(--ant-color-border-secondary))',
         marginTop: 8
       }}>
         <Button type="primary" onClick={handleSaveReminder} style={{ flex: 1 }}>
@@ -782,8 +782,8 @@ const TaskEditor: React.FC = () => {
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
-        borderTop: '1px solid #f0f0f0',
-        borderBottom: '1px solid #f0f0f0',
+        borderTop: '1px solid var(--tl-edge-soft, var(--ant-color-border-secondary))',
+        borderBottom: '1px solid var(--tl-edge-soft, var(--ant-color-border-secondary))',
         marginBottom: 8
       }}>
         <span>全天</span>
@@ -806,7 +806,7 @@ const TaskEditor: React.FC = () => {
             justifyContent: 'space-between', 
             alignItems: 'center',
             cursor: 'pointer',
-            borderTop: '1px solid #f0f0f0'
+            borderTop: '1px solid var(--tl-edge-soft, var(--ant-color-border-secondary))'
           }}
           onClick={() => {
             setTempReminder(selectedReminder);
@@ -829,7 +829,7 @@ const TaskEditor: React.FC = () => {
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center',
-            borderTop: '1px solid #f0f0f0'
+            borderTop: '1px solid var(--tl-edge-soft, var(--ant-color-border-secondary))'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -852,7 +852,7 @@ const TaskEditor: React.FC = () => {
           display: 'flex', 
           gap: 12, 
           padding: '12px',
-          borderTop: '1px solid #f0f0f0',
+          borderTop: '1px solid var(--tl-edge-soft, var(--ant-color-border-secondary))',
           marginTop: 8
         }}>
           <Button type="primary" onClick={handleConfirmDate} style={{ flex: 1 }}>
