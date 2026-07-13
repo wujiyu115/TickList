@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Card, Input, Button, Space, Typography, message, Alert } from 'antd';
+import { Card, Input, Button, Space, Typography, Alert } from 'antd';
+import { message } from '../utils/antdApp';
 import { CheckCircleOutlined, CloseCircleOutlined, ApiOutlined } from '@ant-design/icons';
 import {
   getApiBaseUrl,

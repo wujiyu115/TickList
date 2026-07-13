@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createContext, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { message, ConfigProvider, theme as antdTheme, Spin } from 'antd';
+import { App as AntApp, ConfigProvider, theme as antdTheme, Spin } from 'antd';
+import { message, AntdAppBridge } from './utils/antdApp';
 import MainLayout from './layouts/MainLayout';
 import LoginPage from './pages/LoginPage';
 
@@ -259,6 +260,8 @@ const App: React.FC = () => {
       }}
     >
       <ThemeContext.Provider value={{ primaryColor, isDark, setTheme }}>
+        <AntApp component={false}>
+        <AntdAppBridge />
         <FocusProvider>
         <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}><Spin size="large" /></div>}>
         <Routes>
@@ -319,6 +322,7 @@ const App: React.FC = () => {
         </Routes>
         </Suspense>
         </FocusProvider>
+        </AntApp>
       </ThemeContext.Provider>
     </ConfigProvider>
   );

@@ -1,4 +1,4 @@
-import { message } from 'antd';
+import { message } from '../utils/antdApp';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { isNativePlatform } from '../utils/platform';
 import { remoteLog } from './remoteLog';

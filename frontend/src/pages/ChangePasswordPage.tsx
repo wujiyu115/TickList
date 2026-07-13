@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Card, Typography, Form, Input, Button, message } from 'antd';
+import { Card, Typography, Form, Input, Button } from 'antd';
+import { message } from '../utils/antdApp';
 import { ArrowLeftOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { changePassword } from '../api/auth';

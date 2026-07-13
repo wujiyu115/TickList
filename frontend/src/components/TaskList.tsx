@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import dayjs from 'dayjs';
-import { Input, Button, Spin, Empty, message } from 'antd';
+import { Input, Button, Spin, Empty } from 'antd';
+import { message } from '../utils/antdApp';
 import { PlusOutlined, CaretDownOutlined, CaretRightOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
 import { useTaskContext } from '../contexts/TaskContext';

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode } from 'react';
-import { message, Modal } from 'antd';
+import { message, modalApi } from '../utils/antdApp';
 import { notify } from '../services/notify';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useTimer, TimerPhase, TimerMode } from '../hooks/useTimer';
@@ -109,7 +109,7 @@ export const FocusProvider: React.FC<FocusProviderProps> = ({ children }) => {
       ? `这一轮专注已完成${linkedTask?.title ? `：${linkedTask.title}` : ''}。现在可以休息一下。`
       : '休息结束了，开始下一轮专注吧。';
 
-    Modal.info({
+    modalApi.info({
       title,
       content,
       okText: isWorkComplete ? '去休息' : '继续专注',
@@ -237,7 +237,7 @@ export const FocusProvider: React.FC<FocusProviderProps> = ({ children }) => {
     
     if (duration < minDuration) {
       // 专注不足最短时长，弹出确认 Modal
-      Modal.confirm({
+      modalApi.confirm({
         title: '提前放弃专注？',
         icon: <ExclamationCircleOutlined />,
         content: `本次专注不足${settings?.focus_min_duration ?? 5}分钟，记录将不会被保存。`,
@@ -279,7 +279,7 @@ export const FocusProvider: React.FC<FocusProviderProps> = ({ children }) => {
     
     if (actualDuration < minDuration) {
       // 专注不足最短时长，弹出确认 Modal
-      Modal.confirm({
+      modalApi.confirm({
         title: '提前放弃专注？',
         icon: <ExclamationCircleOutlined />,
         content: `本次专注不足${settings?.focus_min_duration ?? 5}分钟，记录将不会被保存。`,

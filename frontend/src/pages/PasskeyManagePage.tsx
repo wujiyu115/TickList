@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Button, message, Modal, List, Empty, Result, Spin } from 'antd';
+import { Card, Typography, Button, List, Empty, Result, Spin } from 'antd';
+import { message, modalApi } from '../utils/antdApp';
 import { ArrowLeftOutlined, KeyOutlined, PlusOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { startRegistration, browserSupportsWebAuthn } from '@simplewebauthn/browser';
@@ -54,7 +55,7 @@ const PasskeyManagePage: React.FC = () => {
   };
 
   const handleDeleteCredential = (id: string, name: string) => {
-    Modal.confirm({
+    modalApi.confirm({
       title: '删除 Passkey',
       content: `确定删除「${name}」吗？删除后将无法使用此设备免密登录。`,
       okText: '删除',

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Form, Input, Button, message, Result, Spin } from 'antd';
+import { Card, Typography, Form, Input, Button, Result, Spin } from 'antd';
+import { message } from '../utils/antdApp';
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { register, getAuthConfig } from '../api/auth';

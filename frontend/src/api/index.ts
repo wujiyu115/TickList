@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { message, Modal } from 'antd';
+import { message, modalApi } from '../utils/antdApp';
 import { getApiBaseUrl, isNativePlatform } from '../utils/platform';
 import { isBookmarked, removeBookmark, getCurrentPath } from '../utils/bookmarks';
 
@@ -125,7 +125,7 @@ api.interceptors.response.use(
     } else if (error.response?.status === 404) {
       const currentPath = getCurrentPath();
       if (isBookmarked(currentPath)) {
-        Modal.confirm({
+        modalApi.confirm({
           title: '资源不存在',
           content: '当前收藏的页面对应资源已不存在，是否删除该收藏？',
           okText: '删除收藏',

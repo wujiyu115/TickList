@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Checkbox, Dropdown, Input, message } from 'antd';
+import { Checkbox, Dropdown, Input } from 'antd';
+import { message } from '../utils/antdApp';
 import { CaretDownOutlined, CaretRightOutlined, ClockCircleOutlined, HolderOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Radio, Select, Space, message } from 'antd';
+import { Modal, Radio, Select, Space } from 'antd';
+import { message } from '../utils/antdApp';
 import { TaskList } from '../types';
 import { deleteList, getListTaskCount } from '../api/list';
 

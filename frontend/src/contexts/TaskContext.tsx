@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { Task } from '../types';
 import { getTasks, createTask, updateTask, deleteTask as deleteTaskApi, restoreTask as restoreTaskApi, permanentDeleteTask as permanentDeleteTaskApi } from '../api/task';
-import { message } from 'antd';
+import { message } from '../utils/antdApp';
 import { scheduleTaskNotification, cancelTaskNotification } from '../services/notificationService';
 
 interface TaskContextType {

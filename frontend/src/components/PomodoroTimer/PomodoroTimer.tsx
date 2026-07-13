@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { message, Segmented, Empty, Modal, List as AntList, Input } from 'antd';
+import { Segmented, Empty, Modal, List as AntList, Input } from 'antd';
+import { message } from '../../utils/antdApp';
 import { RightOutlined, PlusOutlined, SearchOutlined, ClockCircleFilled, FieldTimeOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
 import { TimerMode } from '../../hooks/useTimer';

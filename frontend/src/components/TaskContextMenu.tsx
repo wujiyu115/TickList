@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, message, Input, Button, Popover, Checkbox, Modal, DatePicker } from 'antd';
+import { Menu, Input, Button, Popover, Checkbox, Modal, DatePicker } from 'antd';
+import { message, modalApi } from '../utils/antdApp';
 import dayjs from 'dayjs';
 import {
   CalendarOutlined,
@@ -633,7 +634,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
           onClose();
           break;
         case 'permanent-delete':
-          Modal.confirm({
+          modalApi.confirm({
             title: '永久删除',
             content: '确定永久删除此任务？此操作无法撤销。',
             okText: '确定',

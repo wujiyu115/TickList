@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Layout, Avatar, Dropdown, Space, Button, message, Modal, Input } from 'antd';
+import { Layout, Avatar, Dropdown, Space, Button, Input } from 'antd';
+import { message, modalApi } from '../utils/antdApp';
 import { UserOutlined, LogoutOutlined, LockOutlined, KeyOutlined, CrownOutlined, MenuOutlined, FullscreenOutlined, FullscreenExitOutlined, RobotOutlined, StarOutlined, StarFilled, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { MenuProps } from 'antd';
@@ -49,7 +50,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onMenuClick }) =>
       // 从路径中提取有意义的部分作为默认标题
       const pathOnly = currentPath.split('?')[0].replace(/^\//, '');
       const defaultTitle = pathOnly || 'Home';
-      Modal.confirm({
+      modalApi.confirm({
         title: '收藏当前页面',
         content: (
           <Input
@@ -134,7 +135,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onMenuClick }) =>
 
     // iOS 不支持 Fullscreen API，引导用户添加到主屏幕
     if (isIOS()) {
-      Modal.info({
+      modalApi.info({
         title: '在 iOS 上实现全屏',
         content: (
           <div>

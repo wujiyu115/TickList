@@ -12,12 +12,12 @@ import {
   Empty,
   Space,
   Dropdown,
-  message,
   Popconfirm,
   Typography,
   Tooltip,
   Progress,
 } from 'antd';
+import { message, modalApi } from '../utils/antdApp';
 import {
   PlusOutlined,
   PushpinOutlined,
@@ -141,7 +141,7 @@ const CounterPage: React.FC = () => {
     try {
       const result = await incrementCounter(counter.id);
       if (result.reached_target) {
-        Modal.confirm({
+        modalApi.confirm({
           title: '🎉 恭喜达标！',
           content: `「${counter.title}」已达到目标值 ${counter.target_value}！你想要：`,
           okText: '标记为已完成',
@@ -167,7 +167,7 @@ const CounterPage: React.FC = () => {
     try {
       const result = await decrementCounter(counter.id);
       if (result.reached_target) {
-        Modal.confirm({
+        modalApi.confirm({
           title: '🎉 恭喜达标！',
           content: `「${counter.title}」已达到目标值 ${counter.target_value}！你想要：`,
           okText: '标记为已完成',

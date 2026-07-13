@@ -5,11 +5,10 @@ import {
   Empty,
   Input,
   Button,
-  Modal,
-  message,
   Dropdown,
 } from 'antd';
 import type { MenuProps } from 'antd';
+import { message, modalApi } from '../utils/antdApp';
 import {
   PushpinOutlined,
   PushpinFilled,
@@ -160,7 +159,7 @@ const NotePage: React.FC = () => {
 
   // 删除笔记（带 Modal 确认）
   const handleDeleteConfirm = () => {
-    Modal.confirm({
+    modalApi.confirm({
       title: '确定删除这个笔记吗？',
       okText: '确定',
       cancelText: '取消',

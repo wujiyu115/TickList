@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Form, Input, Button, Divider, message } from 'antd';
+import { Card, Typography, Form, Input, Button, Divider } from 'antd';
+import { message } from '../utils/antdApp';
 import { UserOutlined, LockOutlined, KeyOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import { startAuthentication, browserSupportsWebAuthn } from '@simplewebauthn/browser';

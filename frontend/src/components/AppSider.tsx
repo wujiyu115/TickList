@@ -27,7 +27,8 @@ import {
   InboxOutlined as ArchiveOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { Dropdown, Modal, Input, Select, message, Button, Radio, Checkbox, Tabs } from 'antd';
+import { Dropdown, Modal, Input, Select, Button, Radio, Checkbox, Tabs } from 'antd';
+import { message, modalApi } from '../utils/antdApp';
 import type { MenuProps, RadioChangeEvent } from 'antd';
 import { User, TaskList, Tag, Filter, FilterConditions, NoteFolder, Note } from '../types';
 import { getLists, createList, deleteList, updateList, reorderLists } from '../api/list';
@@ -322,7 +323,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
   
   // 删除笔记文件夹
   const handleDeleteNoteFolder = async (folderId: string) => {
-    Modal.confirm({
+    modalApi.confirm({
       title: '删除文件夹',
       content: '确定删除该文件夹吗？文件夹下的笔记不会被删除。',
       okText: '删除',
@@ -348,7 +349,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
   
   // 重命名笔记文件夹
   const handleRenameNoteFolder = async (folder: NoteFolder) => {
-    Modal.confirm({
+    modalApi.confirm({
       title: '重命名文件夹',
       content: (
         <Input
@@ -663,7 +664,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
       label: '删除',
       danger: true,
       onClick: () => {
-        Modal.confirm({
+        modalApi.confirm({
           title: '删除标签',
           content: `确定删除标签「${tag.name}」吗？`,
           okText: '删除',
@@ -787,7 +788,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
 
   // 删除过滤器
   const handleDeleteFilter = (filter: Filter) => {
-    Modal.confirm({
+    modalApi.confirm({
       title: '删除过滤器',
       content: `确定删除过滤器「${filter.name}」吗？`,
       okText: '删除',

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Tag, Button, Modal, Input, Select, Form, message, Space } from 'antd';
+import { Table, Tag, Button, Modal, Input, Select, Form, Space } from 'antd';
+import { message } from '../../utils/antdApp';
 import { PlusOutlined, LockOutlined, StopOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { User } from '../../types';
