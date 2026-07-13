@@ -164,6 +164,20 @@ html[data-theme='dark'] {
   backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
   -webkit-backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
 }
+/* 移动端侧栏在 Drawer 内，被 portal 到 body → 脱离 .main-layout，背后没有景深
+   光晕，磨砂读作扁平深色，与桌面侧栏（透出 .main-layout 光晕）不一致。给抽屉内
+   .app-sider 铺同款景深底色+主色光晕，让 icon-bar/secondary-panel 磨砂透出，
+   与桌面观感一致。（浮层带 .css-var 作用域，--ant-color-* 可解析成所选主题本色。） */
+.mobile-sider-drawer .app-sider {
+  background-color: var(--ant-color-bg-layout);
+  background-image:
+    radial-gradient(46% 40% at 88% 0%,
+      color-mix(in srgb, var(--ant-color-primary) var(--tl-glow-a), transparent), transparent 66%),
+    radial-gradient(44% 44% at 0% 18%,
+      color-mix(in srgb, var(--ant-color-primary) var(--tl-glow-b), transparent), transparent 68%),
+    radial-gradient(54% 48% at 24% 100%,
+      color-mix(in srgb, var(--ant-color-primary) var(--tl-glow-c), transparent), transparent 72%);
+}
 /* 任务详情面板：透明透出景深底色，与左侧列表区同一连续表面，
    仅用左侧细线分隔。不给独立磨砂矩形，避免上下出现硬边不融合。 */
 .task-page-right {
