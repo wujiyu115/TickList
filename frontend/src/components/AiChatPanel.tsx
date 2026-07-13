@@ -9,6 +9,12 @@ import './AiChatPanel.less';
 
 const { Text } = Typography;
 
+const AI_SUGGESTIONS = [
+  '帮我创建一个明天截止的任务：写周报',
+  '今天有哪些待办？',
+  '新建一个到春节的倒数日',
+];
+
 const TOOL_LABEL_MAP: Record<string, string> = {
   create_task: '创建任务', update_task: '更新任务', delete_task: '删除任务', list_tasks: '查询任务',
   create_note: '创建笔记', update_note: '更新笔记', delete_note: '删除笔记', list_notes: '查询笔记',
@@ -295,6 +301,25 @@ const AiChatPanel: React.FC = () => {
       </div>
 
       <div className="ai-messages">
+        {messages.length === 0 && !loading && (
+          <div className="ai-empty">
+            <div className="ai-empty-icon"><RobotOutlined /></div>
+            <div className="ai-empty-title">你好，我是 AI 助手</div>
+            <div className="ai-empty-subtitle">用一句话管理任务、笔记、倒数日和计数器</div>
+            <div className="ai-empty-suggestions">
+              {AI_SUGGESTIONS.map(s => (
+                <button
+                  key={s}
+                  type="button"
+                  className="ai-suggestion-chip"
+                  onClick={() => setInputValue(s)}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {messages.map((msg, idx) => (
           <div className={`ai-message ai-message-${msg.role}`} key={idx}>
             <div className="ai-message-icon">

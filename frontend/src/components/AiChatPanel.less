@@ -17,6 +17,74 @@
     padding: 12px 0;
   }
 
+  // 空状态欢迎：主色发光机器人 + 问候 + 建议 chips
+  .ai-empty {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    gap: 8px;
+
+    .ai-empty-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      color: var(--ant-color-primary);
+      background: var(--ant-color-primary-bg);
+      box-shadow: 0 0 0 8px color-mix(in srgb, var(--ant-color-primary) 8%, transparent);
+      margin-bottom: 6px;
+    }
+
+    .ai-empty-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ant-color-text);
+    }
+
+    .ai-empty-subtitle {
+      font-size: 13px;
+      color: var(--ant-color-text-tertiary);
+      max-width: 260px;
+      line-height: 1.6;
+    }
+
+    .ai-empty-suggestions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    .ai-suggestion-chip {
+      border: 1px solid var(--ant-color-border);
+      background: var(--ant-color-bg-text-hover);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--ant-color-text-secondary);
+      cursor: pointer;
+      text-align: left;
+      line-height: 1.5;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+
+      &:hover,
+      &:active {
+        border-color: var(--ant-color-primary);
+        color: var(--ant-color-primary);
+        background: var(--ant-color-primary-bg);
+      }
+    }
+  }
+
   .ai-message {
     display: flex;
     gap: 10px;
@@ -231,8 +299,29 @@
 
 // Mobile drawer
 .ai-chat-drawer {
+  // 圆角与其他页面卡片统一（--tl-card-radius），并裁切内层玻璃底
   .ant-drawer-content-wrapper {
-    border-radius: 12px 12px 0 0;
+    border-radius: var(--tl-card-radius) var(--tl-card-radius) 0 0;
+    overflow: hidden;
+  }
+
+  .ant-drawer-content {
+    border-radius: var(--tl-card-radius) var(--tl-card-radius) 0 0;
+  }
+
+  // 顶部抓手条：iOS 底部弹层观感
+  .ant-drawer-content::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--ant-color-text-quaternary);
+    z-index: 2;
+    pointer-events: none;
   }
 
   .ant-drawer-body {
@@ -242,6 +331,11 @@
   .ai-chat-panel {
     height: 100%;
     padding: 0 12px;
+
+    // 给顶部抓手条留出空间
+    .ai-chat-header {
+      padding-top: 16px;
+    }
 
     .ai-message {
       max-width: 95%;
