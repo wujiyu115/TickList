@@ -155,6 +155,34 @@ html[data-theme='dark'] {
   background: var(--tl-glass-card) !important;
 }
 
+/* ---------- 4.1 仅 iOS 兜底：卡片补不透明底，防 WKWebView 发白 ----------
+   桌面 Chrome/Safari、Android 全部走上面的通透玻璃，效果不变。
+   iOS 的 WKWebView 对「嵌套 backdrop-filter + 透明层叠」采样背景会取到文档白底，
+   把透明白膜卡片磨成纯白（深色主题浅字则看不见）。@supports(-webkit-touch-callout)
+   只在 iOS 为真 → 只给 iOS 的这些卡片叠一层随主题的不透明底（不用 color-mix），
+   膜观感保留，底永远是实色，不再依赖 backdrop 采样。 */
+@supports (-webkit-touch-callout: none) {
+  .ant-card:not(.tl-no-glass),
+  .countdown-card,
+  .counter-card,
+  .settings-page .theme-card,
+  .settings-page .data-action-card,
+  .ai-page .action-card,
+  .ai-page .ai-pending-disambiguation,
+  .pomodoro-right .stat-card,
+  .pomodoro-right .stat-card.stat-card-purple,
+  .pomodoro-right .stat-card.stat-card-blue,
+  .counter-detail-page .counter-section .info-area,
+  .counter-detail-page .counter-section .note-area,
+  .countdown-card.pinned,
+  .counter-card.pinned,
+  .counter-card.completed {
+    background:
+      linear-gradient(0deg, var(--tl-glass-card), var(--tl-glass-card)),
+      var(--ant-color-bg-elevated, #1f1f1f) !important;
+  }
+}
+
 /* ---------- 4.5 外壳半透明玻璃：侧栏透出景深底色 ----------
    用白色磨砂薄膜（--tl-glass）+ backdrop-filter，浮在 .main-layout 的
    景深底色之上 = 通透玻璃；不用 bg-container（中性灰会发闷）。 */
