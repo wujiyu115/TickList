@@ -3,12 +3,19 @@
   overflow: auto;
   padding: 0;
 
+  // 添加任务：与下方任务卡同款磨砂卡片（等宽、等高、圆角），"+"号在框内
   .add-task-inline {
     display: flex;
     align-items: center;
-    padding: 12px 20px;
-    border-bottom: 1px solid var(--ant-color-border);
     gap: 8px;
+    margin: 8px 16px;
+    padding: 0 12px;
+    min-height: 44px;
+    border: 1px solid var(--tl-edge-soft);
+    border-radius: 12px;
+    background-color: var(--tl-glass-card);
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
 
     .add-icon {
       color: var(--ant-color-text-tertiary);
@@ -18,15 +25,24 @@
     .add-input {
       flex: 1;
       font-size: 14px;
-      
+      padding: 0;
+
+      // 外层已是磨砂卡片，输入框自身背景清掉，避免双层背景
+      &.ant-input,
+      &.ant-input:hover,
+      &.ant-input:focus {
+        background: transparent !important;
+      }
+
       &::placeholder {
         color: var(--ant-color-text-tertiary);
       }
     }
   }
 
+  // 列表整体左右等距留白，任务卡在其中居中浮动（左右间隙对等）
   .task-groups {
-    padding: 8px 0;
+    padding: 4px 16px 8px;
   }
 
   .task-group {
@@ -35,7 +51,7 @@
     .task-group-header {
       display: flex;
       align-items: center;
-      padding: 8px 20px;
+      padding: 8px 2px;
       cursor: pointer;
       user-select: none;
       transition: background-color 0.2s;
@@ -95,7 +111,7 @@
       }
 
       .empty-group {
-        padding: 16px 20px 16px 40px;
+        padding: 12px 2px 12px 22px;
         color: var(--ant-color-text-quaternary);
         font-size: 13px;
       }

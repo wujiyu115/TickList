@@ -152,6 +152,11 @@ html[data-theme='dark'] {
   backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
   -webkit-backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
 }
+/* 任务详情面板：透明透出景深底色，与左侧列表区同一连续表面，
+   仅用左侧细线分隔。不给独立磨砂矩形，避免上下出现硬边不融合。 */
+.task-page-right {
+  background: transparent !important;
+}
 /* 顶栏同样磨砂透出 */
 .app-header {
   background: var(--tl-glass) !important;

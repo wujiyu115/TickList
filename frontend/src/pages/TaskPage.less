@@ -16,8 +16,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--ant-color-border);
+    padding: 16px;
+    border-bottom: 1px solid var(--tl-edge-soft, var(--ant-color-border));
     flex-shrink: 0;
 
     .toolbar-left {
@@ -56,11 +56,11 @@
 
   .task-page-right {
     // PC 端任务详情面板：默认更宽，大屏进一步放大，超大屏封顶
+    // 背景由 glass.less 统一处理成磨砂玻璃（透出景深底色），此处不写死实色
     width: 520px;
     flex-shrink: 0;
-    border-left: 1px solid var(--ant-color-border);
+    border-left: 1px solid var(--tl-edge-soft, var(--ant-color-border-secondary));
     overflow: auto;
-    background: var(--ant-color-bg-layout);
 
     @media (min-width: 1600px) {
       width: 600px;
@@ -115,14 +115,14 @@
   display: flex;
   flex-direction: column;
   padding: 16px 20px;
-  background: var(--ant-color-bg-container);
-  
+  background: transparent;
+
   .editor-topbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding-bottom: 12px;
-    border-bottom: 1px solid var(--ant-color-border);
+    border-bottom: 1px solid var(--tl-edge-soft, var(--ant-color-border-secondary));
     margin-bottom: 16px;
     
     .topbar-left {
@@ -171,7 +171,14 @@
       font-weight: 600;
       padding: 0;
       line-height: 1.4;
-      
+
+      // 标题为纯文本样式，清掉 §4.8 给 ant-input 的磨砂底，避免出现独立输入框背景
+      &.ant-input,
+      &.ant-input:hover,
+      &.ant-input:focus {
+        background: transparent !important;
+      }
+
       &::placeholder {
         color: var(--ant-color-text-quaternary);
         font-weight: normal;
@@ -327,8 +334,7 @@
     align-items: center;
     padding: 8px 0;
     gap: 12px;
-    border-bottom: 1px solid var(--ant-color-bg-text-hover);
-    
+
     .field-label {
       color: var(--ant-color-text-tertiary);
       font-size: 13px;
@@ -353,8 +359,7 @@
       align-items: center;
       gap: 10px;
       padding: 10px 0;
-      border-bottom: 1px solid var(--ant-color-bg-text-hover);
-      
+
       .subtask-title {
         flex: 1;
         font-size: 14px;
@@ -427,8 +432,8 @@
 
   .editor-toolbar {
     flex-shrink: 0;
-    border-top: 1px solid var(--ant-color-border-secondary);
-    background: var(--ant-color-bg-container);
+    border-top: 1px solid var(--tl-edge-soft, var(--ant-color-border-secondary));
+    background: transparent;
     margin: 0 -20px;
     padding: 0;
 
@@ -477,7 +482,6 @@
         display: flex;
         flex-direction: column;
         padding: 10px 0;
-        border-bottom: 1px solid var(--ant-color-bg-text-hover);
         font-size: 14px;
 
         .checklist-item-main {
