@@ -70,6 +70,7 @@ const THEME_OPTIONS = [
   { key: 'purple', name: '薰衣紫', color: '#722ed1', isDark: false },
   { key: 'lavender', name: '淡紫', color: '#b37feb', isDark: false },
   { key: 'minimal', name: '极简灰', color: '#8c8c8c', isDark: false },
+  { key: 'spaceglasslight', name: '空间玻璃', color: '#0ca5c0', isDark: false },
   // 深色主题
   { key: 'dark', name: '暗夜黑', color: '#1677ff', isDark: true },
   { key: 'midnight', name: '午夜蓝', color: '#4096ff', isDark: true },

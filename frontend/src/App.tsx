@@ -48,6 +48,19 @@ const THEME_COLORS: Record<string, ThemeConfig> = {
   purple: { color: '#722ed1', isDark: false },
   lavender: { color: '#b37feb', isDark: false },
   minimal: { color: '#8c8c8c', isDark: false },
+  // 空间玻璃青（浅色）：与深色 spaceglass 同色系电光青，冷白磨砂底
+  spaceglasslight: {
+    color: '#0ca5c0',
+    isDark: false,
+    token: {
+      colorBgContainer: '#ffffff',
+      colorBgElevated: '#ffffff',
+      colorBgLayout: '#e8f1f5',
+      colorBgSpotlight: '#d6eaf0',
+      colorBorderSecondary: '#dce9ee',
+      colorBorder: '#c9dee5',
+    },
+  },
   // 深色主题（20 种）
   dark: { color: '#1677ff', isDark: true },
   midnight: {

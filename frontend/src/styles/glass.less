@@ -95,6 +95,8 @@ html[data-theme='dark'] {
 .ant-menu-submenu-popup > .ant-menu,
 .ant-notification-notice,
 .ant-message-notice-content,
+/* 桌面端 AI 助手浮动面板：原为实色 bg-container（近黑方块），纳入统一悬浮层玻璃底。 */
+.ai-chat-floating,
 .ant-tooltip-inner {
   /* 直接在浮层元素上引用 antd 变量：这些 var() 在“使用处”解析，
      而浮层带 .css-var-* 作用域 → --ant-color-* 可解析成所选主题本色。
