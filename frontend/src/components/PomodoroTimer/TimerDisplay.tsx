@@ -42,7 +42,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
   // 获取进度条颜色
   const getProgressColor = (): string => {
     if (mode === 'stopwatch') {
-      return phase === 'idle' ? '#e8e8e8' : '#4f46e5';
+      return phase === 'idle' ? 'var(--ant-color-fill-secondary)' : '#4f46e5';
     }
     switch (phase) {
       case 'work':
@@ -50,7 +50,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
       case 'break':
         return '#52c41a';
       default:
-        return '#e8e8e8'; // idle 状态显示灰色轨道
+        return 'var(--ant-color-fill-secondary)'; // idle 状态显示灰色轨道
     }
   };
 
@@ -65,7 +65,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
         size={300}
         strokeWidth={6}
         strokeColor={getProgressColor()}
-        trailColor="#e8e8e8"
+        trailColor="var(--ant-color-fill-secondary)"
         format={() => (
           <div className="timer-text">
             <span className="time-value">{formatTime(displayTime)}</span>

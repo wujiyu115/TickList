@@ -23,18 +23,18 @@
       flex: 1;
       font-size: 24px;
       font-weight: 600;
-      color: #262626;
+      color: var(--ant-color-text);
 
       &:hover {
-        background-color: #fafafa;
+        background-color: var(--ant-color-fill-quaternary);
       }
 
       &:focus {
-        background-color: #fff;
+        background-color: var(--ant-color-bg-container);
       }
 
       &::placeholder {
-        color: #bfbfbf;
+        color: var(--ant-color-text-quaternary);
       }
     }
 
@@ -45,17 +45,17 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #595959;
+      color: var(--ant-color-text-secondary);
       font-size: 20px;
-      border: 1px solid #d9d9d9;
+      border: 1px solid var(--ant-color-border);
       border-radius: 8px;
-      background: #fafafa;
+      background: var(--ant-color-fill-quaternary);
       transition: all 0.2s;
 
       &:hover {
         color: var(--ant-color-primary);
         border-color: var(--ant-color-primary);
-        background: #e6f4ff;
+        background: var(--ant-color-primary-bg);
       }
     }
   }
@@ -65,7 +65,7 @@
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    border: 1px solid #f0f0f0;
+    border: 1px solid var(--ant-color-border-secondary);
     border-radius: 8px;
   }
 }

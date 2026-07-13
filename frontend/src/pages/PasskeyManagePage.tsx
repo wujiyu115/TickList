@@ -85,7 +85,7 @@ const PasskeyManagePage: React.FC = () => {
           type="text"
           icon={<ArrowLeftOutlined />}
           onClick={() => navigate(-1)}
-          style={{ position: 'absolute', top: 16, left: 16, color: '#666' }}
+          style={{ position: 'absolute', top: 16, left: 16, color: 'var(--ant-color-text-secondary)' }}
         >
           返回
         </Button>
@@ -108,7 +108,7 @@ const PasskeyManagePage: React.FC = () => {
               alignItems: 'center', 
               marginBottom: 16 
             }}>
-              <span style={{ color: '#666', fontSize: 14 }}>
+              <span style={{ color: 'var(--ant-color-text-secondary)', fontSize: 14 }}>
                 绑定 Passkey 后可使用指纹、面容或安全密钥免密登录
               </span>
               <Button

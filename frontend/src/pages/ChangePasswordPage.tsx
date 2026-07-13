@@ -48,7 +48,7 @@ const ChangePasswordPage: React.FC = () => {
           type="text"
           icon={<ArrowLeftOutlined />}
           onClick={() => navigate(-1)}
-          style={{ position: 'absolute', top: 16, left: 16, color: '#666' }}
+          style={{ position: 'absolute', top: 16, left: 16, color: 'var(--ant-color-text-secondary)' }}
         >
           返回
         </Button>

@@ -482,7 +482,7 @@ const CounterPage: React.FC = () => {
                   backgroundColor: c,
                   cursor: 'pointer',
                   marginRight: 8,
-                  border: selectedColor === c ? '2px solid #333' : '2px solid transparent',
+                  border: selectedColor === c ? '2px solid var(--ant-color-text)' : '2px solid transparent',
                   boxShadow: selectedColor === c ? '0 0 0 2px rgba(0,0,0,0.1)' : 'none',
                   transition: 'all 0.2s ease',
                 }}

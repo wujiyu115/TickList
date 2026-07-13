@@ -1266,7 +1266,7 @@ const SettingsPage: React.FC = () => {
         </Upload>
         <div className="import-hint">
           <p style={{ marginBottom: 8 }}>支持的文件格式：</p>
-          <ul style={{ margin: 0, paddingLeft: 20, color: '#666' }}>
+          <ul style={{ margin: 0, paddingLeft: 20, color: 'var(--ant-color-text-secondary)' }}>
             <li><strong>JSON</strong> - 本应用导出的数据文件</li>
             <li><strong>CSV</strong> - 滴答清单（TickTick/Dida）备份文件</li>
           </ul>

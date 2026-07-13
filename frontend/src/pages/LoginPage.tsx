@@ -119,7 +119,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
         {webauthnSupported && (
           <>
-            <Divider style={{ margin: '16px 0', color: '#999', fontSize: 12 }}>或</Divider>
+            <Divider style={{ margin: '16px 0', color: 'var(--ant-color-text-tertiary)', fontSize: 12 }}>或</Divider>
             <Button
               block
               icon={<KeyOutlined />}

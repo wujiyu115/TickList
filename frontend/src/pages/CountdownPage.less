@@ -40,7 +40,7 @@
       justify-content: center;
       align-items: center;
       height: 200px;
-      color: #999;
+      color: var(--ant-color-text-tertiary);
     }
   }
 
@@ -58,7 +58,7 @@
     }
 
     &.pinned {
-      background: linear-gradient(135deg, #fffbe6 0%, #fff 50%);
+      background: var(--ant-color-bg-container);
       border-left-color: #faad14;
 
       &::before {
@@ -172,7 +172,7 @@
     .card-note {
       margin-top: 12px;
       padding-top: 12px;
-      border-top: 1px dashed #f0f0f0;
+      border-top: 1px dashed var(--ant-color-border-secondary);
       
       .ant-typography {
         font-size: 12px;
@@ -199,7 +199,7 @@
       }
 
       &.selected {
-        border-color: #333;
+        border-color: var(--ant-color-text);
         box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
       }
     }

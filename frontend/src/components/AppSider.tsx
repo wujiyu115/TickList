@@ -1202,7 +1202,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
           </>
         ) : null}
         <span className="list-name" style={{ color: item.font_color || undefined }}>{item.name}</span>
-        {item.is_pinned && <PushpinOutlined style={{ fontSize: 12, color: '#8c8c8c', marginLeft: 4 }} />}
+        {item.is_pinned && <PushpinOutlined style={{ fontSize: 12, color: 'var(--ant-color-text-tertiary)', marginLeft: 4 }} />}
         {/* 文件夹 hover 操作按钮 - 只保留 "..." 菜单 */}
         {isFolder && (isFolderHovered || mobileMenuKey === `folder-${item.id}`) && (
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -2036,7 +2036,7 @@ const AppSider: React.FC<AppSiderProps> = ({ user, onNavigate, panelCollapsed = 
         {/* 名称输入 */}
         <div className="filter-field" style={{ marginBottom: 16 }}>
           <Input 
-            prefix={<FilterOutlined style={{ color: '#bfbfbf' }} />}
+            prefix={<FilterOutlined style={{ color: 'var(--ant-color-text-quaternary)' }} />}
             placeholder="名称" 
             value={filterName} 
             onChange={e => setFilterName(e.target.value)}

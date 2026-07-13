@@ -165,7 +165,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
         <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--tl-edge-soft, var(--ant-color-border-secondary))' }}>
           <Input
             placeholder="搜索"
-            prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+            prefix={<SearchOutlined style={{ color: 'var(--ant-color-text-quaternary)' }} />}
             value={moveSearchText}
             onChange={(e) => setMoveSearchText(e.target.value)}
             size="small"
@@ -248,7 +248,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
                 <RightOutlined 
                   style={{ 
                     fontSize: 10, 
-                    color: '#bfbfbf',
+                    color: 'var(--ant-color-text-quaternary)',
                     transform: isExpanded ? 'rotate(90deg)' : 'none',
                     transition: 'transform 0.2s',
                   }} 
@@ -300,7 +300,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
         <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--tl-edge-soft, var(--ant-color-border-secondary))' }}>
           <Input
             placeholder="输入标签"
-            prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+            prefix={<SearchOutlined style={{ color: 'var(--ant-color-text-quaternary)' }} />}
             value={tagSearchText}
             onChange={(e) => setTagSearchText(e.target.value)}
             size="small"
@@ -532,7 +532,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
               <span>移动到</span>
-              <RightOutlined style={{ fontSize: 10, color: '#bfbfbf' }} />
+              <RightOutlined style={{ fontSize: 10, color: 'var(--ant-color-text-quaternary)' }} />
             </div>
           </Popover>
         </div>
@@ -553,7 +553,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
               <span>标签</span>
-              <RightOutlined style={{ fontSize: 10, color: '#bfbfbf' }} />
+              <RightOutlined style={{ fontSize: 10, color: 'var(--ant-color-text-quaternary)' }} />
             </div>
           </Popover>
         </div>
@@ -696,7 +696,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ task, onClose, isTras
       <div>
         <Input
           placeholder="搜索任务"
-          prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+          prefix={<SearchOutlined style={{ color: 'var(--ant-color-text-quaternary)' }} />}
           value={parentSearchText}
           onChange={(e) => setParentSearchText(e.target.value)}
           size="small"

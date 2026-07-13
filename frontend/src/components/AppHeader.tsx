@@ -98,7 +98,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onMenuClick }) =>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minWidth: 180, maxWidth: 260 }}>
                 <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
                   <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
-                  <div style={{ fontSize: 11, color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.url}</div>
+                  <div style={{ fontSize: 11, color: 'var(--ant-color-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.url}</div>
                 </div>
                 <DeleteOutlined
                   style={{ marginLeft: 8, color: '#ff4d4f', fontSize: 12, flexShrink: 0 }}
