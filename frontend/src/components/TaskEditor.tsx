@@ -1124,7 +1124,7 @@ const TaskEditor: React.FC = () => {
               />
             ) : (
               <span className="subtask-title" onClick={() => handleSubtaskEdit(subtask)}>
-                {subtask.title || <span style={{ color: '#bbb' }}>未命名子任务</span>}
+                {subtask.title || <span style={{ color: 'var(--ant-color-text-quaternary)' }}>未命名子任务</span>}
               </span>
             )}
             {supportsHover ? (

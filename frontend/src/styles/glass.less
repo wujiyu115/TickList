@@ -110,6 +110,11 @@ html[data-theme='dark'] {
   -webkit-backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
   box-shadow: var(--tl-shadow) !important;
 }
+/* tooltip 底已随主题变（浅主题=浅霜），但 antd 默认字色恒为白（它假设 tooltip 恒深底）
+   → 浅主题下浅底白字看不清。字色改为跟随主题正文色。 */
+.ant-tooltip-inner {
+  color: var(--ant-color-text) !important;
+}
 /* 遮罩加轻模糊，强化"悬浮"景深 */
 .ant-modal-mask,
 .ant-drawer-mask,
