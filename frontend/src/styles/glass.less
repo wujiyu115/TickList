@@ -266,6 +266,12 @@ html[data-theme='dark'] {
 .ant-picker:not(.ant-picker-disabled):hover {
   background: var(--tl-glass-hover) !important;
 }
+/* 带前后缀的输入（Input.Password/带图标搜索框等）：外层 affix-wrapper 已是一层
+   白霜，内层 .ant-input 若再上霜会叠成"双层框"。内层置透明，只留外壳一层。 */
+.ant-input-affix-wrapper .ant-input,
+.ant-input-affix-wrapper .ant-input:hover {
+  background: transparent !important;
+}
 /* 表格/列表：容器与单元格透明，透出所在卡片玻璃；表头给一层薄霜区分 */
 .ant-table,
 .ant-table-tbody > tr > td,
