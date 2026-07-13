@@ -278,6 +278,26 @@ html[data-theme='dark'] {
   background: var(--tl-glass-card) !important;
 }
 
+/* ---------- 4.9 独立认证页（注册/改密/Passkey/服务器配置）：套用登录页同款玻璃 ----------
+   这些页面渲染在 MainLayout 之外，原为写死紫色渐变（#667eea→#764ba2），
+   不跟随主题也无磨砂。统一改成 .main-layout 同款主题底色 + 主色景深光晕，
+   内部 .ant-card 自动吃 §4 磨砂玻璃 → 与登录页/全站一致。桌面移动端通用。 */
+.auth-page.ant-layout {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100dvh;
+  padding: 24px;
+  background-color: var(--ant-color-bg-layout);
+  background-image:
+    radial-gradient(46% 40% at 88% 0%,
+      color-mix(in srgb, var(--ant-color-primary) var(--tl-glow-a), transparent), transparent 66%),
+    radial-gradient(44% 44% at 0% 18%,
+      color-mix(in srgb, var(--ant-color-primary) var(--tl-glow-b), transparent), transparent 68%),
+    radial-gradient(54% 48% at 24% 100%,
+      color-mix(in srgb, var(--ant-color-primary) var(--tl-glow-c), transparent), transparent 72%);
+}
+
 /* ---------- 5. 勾选框保持方形圆角（避免全局圆角 token 变成圆形） ---------- */
 .ant-checkbox .ant-checkbox-inner,
 .ant-checkbox-wrapper:hover .ant-checkbox-inner {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Form, Input, Button, Result, Spin } from 'antd';
+import { Card, Typography, Form, Input, Button, Result, Spin, Layout } from 'antd';
 import { message } from '../utils/antdApp';
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
@@ -53,13 +53,7 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100dvh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-    }}>
+    <Layout className="auth-page">
       {registerEnabled === null ? (
         <Spin size="large" />
       ) : !registerEnabled ? (
@@ -163,7 +157,7 @@ const RegisterPage: React.FC = () => {
         </div>
       </Card>
       )}
-    </div>
+    </Layout>
   );
 };
 

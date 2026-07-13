@@ -1,22 +1,7 @@
-/* 登录页：沿用全站空间玻璃——主题底色 + 随主色的景深光晕 + 磨砂玻璃卡片 */
-.login-page {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100dvh;
-  padding: 24px;
-  background-color: var(--ant-color-bg-layout);
-  background-image:
-    radial-gradient(46% 40% at 88% 0%,
-      color-mix(in srgb, var(--ant-color-primary) 18%, transparent), transparent 66%),
-    radial-gradient(44% 44% at 0% 18%,
-      color-mix(in srgb, var(--ant-color-primary) 8%, transparent), transparent 68%),
-    radial-gradient(54% 48% at 24% 100%,
-      color-mix(in srgb, var(--ant-color-primary) 10%, transparent), transparent 72%);
-
-  .login-card {
-    width: 90vw;
-    max-width: 400px;
-    text-align: center;
-  }
+/* 登录页：布局/景深光晕由 glass.less 的 .auth-page 统一提供（需 antd Layout 承载
+   css-var 作用域，主色/底色变量才能解析）。此处只定义登录卡片尺寸。 */
+.login-page .login-card {
+  width: 90vw;
+  max-width: 400px;
+  text-align: center;
 }

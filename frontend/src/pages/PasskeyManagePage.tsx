@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Button, List, Empty, Result, Spin } from 'antd';
+import { Card, Typography, Button, List, Empty, Result, Spin, Layout } from 'antd';
 import { message, modalApi } from '../utils/antdApp';
 import { ArrowLeftOutlined, KeyOutlined, PlusOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -74,13 +74,7 @@ const PasskeyManagePage: React.FC = () => {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100dvh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-    }}>
+    <Layout className="auth-page">
       <Card style={{ width: '90vw', maxWidth: 520, position: 'relative' }}>
         <Button
           type="text"
@@ -155,7 +149,7 @@ const PasskeyManagePage: React.FC = () => {
           </div>
         )}
       </Card>
-    </div>
+    </Layout>
   );
 };
 

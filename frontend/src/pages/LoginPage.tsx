@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Form, Input, Button, Divider } from 'antd';
+import { Card, Typography, Form, Input, Button, Divider, Layout } from 'antd';
 import { message } from '../utils/antdApp';
 import { UserOutlined, LockOutlined, KeyOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
@@ -73,7 +73,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="login-page">
+    <Layout className="auth-page login-page">
       <Card className="login-card">
         <Title level={2}>TickList</Title>
         <Paragraph>任务管理系统</Paragraph>
@@ -139,7 +139,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         </div>
         )}
       </Card>
-    </div>
+    </Layout>
   );
 };
 

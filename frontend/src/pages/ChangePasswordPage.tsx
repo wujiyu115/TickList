@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Typography, Form, Input, Button } from 'antd';
+import { Card, Typography, Form, Input, Button, Layout } from 'antd';
 import { message } from '../utils/antdApp';
 import { ArrowLeftOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -37,13 +37,7 @@ const ChangePasswordPage: React.FC = () => {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100dvh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-    }}>
+    <Layout className="auth-page">
       <Card style={{ width: '90vw', maxWidth: 420, position: 'relative' }}>
         <Button
           type="text"
@@ -126,7 +120,7 @@ const ChangePasswordPage: React.FC = () => {
           </Form.Item>
         </Form>
       </Card>
-    </div>
+    </Layout>
   );
 };
 

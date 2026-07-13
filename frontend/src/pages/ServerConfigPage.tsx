@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Card, Input, Button, Space, Typography, Alert } from 'antd';
+import { Card, Input, Button, Space, Typography, Alert, Layout } from 'antd';
 import { message } from '../utils/antdApp';
 import { CheckCircleOutlined, CloseCircleOutlined, ApiOutlined } from '@ant-design/icons';
 import {
@@ -112,16 +112,7 @@ const ServerConfigPage: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100dvh',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 16,
-        background: 'var(--ant-color-bg-layout)',
-      }}
-    >
+    <Layout className="auth-page">
       <Card style={{ width: '100%', maxWidth: 480 }} bordered>
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
           <div style={{ textAlign: 'center' }}>
@@ -195,7 +186,7 @@ const ServerConfigPage: React.FC = () => {
           </Space>
         </Space>
       </Card>
-    </div>
+    </Layout>
   );
 };
 
