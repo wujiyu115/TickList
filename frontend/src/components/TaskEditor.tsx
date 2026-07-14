@@ -444,7 +444,13 @@ const TaskEditor: React.FC = () => {
     const newItems = contentItems.filter((_, idx) => idx !== index);
     setContentItems(newItems);
     setContentText(newItems.map(item => item.text).join('\n'));
-    updateTaskData(selectedTask.id, { content: JSON.stringify(newItems) });
+    const json = JSON.stringify(newItems);
+    // 内容未变化则不落库（例如点开空占位项又直接离开，删掉的是未保存的空项）。
+    // 空数组等价于无内容（后端存 null/""），避免多发一次空 PUT。
+    const prevEmpty = !selectedTask.content || selectedTask.content === '[]';
+    if (!(newItems.length === 0 && prevEmpty) && json !== selectedTask.content) {
+      updateTaskData(selectedTask.id, { content: json });
+    }
   };
 
   // 检查事项行内编辑
@@ -1077,10 +1083,10 @@ const TaskEditor: React.FC = () => {
                   placeholder="回车添加下一项"
                   variant="borderless"
                   onFocus={() => {
-                    const newItems = [{ text: '', checked: false }];
-                    setContentItems(newItems);
+                    // 仅进入本地编辑态，不落库；真正输入内容后由 blur/回车 持久化，
+                    // 否则点一下空占位框就会误发一次 PUT（保存空项）。
+                    setContentItems([{ text: '', checked: false }]);
                     setContentText('');
-                    updateTaskData(selectedTask.id, { content: JSON.stringify(newItems) });
                     setEditingCheckIdx(0);
                     setEditingCheckText('');
                   }}
