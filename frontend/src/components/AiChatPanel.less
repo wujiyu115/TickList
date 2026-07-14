@@ -95,9 +95,15 @@
       flex-direction: row-reverse;
       margin-left: auto;
 
+      // 实色主色底 + 亮字：primary-bg 上的暗字在深色主题里对比太低看不清。
       .ai-message-content {
-        background: var(--ant-color-primary-bg);
+        background: var(--ant-color-primary);
         border-radius: 12px 12px 2px 12px;
+        color: var(--ant-color-text-light-solid);
+      }
+
+      .ai-message-text {
+        color: var(--ant-color-text-light-solid);
       }
     }
 
@@ -298,32 +304,8 @@
 }
 
 // Mobile drawer
+// 圆角/裁切/顶部抓手条已统一到 glass.less 的 .ant-drawer-bottom 全局规则。
 .ai-chat-drawer {
-  // 圆角与其他页面卡片统一（--tl-card-radius），并裁切内层玻璃底
-  .ant-drawer-content-wrapper {
-    border-radius: var(--tl-card-radius) var(--tl-card-radius) 0 0;
-    overflow: hidden;
-  }
-
-  .ant-drawer-content {
-    border-radius: var(--tl-card-radius) var(--tl-card-radius) 0 0;
-  }
-
-  // 顶部抓手条：iOS 底部弹层观感
-  .ant-drawer-content::before {
-    content: '';
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 36px;
-    height: 4px;
-    border-radius: 2px;
-    background: var(--ant-color-text-quaternary);
-    z-index: 2;
-    pointer-events: none;
-  }
-
   .ant-drawer-body {
     height: 100%;
   }
