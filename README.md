@@ -16,18 +16,16 @@
 | :---: | :---: |
 | <img src="img/task-mobile-light.png" width="260" /> | <img src="img/task-mobile-dark.png" width="260" /> |
 
-### 各功能界面（亮色 / 暗色）
+### 各功能界面（桌面 / 移动 × 亮色 / 暗色）
 
-| 界面 | 亮色 | 暗色 |
-| :---: | :---: | :---: |
-| 日历视图 | ![日历-亮色](img/calendar-desktop-light.png) | ![日历-暗色](img/calendar-desktop-dark.png) |
-| 番茄专注 | ![番茄-亮色](img/pomodoro-desktop-light.png) | ![番茄-暗色](img/pomodoro-desktop-dark.png) |
-| 计数器 | ![计数器-亮色](img/counter-desktop-light.png) | ![计数器-暗色](img/counter-desktop-dark.png) |
-| 倒数日 | ![倒数日-亮色](img/countdown-desktop-light.png) | ![倒数日-暗色](img/countdown-desktop-dark.png) |
-| 笔记 | ![笔记-亮色](img/note-desktop-light.png) | ![笔记-暗色](img/note-desktop-dark.png) |
-| 设置 | ![设置-亮色](img/settings-desktop-light.png) | ![设置-暗色](img/settings-desktop-dark.png) |
-
-> 移动端各界面截图见 [`img/`](img/) 目录（`*-mobile-light.png` / `*-mobile-dark.png`）。
+| 界面 | 桌面亮色 | 桌面暗色 | 移动亮色 | 移动暗色 |
+| :---: | :---: | :---: | :---: | :---: |
+| 日历视图 | ![日历-桌面亮](img/calendar-desktop-light.png) | ![日历-桌面暗](img/calendar-desktop-dark.png) | <img src="img/calendar-mobile-light.png" width="180" /> | <img src="img/calendar-mobile-dark.png" width="180" /> |
+| 番茄专注 | ![番茄-桌面亮](img/pomodoro-desktop-light.png) | ![番茄-桌面暗](img/pomodoro-desktop-dark.png) | <img src="img/pomodoro-mobile-light.png" width="180" /> | <img src="img/pomodoro-mobile-dark.png" width="180" /> |
+| 计数器 | ![计数器-桌面亮](img/counter-desktop-light.png) | ![计数器-桌面暗](img/counter-desktop-dark.png) | <img src="img/counter-mobile-light.png" width="180" /> | <img src="img/counter-mobile-dark.png" width="180" /> |
+| 倒数日 | ![倒数日-桌面亮](img/countdown-desktop-light.png) | ![倒数日-桌面暗](img/countdown-desktop-dark.png) | <img src="img/countdown-mobile-light.png" width="180" /> | <img src="img/countdown-mobile-dark.png" width="180" /> |
+| 笔记 | ![笔记-桌面亮](img/note-desktop-light.png) | ![笔记-桌面暗](img/note-desktop-dark.png) | <img src="img/note-mobile-light.png" width="180" /> | <img src="img/note-mobile-dark.png" width="180" /> |
+| 设置 | ![设置-桌面亮](img/settings-desktop-light.png) | ![设置-桌面暗](img/settings-desktop-dark.png) | <img src="img/settings-mobile-light.png" width="180" /> | <img src="img/settings-mobile-dark.png" width="180" /> |
 
 ## 功能特性
 
