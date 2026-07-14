@@ -411,7 +411,37 @@
   .ant-drawer-body {
     padding: 0 !important;
   }
-  
+
+  // 关闭按钮与下方图标列（52px 宽居中）水平对齐：去掉 header 横向内边距，
+  // 关闭按钮撑满 52px 并居中，glyph 落在 26px 中线上，与图标同列。
+  .ant-drawer-header {
+    padding: 8px 0;
+    border-bottom: none;
+  }
+  .ant-drawer-close {
+    width: 52px;
+    margin-inline-end: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    // hover 反馈：与 icon-item 一致的圆角高亮块，居中 44x44
+    .anticon {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      transition: background 0.2s, color 0.2s;
+    }
+    &:hover .anticon {
+      background: var(--ant-color-bg-text-hover);
+      color: var(--ant-color-text);
+    }
+  }
+
   .app-sider {
     height: 100%;
     

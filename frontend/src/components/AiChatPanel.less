@@ -3,12 +3,58 @@
   flex-direction: column;
   height: 100%;
   padding: 0 16px;
+  // 裸 DOM（header div、RobotOutlined 等）默认继承 #root 黑字，深色主题下看不见；
+  // 显式跟随主题正文色，让面板内所有非 antd 组件的文本/图标都可读。
+  color: var(--ant-color-text);
 
   .ai-chat-header {
     display: flex;
     align-items: center;
+    gap: 8px;
     padding: 12px 0;
     border-bottom: 1px solid var(--ant-color-border);
+
+    // 操作按钮统一圆角底板，跟随主题色
+    .ant-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--ant-color-fill-quaternary);
+      color: var(--ant-color-text-secondary);
+      transition: background 0.2s, color 0.2s;
+
+      &:hover {
+        background: var(--ant-color-fill-tertiary) !important;
+        color: var(--ant-color-text) !important;
+      }
+    }
+
+    // 新对话（+）：主题色底板 + 主色图标，向右挪一点与标题拉开距离
+    .ant-btn:first-of-type {
+      margin-left: 6px;
+      background: var(--ant-color-primary-bg);
+      color: var(--ant-color-primary);
+
+      &:hover {
+        background: var(--ant-color-primary-bg-hover) !important;
+        color: var(--ant-color-primary) !important;
+      }
+    }
+  }
+
+  // 头部机器人徽标：空状态大图标的迷你版，跟随主题色（不硬编码）
+  .ai-header-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--ant-color-primary);
+    background: var(--ant-color-primary-bg);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--ant-color-primary) 8%, transparent);
+    flex-shrink: 0;
   }
 
   .ai-messages {
@@ -258,7 +304,6 @@
     display: flex;
     gap: 8px;
     padding: 10px 0;
-    border-top: 1px solid var(--ant-color-border);
     align-items: center;
 
     .ai-input {

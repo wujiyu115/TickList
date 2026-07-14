@@ -290,14 +290,12 @@ const AiChatPanel: React.FC = () => {
   const chatContent = (
     <div className="ai-chat-panel">
       <div className="ai-chat-header">
-        <RobotOutlined style={{ fontSize: 18, marginRight: 8 }} />
+        <span className="ai-header-icon"><RobotOutlined /></span>
         <Text strong style={{ fontSize: 15 }}>AI 助手</Text>
         <Tooltip title="新对话">
-          <Button type="text" icon={<PlusOutlined />} size="small" onClick={newConversation} style={{ marginLeft: 8 }} />
+          <Button type="text" icon={<PlusOutlined />} size="small" onClick={newConversation} />
         </Tooltip>
-        {!isMobile && (
-          <Button type="text" icon={<CloseOutlined />} size="small" onClick={closePanel} style={{ marginLeft: 'auto' }} />
-        )}
+        <Button type="text" icon={<CloseOutlined />} size="small" onClick={closePanel} style={{ marginLeft: 'auto' }} />
       </div>
 
       <div className="ai-messages">
@@ -376,6 +374,7 @@ const AiChatPanel: React.FC = () => {
         placement="bottom"
         height="85vh"
         className="ai-chat-drawer"
+        closable={false}
         styles={{ body: { padding: 0 } }}
         destroyOnClose={false}
       >
