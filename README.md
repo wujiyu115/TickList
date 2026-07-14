@@ -2,6 +2,33 @@
 
 基于 FastAPI + React + TypeScript 的全功能任务管理系统，支持多级嵌套任务、番茄专注、AI 助手、日历视图、看板视图、笔记、计数器、多端同步等功能。
 
+## 界面预览
+
+采用「空间玻璃」视觉风格，支持亮色 / 暗色主题，桌面端与移动端自适应。
+
+### 任务主界面
+
+| 桌面端（亮色） | 桌面端（暗色） |
+| :---: | :---: |
+| ![任务-桌面-亮色](img/task-desktop-light.png) | ![任务-桌面-暗色](img/task-desktop-dark.png) |
+
+| 移动端（亮色） | 移动端（暗色） |
+| :---: | :---: |
+| <img src="img/task-mobile-light.png" width="260" /> | <img src="img/task-mobile-dark.png" width="260" /> |
+
+### 各功能界面（亮色 / 暗色）
+
+| 界面 | 亮色 | 暗色 |
+| :---: | :---: | :---: |
+| 日历视图 | ![日历-亮色](img/calendar-desktop-light.png) | ![日历-暗色](img/calendar-desktop-dark.png) |
+| 番茄专注 | ![番茄-亮色](img/pomodoro-desktop-light.png) | ![番茄-暗色](img/pomodoro-desktop-dark.png) |
+| 计数器 | ![计数器-亮色](img/counter-desktop-light.png) | ![计数器-暗色](img/counter-desktop-dark.png) |
+| 倒数日 | ![倒数日-亮色](img/countdown-desktop-light.png) | ![倒数日-暗色](img/countdown-desktop-dark.png) |
+| 笔记 | ![笔记-亮色](img/note-desktop-light.png) | ![笔记-暗色](img/note-desktop-dark.png) |
+| 设置 | ![设置-亮色](img/settings-desktop-light.png) | ![设置-暗色](img/settings-desktop-dark.png) |
+
+> 移动端各界面截图见 [`img/`](img/) 目录（`*-mobile-light.png` / `*-mobile-dark.png`）。
+
 ## 功能特性
 
 ### 任务管理
