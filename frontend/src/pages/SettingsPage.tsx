@@ -5,8 +5,7 @@ import {
   InputNumber, 
   Radio, 
   Button, 
-  Upload, 
-  message, 
+  Upload,
   Modal,
   Spin,
   Card,
@@ -17,6 +16,9 @@ import {
   Popconfirm,
   Tooltip,
 } from 'antd';
+// 用主题化 message（App.useApp 桥接），静态 antd message 在 ConfigProvider 外
+// 拿不到主题 token，深色主题下浮层是暗底黑字看不清。
+import { message } from '../utils/antdApp';
 import {
   BgColorsOutlined,
   SettingOutlined,
