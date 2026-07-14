@@ -33,7 +33,7 @@ const StatisticsPage: React.FC = () => {
 
   return (
     <div className="statistics-page">
-      <Row gutter={16}>
+      <Row gutter={[16, 16]}>
         <Col xs={12} sm={12} md={6}>
           <Card>
             <Statistic
