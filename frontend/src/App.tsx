@@ -4,6 +4,7 @@ import { App as AntApp, ConfigProvider, theme as antdTheme, Spin } from 'antd';
 import { message, AntdAppBridge } from './utils/antdApp';
 import MainLayout from './layouts/MainLayout';
 import LoginPage from './pages/LoginPage';
+import TitleBar from './components/TitleBar';
 
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const ChangePasswordPage = lazy(() => import('./pages/ChangePasswordPage'));
@@ -275,6 +276,8 @@ const App: React.FC = () => {
       <ThemeContext.Provider value={{ primaryColor, isDark, setTheme }}>
         <AntApp component={false}>
         <AntdAppBridge />
+        <TitleBar primaryColor={primaryColor} isDark={isDark} />
+        <div className="app-content">
         <FocusProvider>
         <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}><Spin size="large" /></div>}>
         <Routes>
@@ -335,6 +338,7 @@ const App: React.FC = () => {
         </Routes>
         </Suspense>
         </FocusProvider>
+        </div>
         </AntApp>
       </ThemeContext.Provider>
     </ConfigProvider>
