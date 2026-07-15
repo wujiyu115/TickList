@@ -8,7 +8,7 @@ import {
   setApiBaseUrl,
   clearApiBaseUrl,
   testApiHealth,
-  isNativePlatform,
+  usesRemoteServer,
   normalizeApiUrl,
 } from '../utils/platform';
 
@@ -37,7 +37,7 @@ const ServerConfigPage: React.FC = () => {
 
   // Web 端不需要配置页
   useEffect(() => {
-    if (!isNativePlatform()) {
+    if (!usesRemoteServer()) {
       navigate('/', { replace: true });
       return;
     }

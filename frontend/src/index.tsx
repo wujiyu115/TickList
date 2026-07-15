@@ -4,13 +4,13 @@ import { BrowserRouter, HashRouter } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import App from './App';
-import { isNativePlatform } from './utils/platform';
+import { usesRemoteServer } from './utils/platform';
 import './index.less';
 import './styles/glass.less';
 
-// Native 端（Capacitor iOS/Android）使用 HashRouter，因为内置协议不支持 history 模式
+// Native（Capacitor iOS/Android）/ 桌面（Tauri）端使用 HashRouter，因为内置协议不支持 history 模式
 // Web 端保留 BrowserRouter 以维持现有路由与分享行为
-const Router = isNativePlatform() ? HashRouter : BrowserRouter;
+const Router = usesRemoteServer() ? HashRouter : BrowserRouter;
 
 
 export const API_BASE_URL = process.env.NODE_ENV === 'development' 

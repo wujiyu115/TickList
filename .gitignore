@@ -25,6 +25,10 @@ node_modules/
 frontend/dist/
 .cache/
 
+# Tauri 桌面端（Rust 构建产物 / 自动生成，Cargo.lock 保留提交）
+frontend/src-tauri/target/
+frontend/src-tauri/gen/
+
 # ===================
 # IDE / 编辑器
 # ===================

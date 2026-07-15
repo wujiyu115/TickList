@@ -2,7 +2,7 @@
  * 平台判断与 API 服务器地址管理
  *
  * - Web 端：baseURL 固定为相对路径 '/api'
- * - iOS / Android（Capacitor）端：baseURL 由用户在运行时动态配置，存储在 localStorage
+ * - iOS / Android（Capacitor）/ 桌面（Tauri）端：baseURL 由用户在运行时动态配置，存储在 localStorage
  */
 
 const API_SERVER_URL_KEY = 'api_server_url';
@@ -10,6 +10,9 @@ const API_SERVER_URL_KEY = 'api_server_url';
 /**
  * 判断当前是否运行在 Capacitor 原生容器（iOS / Android）中。
  * 兼容未安装 @capacitor/core 的场景——直接返回 false。
+ *
+ * 注意：仅用于 Capacitor 专属能力（如 LocalNotifications 插件）。
+ * 判断"是否需要用户配置服务器地址"请用 usesRemoteServer()。
  */
 export const isNativePlatform = (): boolean => {
   try {
@@ -29,6 +32,25 @@ export const isNativePlatform = (): boolean => {
 };
 
 /**
+ * 判断当前是否运行在 Tauri 桌面容器（Windows / macOS / Linux）中。
+ * Tauri v2 会注入 window.__TAURI_INTERNALS__；旧版注入 window.__TAURI__。
+ */
+export const isTauri = (): boolean => {
+  try {
+    const w = window as any;
+    return !!(w?.__TAURI_INTERNALS__ || w?.__TAURI__);
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * 判断当前平台是否需要用户配置绝对 API 服务器地址（而非 Web 的相对 '/api'）。
+ * Capacitor（移动端）与 Tauri（桌面端）都以内置协议加载静态资源，需连接远程后端。
+ */
+export const usesRemoteServer = (): boolean => isNativePlatform() || isTauri();
+
+/**
  * 标准化 API URL：去除末尾斜杠，并确保非空。
  */
 export const normalizeApiUrl = (raw: string): string => {
@@ -42,10 +64,10 @@ export const normalizeApiUrl = (raw: string): string => {
  * 读取当前 API baseURL。
  *
  * - Web：返回 '/api'
- * - Native：返回用户配置的绝对 URL，未配置时返回 null（由上层决定跳转配置页）
+ * - Native / 桌面：返回用户配置的绝对 URL，未配置时返回 null（由上层决定跳转配置页）
  */
 export const getApiBaseUrl = (): string | null => {
-  if (!isNativePlatform()) {
+  if (!usesRemoteServer()) {
     return '/api';
   }
   try {
@@ -58,10 +80,10 @@ export const getApiBaseUrl = (): string | null => {
 };
 
 /**
- * 保存用户配置的 API URL。仅在 Native 平台有意义，Web 端调用将被忽略。
+ * 保存用户配置的 API URL。仅在 Native / 桌面平台有意义，Web 端调用将被忽略。
  */
 export const setApiBaseUrl = (url: string): void => {
-  if (!isNativePlatform()) return;
+  if (!usesRemoteServer()) return;
   const normalized = normalizeApiUrl(url);
   if (!normalized) return;
   try {
@@ -72,10 +94,10 @@ export const setApiBaseUrl = (url: string): void => {
 };
 
 /**
- * 清除已配置的 API URL（例如切换服务器、登出后重置）。仅在 Native 平台生效。
+ * 清除已配置的 API URL（例如切换服务器、登出后重置）。仅在 Native / 桌面平台生效。
  */
 export const clearApiBaseUrl = (): void => {
-  if (!isNativePlatform()) return;
+  if (!usesRemoteServer()) return;
   try {
     localStorage.removeItem(API_SERVER_URL_KEY);
   } catch {

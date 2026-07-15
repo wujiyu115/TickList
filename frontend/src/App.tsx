@@ -13,7 +13,7 @@ import { FocusProvider } from './contexts/FocusContext';
 import { getCurrentUser } from './api/auth';
 import { getSettings } from './api/settings';
 import { User, UserSettings } from './types';
-import { isNativePlatform, getApiBaseUrl } from './utils/platform';
+import { isNativePlatform, usesRemoteServer, getApiBaseUrl } from './utils/platform';
 import { initNotifications, addNotificationListeners, syncAllTaskNotifications, syncAllCountdownNotifications } from './services/notificationService';
 import { getTasks } from './api/task';
 import { getCountdowns } from './api/countdown';
@@ -166,8 +166,8 @@ const App: React.FC = () => {
   const [defaultViewPath, setDefaultViewPath] = useState<string | null>(null);
 
   useEffect(() => {
-    // Native 端未配置服务器地址：强制跳转配置页，不发出任何认证请求
-    if (isNativePlatform() && !getApiBaseUrl()) {
+    // Native / 桌面端未配置服务器地址：强制跳转配置页，不发出任何认证请求
+    if (usesRemoteServer() && !getApiBaseUrl()) {
       setLoading(false);
       if (location.pathname !== '/server-config') {
         navigate('/server-config?reason=missing', { replace: true });

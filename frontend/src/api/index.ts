@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { message, modalApi } from '../utils/antdApp';
-import { getApiBaseUrl, isNativePlatform } from '../utils/platform';
+import { getApiBaseUrl, usesRemoteServer } from '../utils/platform';
 import { isBookmarked, removeBookmark, getCurrentPath } from '../utils/bookmarks';
 
 const api = axios.create({
@@ -12,7 +12,7 @@ api.interceptors.request.use(
   (config) => {
     const baseUrl = getApiBaseUrl();
     if (!baseUrl) {
-      if (isNativePlatform() && !window.location.hash.includes('/server-config')) {
+      if (usesRemoteServer() && !window.location.hash.includes('/server-config')) {
         window.location.replace('#/server-config?reason=missing');
       }
       return Promise.reject(new axios.Cancel('api_server_url not configured'));
@@ -48,7 +48,7 @@ function processQueue(error: unknown, token: string | null) {
 function doLogout() {
   localStorage.removeItem('token');
   localStorage.removeItem('refresh_token');
-  if (isNativePlatform()) {
+  if (usesRemoteServer()) {
     window.location.replace('#/login');
   } else {
     window.location.href = '/login';

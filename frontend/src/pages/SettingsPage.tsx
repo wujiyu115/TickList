@@ -45,7 +45,7 @@ import { getDebugLogs, clearDebugLogs } from '../api/debugLog';
 import { setRemoteLogEnabled, isRemoteLogEnabled } from '../services/remoteLog';
 import { createPAT, listPATs, deletePAT, PATItem } from '../api/auth';
 import { ThemeContext } from '../App';
-import { isNativePlatform, getApiBaseUrl } from '../utils/platform';
+import { usesRemoteServer, getApiBaseUrl } from '../utils/platform';
 import { useNavigate } from 'react-router-dom';
 import './SettingsPage.less';
 
@@ -598,8 +598,8 @@ const SettingsPage: React.FC = () => {
 
       {/* 右侧内容 */}
       <div className="settings-content">
-        {/* 移动端专属：服务器地址配置入口 */}
-        {isNativePlatform() && (
+        {/* 移动端 / 桌面端专属：服务器地址配置入口 */}
+        {usesRemoteServer() && (
           <div className="settings-section" style={{ marginBottom: 16 }}>
             <div className="section-title">服务器地址</div>
             <Card size="small" style={{ marginTop: 8 }}>
