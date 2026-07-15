@@ -82,12 +82,15 @@ def create_app():
     else:
         allowed_origins = list(config.get('cors.allowed_origins', []) or [])
 
-    # Capacitor iOS / Android app 的 origin（无论環境都放行，供移动端打包后访问）
+    # Capacitor iOS / Android app 与 Tauri 桌面端的 origin（无论環境都放行，供打包后访问）
     native_origins = [
         "capacitor://localhost",   # iOS WebView
         "http://localhost",         # Android WebView
         "https://localhost",        # Capacitor androidScheme=https
         "ionic://localhost",        # 历史兼容
+        "http://tauri.localhost",   # Tauri v2 Windows（WebView2）
+        "https://tauri.localhost",  # Tauri v2 Windows（备用 scheme）
+        "tauri://localhost",        # Tauri v2 macOS / Linux
     ]
     for origin in native_origins:
         if origin not in allowed_origins:
