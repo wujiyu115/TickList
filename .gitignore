@@ -28,6 +28,11 @@ frontend/dist/
 # Tauri 桌面端（Rust 构建产物 / 自动生成，Cargo.lock 保留提交）
 frontend/src-tauri/target/
 frontend/src-tauri/gen/
+# tauri icon 附带的 iOS/Android 副产物（桌面端不用，移动端走 Capacitor 自有图标）
+frontend/src-tauri/icons/ios/
+frontend/src-tauri/icons/android/
+# 图标生成脚本渲染的中间 png（每次由 svg 重新生成）
+frontend/resources/icon-1024.png
 
 # ===================
 # IDE / 编辑器

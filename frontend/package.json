@@ -17,6 +17,7 @@
     "cap:android": "rsbuild build && npx cap sync android && npx cap open android",
     "preview": "rsbuild preview",
     "shot": "node scripts/shot.mjs",
+    "gen:icons": "node scripts/gen-icons.mjs",
     "lint": "eslint --ext .js,.ts,.tsx .",
     "lint-fix": "eslint --ext .js,.ts,.tsx --fix .",
     "test": "vitest",
@@ -60,6 +61,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^8.3.3",
+    "@resvg/resvg-js": "^2.6.2",
     "@rsbuild/core": "^1.2.0",
     "@rsbuild/plugin-less": "^1.2.0",
     "@rsbuild/plugin-react": "^1.2.0",
