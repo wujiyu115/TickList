@@ -1,0 +1,71 @@
+.tl-titlebar {
+  position: relative;
+  flex: 0 0 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  z-index: 1000;
+  user-select: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
+  html[data-theme='dark'] & {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.tl-titlebar__lights {
+  display: flex;
+  gap: 8px;
+  padding-left: 12px;
+  z-index: 1; // 高于拖动区，保证按钮可点击
+}
+
+.tl-light {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  line-height: 1;
+
+  &::after {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+  }
+
+  &:hover::after {
+    opacity: 1;
+  }
+}
+
+.tl-light--close {
+  background: #ff5f57;
+  &::after { content: '\00d7'; } // ×
+}
+.tl-light--min {
+  background: #febc2e;
+  &::after { content: '\2212'; } // −
+}
+.tl-light--max {
+  background: #28c840;
+  &::after { content: '\002b'; } // +
+}
+
+.tl-titlebar__title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  pointer-events: none; // 交给整条标题栏的拖动区处理
+}
