@@ -7,6 +7,8 @@
   z-index: 1000;
   user-select: none;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 8px 8px 0 0; // 顶部圆角，配合 borderless 窗口
+  overflow: hidden; // 渐变背景裁剪到圆角内
 
   html[data-theme='dark'] & {
     border-bottom-color: rgba(255, 255, 255, 0.08);
@@ -18,6 +20,13 @@
   gap: 8px;
   padding-left: 12px;
   z-index: 1; // 高于拖动区，保证按钮可点击
+}
+
+// Windows / Linux：按钮靠右，关闭在最右
+.tl-titlebar--right .tl-titlebar__lights {
+  margin-left: auto;
+  padding-left: 0;
+  padding-right: 12px;
 }
 
 .tl-light {
