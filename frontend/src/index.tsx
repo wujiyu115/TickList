@@ -4,7 +4,7 @@ import { BrowserRouter, HashRouter } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import App from './App';
-import { usesRemoteServer } from './utils/platform';
+import { usesRemoteServer, isTauri } from './utils/platform';
 import './index.less';
 import './styles/glass.less';
 
@@ -16,6 +16,11 @@ const Router = usesRemoteServer() ? HashRouter : BrowserRouter;
 export const API_BASE_URL = process.env.NODE_ENV === 'development' 
   ? 'http://localhost:5000' 
   : '';
+
+// Tauri 桌面端给根元素打标记，供 CSS 变量 --tl-titlebar-h 生效（须在首屏渲染前执行以避免闪现）
+if (isTauri()) {
+  document.documentElement.classList.add('tl-tauri');
+}
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement

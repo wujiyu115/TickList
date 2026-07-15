@@ -279,7 +279,7 @@ const App: React.FC = () => {
         <TitleBar primaryColor={primaryColor} isDark={isDark} />
         <div className="app-content">
         <FocusProvider>
-        <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}><Spin size="large" /></div>}>
+        <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 'calc(100dvh - var(--tl-titlebar-h))' }}><Spin size="large" /></div>}>
         <Routes>
           <Route
             path="/server-config"
