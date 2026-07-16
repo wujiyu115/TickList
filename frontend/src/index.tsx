@@ -29,6 +29,8 @@ const root = ReactDOM.createRoot(
 
 if (window.location.hash === '#tray') {
   // 托盘弹窗：轻量入口，不挂 App/Router/业务 Provider
+  // 打标记，令 TrayMenu.less 的透明背景/overflow 只作用于托盘窗，不泄漏到主窗
+  document.body.classList.add('tray-body');
   root.render(
     <React.StrictMode>
       <TrayMenu />

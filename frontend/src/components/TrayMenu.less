@@ -1,6 +1,8 @@
 /* 托盘磨砂菜单：复用 glass.less 的白霜 token。
    窗口透明，四周留透明外边距容纳 CSS 阴影（Rust 侧窗口比面板大一圈）。 */
-html, body, #root {
+/* 作用域收敛到托盘窗（index.tsx 给 body 加 .tray-body），避免透明背景泄漏到主窗 */
+body.tray-body,
+body.tray-body #root {
   margin: 0;
   background: transparent !important;
   overflow: hidden;

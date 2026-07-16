@@ -26,4 +26,13 @@ describe('TrayMenu', () => {
     fireEvent.click(screen.getByText('退出'));
     expect(invoke).toHaveBeenCalledWith('tray_quit');
   });
+  it('窗口获焦后重读 localStorage 主题（切换配色跟随）', () => {
+    localStorage.setItem('theme_key', 'default');
+    render(<TrayMenu />);
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    // 模拟主窗切换到暗色主题后，Rust 右键 show → set_focus 触发 focus 事件
+    localStorage.setItem('theme_key', 'dark');
+    fireEvent(window, new Event('focus'));
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+  });
 });

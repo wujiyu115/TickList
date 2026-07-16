@@ -1,4 +1,4 @@
-import React, { useLayoutEffect } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { ConfigProvider, theme } from 'antd';
 import { invoke } from '@tauri-apps/api/core';
 import { resolveTheme } from '../theme/themeColors';
@@ -18,14 +18,14 @@ const TrayMenuInner: React.FC = () => {
       <button
         className="tray-menu-item"
         style={{ color: token.colorText }}
-        onClick={() => invoke('tray_toggle_window').catch(() => {})}
+        onClick={() => invoke('tray_toggle_window').catch(console.error)}
       >
         显示/隐藏窗口
       </button>
       <button
         className="tray-menu-item"
         style={{ color: token.colorText }}
-        onClick={() => invoke('tray_quit').catch(() => {})}
+        onClick={() => invoke('tray_quit').catch(console.error)}
       >
         退出
       </button>
@@ -34,7 +34,16 @@ const TrayMenuInner: React.FC = () => {
 };
 
 const TrayMenu: React.FC = () => {
-  const cfg = resolveTheme(localStorage.getItem('theme_key') || 'default');
+  // 主题存进 state：Rust 右键 show 时 set_focus() 触发 window focus 事件，
+  // 借此重读 localStorage，让主窗切换配色后托盘菜单跟随刷新（零依赖，无需 Tauri event）。
+  const [themeKey, setThemeKey] = useState(() => localStorage.getItem('theme_key') || 'default');
+  const cfg = resolveTheme(themeKey);
+
+  useEffect(() => {
+    const onFocus = () => setThemeKey(localStorage.getItem('theme_key') || 'default');
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, []);
 
   useLayoutEffect(() => {
     document.documentElement.setAttribute('data-theme', cfg.isDark ? 'dark' : 'light');
@@ -43,7 +52,6 @@ const TrayMenu: React.FC = () => {
   return (
     <ConfigProvider
       theme={{
-        cssVar: true,
         token: { colorPrimary: cfg.color, borderRadius: 10, ...cfg.token },
         algorithm: cfg.isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
       }}
