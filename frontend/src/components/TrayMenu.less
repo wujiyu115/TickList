@@ -11,8 +11,7 @@ html, body, #root {
   margin: 16px;
   padding: 6px;
   border-radius: var(--tl-card-radius);
-  /* 半透明主题底 + 白霜膜（对齐全站浮层材质） */
-  background-color: var(--ant-color-bg-layout);
+  /* 半透明主题底（内联 backgroundColor 提供）+ 白霜膜（对齐全站浮层材质） */
   background-image: linear-gradient(0deg, var(--tl-glass), var(--tl-glass));
   backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
   -webkit-backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
@@ -28,7 +27,6 @@ html, body, #root {
   appearance: none;
   border: none;
   background: transparent;
-  color: var(--ant-color-text);
   font-size: 13px;
   text-align: left;
   padding: 8px 12px;
