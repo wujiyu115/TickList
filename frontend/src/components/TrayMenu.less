@@ -1,0 +1,44 @@
+/* 托盘磨砂菜单：复用 glass.less 的白霜 token。
+   窗口透明，四周留透明外边距容纳 CSS 阴影（Rust 侧窗口比面板大一圈）。 */
+html, body, #root {
+  margin: 0;
+  background: transparent !important;
+  overflow: hidden;
+}
+
+.tray-menu {
+  /* 距窗口边缘 16px：透明外边距，让 box-shadow 落在窗内不被裁切 */
+  margin: 16px;
+  padding: 6px;
+  border-radius: var(--tl-card-radius);
+  /* 半透明主题底 + 白霜膜（对齐全站浮层材质） */
+  background-color: var(--ant-color-bg-layout);
+  background-image: linear-gradient(0deg, var(--tl-glass), var(--tl-glass));
+  backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
+  -webkit-backdrop-filter: blur(var(--tl-blur)) saturate(var(--tl-sat));
+  box-shadow: var(--tl-shadow);
+  border: 1px solid var(--tl-edge-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  user-select: none;
+}
+
+.tray-menu-item {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--ant-color-text);
+  font-size: 13px;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.tray-menu-item:hover {
+  background: var(--tl-glass-hover);
+}
+.tray-menu-item:active {
+  transform: scale(0.98);
+}

@@ -1,0 +1,29 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import TrayMenu from './TrayMenu';
+
+const invoke = vi.fn();
+vi.mock('@tauri-apps/api/core', () => ({ invoke: (...args: any[]) => invoke(...args) }));
+
+beforeEach(() => {
+  invoke.mockClear();
+  localStorage.setItem('theme_key', 'default');
+});
+
+describe('TrayMenu', () => {
+  it('渲染显示/隐藏与退出两项', () => {
+    render(<TrayMenu />);
+    expect(screen.getByText('显示/隐藏窗口')).toBeTruthy();
+    expect(screen.getByText('退出')).toBeTruthy();
+  });
+  it('点击显示/隐藏调用 tray_toggle_window', () => {
+    render(<TrayMenu />);
+    fireEvent.click(screen.getByText('显示/隐藏窗口'));
+    expect(invoke).toHaveBeenCalledWith('tray_toggle_window');
+  });
+  it('点击退出调用 tray_quit', () => {
+    render(<TrayMenu />);
+    fireEvent.click(screen.getByText('退出'));
+    expect(invoke).toHaveBeenCalledWith('tray_quit');
+  });
+});
