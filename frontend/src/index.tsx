@@ -4,6 +4,7 @@ import { BrowserRouter, HashRouter } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import App from './App';
+import TrayMenu from './components/TrayMenu';
 import { usesRemoteServer, isTauri } from './utils/platform';
 import './index.less';
 import './styles/glass.less';
@@ -26,12 +27,21 @@ const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 
-root.render(
-  <React.StrictMode>
-    <ConfigProvider locale={zhCN}>
-      <Router>
-        <App />
-      </Router>
-    </ConfigProvider>
-  </React.StrictMode>
-);
+if (window.location.hash === '#tray') {
+  // 托盘弹窗：轻量入口，不挂 App/Router/业务 Provider
+  root.render(
+    <React.StrictMode>
+      <TrayMenu />
+    </React.StrictMode>
+  );
+} else {
+  root.render(
+    <React.StrictMode>
+      <ConfigProvider locale={zhCN}>
+        <Router>
+          <App />
+        </Router>
+      </ConfigProvider>
+    </React.StrictMode>
+  );
+}
