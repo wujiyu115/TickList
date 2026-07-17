@@ -257,7 +257,7 @@ const AiPage: React.FC = () => {
           onClick={handleSend}
           loading={loading}
           size="large"
-          className="ai-send-btn"
+          className={`ai-send-btn ${inputValue.trim() ? 'has-text' : ''}`}
         />
       </div>
     </div>

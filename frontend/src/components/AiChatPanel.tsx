@@ -359,7 +359,7 @@ const AiChatPanel: React.FC = () => {
           icon={<SendOutlined />}
           onClick={handleSend}
           loading={loading}
-          className="ai-send-btn"
+          className={`ai-send-btn ${inputValue.trim() ? 'has-text' : ''}`}
         />
       </div>
     </div>
