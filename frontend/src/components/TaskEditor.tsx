@@ -71,11 +71,11 @@ const formatDateDisplay = (startTime?: string, dueDate?: string): string => {
   };
   
   if (start && end) {
-    return `📅 ${formatDate(start)} - ${formatDate(end)}`;
+    return `${formatDate(start)} - ${formatDate(end)}`;
   } else if (start) {
-    return `📅 ${formatDate(start)}`;
+    return `${formatDate(start)}`;
   } else if (end) {
-    return `📅 截止: ${formatDate(end)}`;
+    return `截止: ${formatDate(end)}`;
   }
   return '';
 };
@@ -891,7 +891,8 @@ const TaskEditor: React.FC = () => {
           >
             <span className="date-reminder" style={{ cursor: 'pointer' }}>
               {selectedTask.start_time || selectedTask.due_date ? (
-                <span style={{ color: 'var(--ant-color-primary)' }}>
+                <span style={{ color: 'var(--ant-color-text-tertiary)' }}>
+                  <CalendarOutlined style={{ marginRight: 4 }} />
                   {formatDateDisplay(selectedTask.start_time, selectedTask.due_date)}
                 </span>
               ) : (

@@ -240,8 +240,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onMenuClick }) =>
         />
         <Dropdown menu={{ items }} placement="bottomRight">
           <Space style={{ cursor: 'pointer' }}>
-            <Avatar icon={<UserOutlined />} />
             <span>{user.username}</span>
+            <Avatar icon={<UserOutlined />} />
           </Space>
         </Dropdown>
       </Space>
