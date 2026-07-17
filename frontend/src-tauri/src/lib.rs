@@ -18,6 +18,8 @@ fn toggle_main_window(app: &AppHandle) {
 /// 托盘弹窗窗口尺寸（含四周透明外边距，用于容纳 CSS 阴影）。
 const TRAY_MENU_W: f64 = 240.0;
 const TRAY_MENU_H: f64 = 140.0;
+/// 菜单底边与光标之间的额外间隙，避免弹窗盖住托盘图标本身。
+const TRAY_MENU_GAP: f64 = 16.0;
 
 #[tauri::command]
 fn tray_toggle_window(app: AppHandle) {
@@ -76,7 +78,7 @@ pub fn run() {
                         if let Some(win) = app.get_webview_window("tray-menu") {
                             // 菜单出现在光标左上方（Windows 托盘在右下，向上展开）
                             let x = position.x - TRAY_MENU_W;
-                            let y = position.y - TRAY_MENU_H;
+                            let y = position.y - TRAY_MENU_H - TRAY_MENU_GAP;
                             let _ = win.set_position(PhysicalPosition::new(x, y));
                             let _ = win.show();
                             let _ = win.set_focus();
