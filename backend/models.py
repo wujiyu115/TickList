@@ -123,7 +123,8 @@ class FocusSession:
         duration: int = 0,
         started_at: str = "",
         ended_at: str = "",
-        created_at: Optional[datetime] = None
+        created_at: Optional[datetime] = None,
+        client_session_id: Optional[str] = None
     ):
         self.id = id
         self.user_id = user_id
@@ -133,6 +134,7 @@ class FocusSession:
         self.started_at = started_at
         self.ended_at = ended_at
         self.created_at = created_at or datetime.now()
+        self.client_session_id = client_session_id
     
     def to_dict(self) -> Dict:
         return {
@@ -144,6 +146,7 @@ class FocusSession:
             'started_at': self.started_at,
             'ended_at': self.ended_at,
             'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else self.created_at,
+            'client_session_id': self.client_session_id,
         }
 
 
