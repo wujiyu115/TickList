@@ -18,10 +18,14 @@ interface UseTimerOptions {
   onComplete?: (phase: TimerPhase) => void;
 }
 
-interface UseTimerReturn extends TimerState {
+export interface TimerResetOptions {
+  resetPomodoroCount?: boolean;
+}
+
+export interface UseTimerReturn extends TimerState {
   start: () => void;
   pause: () => void;
-  reset: () => void;
+  reset: (options?: TimerResetOptions) => void;
   skip: () => void;
   setTimeLeft: (seconds: number) => void;
   pomodoroCount: number; // 已完成的番茄数
@@ -201,8 +205,8 @@ export const useTimer = (options: UseTimerOptions): UseTimerReturn => {
     setState((prev) => ({ ...prev, isRunning: false }));
   }, [mode]);
 
-  // 重置计时
-  const reset = useCallback(() => {
+  // 重置计时，默认清零已完成的番茄数
+  const reset = useCallback(({ resetPomodoroCount = true }: TimerResetOptions = {}) => {
     clearTimer();
     if (mode === 'stopwatch') {
       setElapsedTime(0);
@@ -218,7 +222,9 @@ export const useTimer = (options: UseTimerOptions): UseTimerReturn => {
         timeLeft: workDuration,
         isRunning: false,
       });
-      setPomodoroCount(0);
+      if (resetPomodoroCount) {
+        setPomodoroCount(0);
+      }
     }
   }, [clearTimer, mode, workDuration]);
 

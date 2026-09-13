@@ -80,7 +80,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
           暂停
         </Button>
       ) : isPaused ? (
-        // 暂停态：显示继续（实心）和结束（边框）按钮
+        // 暂停态：显示继续，以及结束专注或跳过休息按钮
         <>
           <Button
             className="control-btn control-btn-primary"
@@ -92,7 +92,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
             className="control-btn control-btn-outline"
             onClick={onEnd}
           >
-            结束
+            {phase === 'break' ? '跳过休息' : '结束'}
           </Button>
         </>
       ) : (

@@ -268,8 +268,13 @@ export const FocusProvider: React.FC<FocusProviderProps> = ({ children }) => {
     }
   }, [timer, settings, linkedTaskId, loadOverview, loadSessions]);
 
-  // 番茄模式结束专注（点击"结束"按钮）
+  // 番茄模式结束专注或跳过休息
   const handleEnd = useCallback(async () => {
+    if (timerMode === 'pomodoro' && timer.phase === 'break') {
+      timer.reset({ resetPomodoroCount: false });
+      return;
+    }
+
     // 计算实际专注时长
     const actualDuration = timerMode === 'pomodoro' 
       ? (workDuration - timer.timeLeft) 
