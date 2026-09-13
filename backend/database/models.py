@@ -269,10 +269,17 @@ class FocusSessionModel(Base):
     started_at = Column(String(50))
     ended_at = Column(String(50))
     created_at = Column(String(50))
+    # 客户端生成的稳定会话 ID，用于网络重试幂等；旧手机请求可为空
+    client_session_id = Column(String(128), nullable=True)
     
     __table_args__ = (
         Index('idx_focus_sessions_user', 'user_id'),
         Index('idx_focus_sessions_user_started', 'user_id', 'started_at'),
+        UniqueConstraint(
+            'user_id',
+            'client_session_id',
+            name='uq_focus_sessions_user_client_session'
+        ),
     )
 
 
