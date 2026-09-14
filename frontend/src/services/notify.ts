@@ -2,6 +2,7 @@ import { message } from '../utils/antdApp';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { isNativePlatform } from '../utils/platform';
 import { remoteLog } from './remoteLog';
+import { isFocusShieldHost } from './focusHost';
 
 export interface NotifyOptions {
   title: string;
@@ -12,6 +13,7 @@ export interface NotifyOptions {
 }
 
 export async function notify(options: NotifyOptions): Promise<void> {
+  if (isFocusShieldHost()) return;
   const native = isNativePlatform();
   const cap = (window as any)?.Capacitor;
   remoteLog('notification', {

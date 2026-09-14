@@ -1,4 +1,5 @@
 import request from './index';
+import { isFocusShieldHost } from '../services/focusHost';
 
 // 专注概览响应
 export interface FocusOverview {
@@ -55,6 +56,9 @@ export const getFocusSessions = (params?: {
 
 // 创建专注记录
 export const createFocusSession = (data: FocusSessionCreateRequest): Promise<FocusSession> => {
+  if (isFocusShieldHost()) {
+    return Promise.reject(new Error('宿主模式的专注记录只能由 FocusShield 保存'));
+  }
   return request.post('/focus/sessions', data);
 };
 

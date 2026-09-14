@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { Task } from '../types';
 import { getTasks, createTask, updateTask, deleteTask as deleteTaskApi, restoreTask as restoreTaskApi, permanentDeleteTask as permanentDeleteTaskApi } from '../api/task';
 import { message } from '../utils/antdApp';
 import { scheduleTaskNotification, cancelTaskNotification } from '../services/notificationService';
+import { HOST_TASKS_REFRESH_EVENT, isFocusShieldHost } from '../services/focusHost';
 
 interface TaskContextType {
   tasks: Task[];
@@ -37,11 +38,19 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [lastParams, setLastParams] = useState<any>({});
+  const mounted = useRef(true);
+  const fetchRevision = useRef(0);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; fetchRevision.current += 1; };
+  }, []);
 
   const fetchTasks = useCallback(async (params: any = {}) => {
+    const revision = ++fetchRevision.current;
     setLoading(true);
     try {
       const response = await getTasks(params);
+      if (isFocusShieldHost() && (!mounted.current || revision !== fetchRevision.current)) return;
       setTasks(response.tasks);
       setLastParams(params);
       // 同步更新 selectedTask，确保编辑器显示最新数据
@@ -53,18 +62,42 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
         return null;
       });
     } catch (error) {
+      if (isFocusShieldHost() && (!mounted.current || revision !== fetchRevision.current)) return;
       message.error('获取任务列表失败');
       console.error('Failed to fetch tasks:', error);
     } finally {
-      setLoading(false);
+      if (!isFocusShieldHost() || (mounted.current && revision === fetchRevision.current)) setLoading(false);
     }
   }, []);
 
   const refreshTasks = useCallback(async () => {
     await fetchTasks(lastParams);
     // 通知 TaskPage 等组件同步刷新已完成任务
-    window.dispatchEvent(new CustomEvent('tasks-refreshed'));
+    if (!isFocusShieldHost() || mounted.current) window.dispatchEvent(new CustomEvent('tasks-refreshed'));
   }, [fetchTasks, lastParams]);
+
+  const hostRefresh = useRef(refreshTasks);
+  hostRefresh.current = refreshTasks;
+  useEffect(() => {
+    if (!isFocusShieldHost()) return;
+    let active = true;
+    let running = false;
+    let pending = false;
+    const refresh = async () => {
+      if (running) { pending = true; return; }
+      running = true;
+      do {
+        pending = false;
+        await hostRefresh.current();
+      } while (active && pending);
+      running = false;
+    };
+    window.addEventListener(HOST_TASKS_REFRESH_EVENT, refresh);
+    return () => {
+      active = false;
+      window.removeEventListener(HOST_TASKS_REFRESH_EVENT, refresh);
+    };
+  }, []);
 
   const addTask = useCallback(async (taskData: any): Promise<Task | undefined> => {
     try {

@@ -3,10 +3,14 @@ import { message, modalApi } from '../utils/antdApp';
 import { notify } from '../services/notify';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useTimer, TimerPhase, TimerMode } from '../hooks/useTimer';
+import type { UseTimerReturn } from '../hooks/useTimer';
 import { getSettings } from '../api/settings';
 import { getTaskById, updateTask } from '../api/task';
 import { createFocusSession, getFocusOverview, getFocusSessions, FocusOverview, FocusSession } from '../api/focus';
 import { UserSettings, Task } from '../types';
+import { isFocusShieldHost } from '../services/focusHost';
+import type { HostState } from '../services/focusHost';
+import { useHostedFocus } from './useHostedFocus';
 
 // 默认番茄钟时间配置（秒）
 const DEFAULT_WORK_DURATION = 25 * 60;
@@ -14,9 +18,15 @@ const DEFAULT_BREAK_DURATION = 5 * 60;
 const DEFAULT_LONG_BREAK_DURATION = 15 * 60;
 
 // useTimer 返回类型
-type TimerReturn = ReturnType<typeof useTimer>;
+type TimerReturn = UseTimerReturn;
 
-interface FocusContextValue {
+export interface FocusContextValue {
+  isHosted: boolean;
+  hostState: HostState | null;
+  hostError: string | null;
+  hostReady: boolean;
+  hostStarting: boolean;
+  hostRefreshRevision: number;
   // 计时器状态
   timer: TimerReturn;
   timerMode: TimerMode;
@@ -29,7 +39,7 @@ interface FocusContextValue {
   setLinkedTask: (task: Task | null) => void;
   
   // 操作
-  handleStart: () => void;
+  handleStart: (taskId?: string) => void;
   handleEnd: () => void;
   handleStopStopwatch: () => void;
   
@@ -61,9 +71,24 @@ export const useFocus = () => {
 
 interface FocusProviderProps {
   children: ReactNode;
+  currentUserId?: string | null;
 }
 
-export const FocusProvider: React.FC<FocusProviderProps> = ({ children }) => {
+export const FocusProvider: React.FC<FocusProviderProps> = ({ children, currentUserId = null }) => (
+  isFocusShieldHost()
+    ? <HostedFocusProvider key={currentUserId ?? 'logged-out'} currentUserId={currentUserId}>{children}</HostedFocusProvider>
+    : <StandaloneFocusProvider>{children}</StandaloneFocusProvider>
+);
+
+const HostedFocusProvider: React.FC<FocusProviderProps> = ({ children, currentUserId = null }) => {
+  const value = useHostedFocus(currentUserId);
+  return <FocusContext.Provider value={value}>
+    {value.hostError && <div role="alert">{value.hostError}。网页计时与保存已禁用，请回到本地 HUD。</div>}
+    {children}
+  </FocusContext.Provider>;
+};
+
+const StandaloneFocusProvider: React.FC<FocusProviderProps> = ({ children }) => {
   // 计时模式状态
   const [timerMode, setTimerMode] = useState<TimerMode>('pomodoro');
   
@@ -351,6 +376,12 @@ export const FocusProvider: React.FC<FocusProviderProps> = ({ children }) => {
   }, [linkedTaskId]);
 
   const contextValue: FocusContextValue = {
+    isHosted: false,
+    hostState: null,
+    hostError: null,
+    hostReady: false,
+    hostStarting: false,
+    hostRefreshRevision: 0,
     timer,
     timerMode,
     setTimerMode,

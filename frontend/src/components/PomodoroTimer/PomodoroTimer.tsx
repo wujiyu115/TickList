@@ -11,8 +11,10 @@ import { useFocus } from '../../contexts/FocusContext';
 import TimerDisplay from './TimerDisplay';
 import TimerControls from './TimerControls';
 import './PomodoroTimer.less';
+import { isFocusShieldHost } from '../../services/focusHost';
+import HostedFocusPanel from './HostedFocusPanel';
 
-const PomodoroTimer: React.FC = () => {
+const StandalonePomodoroTimer: React.FC = () => {
   // 从 FocusContext 获取全局状态
   const {
     timer,
@@ -313,5 +315,7 @@ const PomodoroTimer: React.FC = () => {
     </div>
   );
 };
+
+const PomodoroTimer: React.FC = () => isFocusShieldHost() ? <HostedFocusPanel /> : <StandalonePomodoroTimer />;
 
 export default PomodoroTimer;

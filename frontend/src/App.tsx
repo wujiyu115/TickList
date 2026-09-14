@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, createContext, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { App as AntApp, ConfigProvider, theme as antdTheme, Spin } from 'antd';
 import { message, AntdAppBridge } from './utils/antdApp';
@@ -20,6 +20,7 @@ import { getTasks } from './api/task';
 import { getCountdowns } from './api/countdown';
 import { remoteLog } from './services/remoteLog';
 import { THEME_COLORS } from './theme/themeColors';
+import { isFocusShieldHost, readyFocusHost } from './services/focusHost';
 
 // 主题 Context
 export const ThemeContext = createContext<{
@@ -43,7 +44,7 @@ const getDefaultViewPath = (defaultView: string): string => {
   }
 };
 
-addNotificationListeners();
+if (!isFocusShieldHost()) addNotificationListeners();
 
 const cap = (window as any)?.Capacitor;
 remoteLog('app-init', {
@@ -55,6 +56,7 @@ remoteLog('app-init', {
 });
 
 const syncNotifications = () => {
+  if (isFocusShieldHost()) return;
   initNotifications().then(async (granted) => {
     if (!granted) return;
     const [taskResp, cdResp] = await Promise.all([
@@ -66,7 +68,7 @@ const syncNotifications = () => {
   }).catch(console.error);
 };
 
-const App: React.FC = () => {
+const TickListApp: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
@@ -77,6 +79,12 @@ const App: React.FC = () => {
   const [isDark, setIsDark] = useState(cachedTheme?.isDark || false);
   const [extraToken, setExtraToken] = useState<Record<string, string> | undefined>(cachedTheme?.token);
   const [defaultViewPath, setDefaultViewPath] = useState<string | null>(null);
+  const authGeneration = useRef(0);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; authGeneration.current += 1; };
+  }, []);
 
   useEffect(() => {
     // Native / 桌面端未配置服务器地址：强制跳转配置页，不发出任何认证请求
@@ -101,14 +109,18 @@ const App: React.FC = () => {
   };
 
   const checkAuth = async () => {
+    const generation = ++authGeneration.current;
+    const token = localStorage.getItem('token');
+    const current = () => !isFocusShieldHost() || (mounted.current && generation === authGeneration.current);
     try {
-      const token = localStorage.getItem('token');
       if (token) {
         const userData = await getCurrentUser();
+        if (!current()) return;
         setUser(userData);
         // 加载用户设置并应用主题和默认视图
         try {
           const settings = await getSettings();
+          if (!current()) return;
           if (settings.theme && THEME_COLORS[settings.theme]) {
             applyTheme(settings.theme);
           }
@@ -121,11 +133,12 @@ const App: React.FC = () => {
         }
       }
     } catch (error) {
+      if (!current()) return;
       console.error('Auth check failed:', error);
       localStorage.removeItem('token');
       localStorage.removeItem('refresh_token');
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
   };
 
@@ -134,6 +147,8 @@ const App: React.FC = () => {
   };
 
   const handleLogin = async (userData: User, token: string, refreshToken?: string) => {
+    const generation = ++authGeneration.current;
+    const current = () => !isFocusShieldHost() || (mounted.current && generation === authGeneration.current);
     localStorage.setItem('token', token);
     if (refreshToken) {
       localStorage.setItem('refresh_token', refreshToken);
@@ -143,6 +158,7 @@ const App: React.FC = () => {
     // 加载用户设置并跳转到默认视图
     try {
       const settings = await getSettings();
+      if (!current()) return;
       if (settings.theme && THEME_COLORS[settings.theme]) {
         applyTheme(settings.theme);
       }
@@ -150,12 +166,14 @@ const App: React.FC = () => {
       const targetPath = getDefaultViewPath(settings.default_view || 'tasks');
       navigate(targetPath, { replace: true });
     } catch (e) {
+      if (!current()) return;
       console.error('Failed to load settings:', e);
       navigate('/', { replace: true });
     }
   };
 
   const handleLogout = () => {
+    authGeneration.current += 1;
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
     setUser(null);
@@ -165,6 +183,19 @@ const App: React.FC = () => {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
   }, [isDark]);
+
+  useEffect(() => {
+    if (!isFocusShieldHost()) return;
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== 'token' && event.key !== null) return;
+      // Unmount the previous account's host provider immediately.
+      setUser(null);
+      setLoading(true);
+      void checkAuth();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -188,9 +219,9 @@ const App: React.FC = () => {
       <ThemeContext.Provider value={{ primaryColor, isDark, setTheme }}>
         <AntApp component={false}>
         <AntdAppBridge />
-        <TitleBar primaryColor={primaryColor} isDark={isDark} />
+        {!isFocusShieldHost() && <TitleBar primaryColor={primaryColor} isDark={isDark} />}
         <div className="app-content">
-        <FocusProvider>
+        <FocusProvider currentUserId={user?.id ?? null}>
         <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 'calc(100dvh - var(--tl-titlebar-h))' }}><Spin size="large" /></div>}>
         <Routes>
           <Route
@@ -255,6 +286,23 @@ const App: React.FC = () => {
       </ThemeContext.Provider>
     </ConfigProvider>
   );
+};
+
+// Do not mount auth, task entry effects or any timer provider until v1 ready.
+const App: React.FC = () => {
+  const [ready, setReady] = useState(!isFocusShieldHost());
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isFocusShieldHost()) return;
+    let active = true;
+    readyFocusHost().then(() => { if (active) setReady(true); }).catch(reason => {
+      if (active) setError(reason instanceof Error ? reason.message : 'FocusShield 握手失败');
+    });
+    return () => { active = false; };
+  }, []);
+  if (error) return <div role="alert">{error}。网页计时已禁用，请返回 FocusShield 重新打开任务页面。</div>;
+  if (!ready) return <div role="status">正在连接 FocusShield…</div>;
+  return <TickListApp />;
 };
 
 export default App;

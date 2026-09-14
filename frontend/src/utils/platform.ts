@@ -5,6 +5,8 @@
  * - iOS / Android（Capacitor）/ 桌面（Tauri）端：baseURL 由用户在运行时动态配置，存储在 localStorage
  */
 
+import { isFocusShieldHost } from '../services/focusHost';
+
 const API_SERVER_URL_KEY = 'api_server_url';
 
 /**
@@ -15,6 +17,7 @@ const API_SERVER_URL_KEY = 'api_server_url';
  * 判断"是否需要用户配置服务器地址"请用 usesRemoteServer()。
  */
 export const isNativePlatform = (): boolean => {
+  if (isFocusShieldHost()) return false;
   try {
     // 动态读取全局注入的 Capacitor 对象，避免强依赖
     const cap = (window as any)?.Capacitor;
@@ -36,6 +39,7 @@ export const isNativePlatform = (): boolean => {
  * Tauri v2 会注入 window.__TAURI_INTERNALS__；旧版注入 window.__TAURI__。
  */
 export const isTauri = (): boolean => {
+  if (isFocusShieldHost()) return false;
   try {
     const w = window as any;
     return !!(w?.__TAURI_INTERNALS__ || w?.__TAURI__);
