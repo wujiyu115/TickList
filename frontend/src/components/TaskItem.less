@@ -258,6 +258,50 @@
         color: var(--ant-color-text-tertiary);
       }
     }
+
+    .task-focus-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 24px;
+      width: 24px;
+      height: 24px;
+      margin: -2px 0;
+      padding: 0;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      box-sizing: border-box;
+      background: transparent;
+      color: var(--ant-color-text-tertiary);
+      font-size: 14px;
+      cursor: pointer;
+      touch-action: manipulation;
+      // Keep the slot and native tab stop even when not hovered.
+      opacity: 0;
+      transition: opacity 0.2s, background-color 0.2s, color 0.2s;
+
+      &:hover {
+        color: var(--ant-color-primary);
+        background: var(--ant-color-primary-bg);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--ant-color-primary);
+        outline-offset: 2px;
+        color: var(--ant-color-primary);
+      }
+    }
+
+    &:hover > .task-meta > .task-focus-button,
+    &:focus-within > .task-meta > .task-focus-button {
+      opacity: 1;
+    }
+
+    @media (hover: none), (pointer: coarse) {
+      .task-focus-button {
+        opacity: 1;
+      }
+    }
   }
 
   .task-children {

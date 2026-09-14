@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Checkbox, Dropdown, Input } from 'antd';
 import { message } from '../utils/antdApp';
-import { CaretDownOutlined, CaretRightOutlined, ClockCircleOutlined, HolderOutlined } from '@ant-design/icons';
+import { CaretDownOutlined, CaretRightOutlined, ClockCircleOutlined, HolderOutlined, CaretRightFilled } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
 import { Task, TaskList as TaskListType } from '../types';
@@ -9,6 +9,7 @@ import { useTaskContext } from '../contexts/TaskContext';
 import { useDragContext } from '../contexts/DragContext';
 import { useLongPress } from '../hooks/useLongPress';
 import { reorderTasks, moveTask } from '../api/task';
+import { isFocusShieldHost } from '../services/focusHost';
 import TaskContextMenu from './TaskContextMenu';
 import DragIndicator from './DragIndicator';
 import './TaskItem.less';
@@ -256,6 +257,29 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
 
   const isSelected = selectedTask?.id === task.id;
   const isCompleted = task.status === 'completed';
+  const canStartHostedFocus = isFocusShieldHost()
+    && (task.status === 'pending' || task.status === 'in_progress')
+    && !editing;
+
+  const stopFocusPropagation = (e: React.SyntheticEvent) => {
+    e.stopPropagation();
+  };
+
+  const preventFocusRowGesture = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleFocusMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
+    preventFocusRowGesture(e);
+    // Cancel the draggable ancestor's default gesture without losing button focus.
+    if (e.button === 0) e.currentTarget.focus();
+  };
+
+  const handleStartHostedFocus = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    navigate(`/pomodoro?task_id=${encodeURIComponent(task.id)}&mode=pomodoro`);
+  };
 
   const handleStatusToggle = async () => {
     await updateTaskData(task.id, {
@@ -475,6 +499,32 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, allTasks, depth = 0, hideDeta
             )}
             {task.due_date && (
               <span className="task-due">{formatDate(task.due_date)}</span>
+            )}
+            {canStartHostedFocus && (
+              <button
+                type="button"
+                className="task-focus-button"
+                title="开始番茄专注"
+                aria-label={`开始番茄专注：${task.title}`}
+                draggable={false}
+                onClick={handleStartHostedFocus}
+                onDoubleClick={stopFocusPropagation}
+                onPointerDown={stopFocusPropagation}
+                onPointerUp={stopFocusPropagation}
+                onMouseDown={handleFocusMouseDown}
+                onMouseUp={stopFocusPropagation}
+                onTouchStart={stopFocusPropagation}
+                onTouchMove={stopFocusPropagation}
+                onTouchEnd={stopFocusPropagation}
+                onTouchCancel={stopFocusPropagation}
+                onContextMenu={preventFocusRowGesture}
+                onDragStart={preventFocusRowGesture}
+                onDragEnd={stopFocusPropagation}
+                onKeyDown={stopFocusPropagation}
+                onKeyUp={stopFocusPropagation}
+              >
+                <CaretRightFilled aria-hidden="true" />
+              </button>
             )}
           </div>
         </div>
