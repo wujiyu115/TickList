@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Card, Typography, Form, Input, Button, Divider, Layout } from 'antd';
 import { message } from '../utils/antdApp';
 import { UserOutlined, LockOutlined, KeyOutlined } from '@ant-design/icons';
@@ -7,6 +7,8 @@ import { startAuthentication, browserSupportsWebAuthn } from '@simplewebauthn/br
 import { User } from '../types';
 import { localLogin, getAuthConfig, getPasskeyLoginOptions, verifyPasskeyLogin } from '../api/auth';
 import { isNativePlatform } from '../utils/platform';
+import { ThemeContext } from '../App';
+import ThemeToggle from '../components/ThemeToggle';
 import './LoginPage.less';
 
 const { Title, Paragraph } = Typography;
@@ -16,6 +18,7 @@ interface LoginPageProps {
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+  const themeContext = useContext(ThemeContext);
   const [loading, setLoading] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [registerEnabled, setRegisterEnabled] = useState(true);
@@ -75,7 +78,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   return (
     <Layout className="auth-page login-page">
       <Card className="login-card">
-        <Title level={2}>TickList</Title>
+        <div style={{ position: 'relative' }}>
+          <Title level={2}>TickList</Title>
+          {themeContext && (
+            <div style={{ position: 'absolute', top: 0, right: 0 }}>
+              <ThemeToggle isDark={themeContext.isDark} onThemeChange={themeContext.setTheme} />
+            </div>
+          )}
+        </div>
         <Paragraph>任务管理系统</Paragraph>
         
         <Form

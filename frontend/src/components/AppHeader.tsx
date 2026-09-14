@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useContext } from 'react';
 import { Layout, Avatar, Dropdown, Space, Button, Input } from 'antd';
 import { message, modalApi } from '../utils/antdApp';
 import { UserOutlined, LogoutOutlined, LockOutlined, KeyOutlined, CrownOutlined, MenuOutlined, FullscreenOutlined, FullscreenExitOutlined, RobotOutlined, StarOutlined, StarFilled, DeleteOutlined } from '@ant-design/icons';
@@ -7,6 +7,8 @@ import type { MenuProps } from 'antd';
 import { User } from '../types';
 import { useAiContext } from '../contexts/AiContext';
 import { getBookmarks, addBookmark, removeBookmark, isBookmarked, getCurrentPath, Bookmark } from '../utils/bookmarks';
+import { ThemeContext } from '../App';
+import ThemeToggle from './ThemeToggle';
 
 const { Header } = Layout;
 
@@ -28,6 +30,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onMenuClick }) =>
   const navigate = useNavigate();
   const location = useLocation();
   const { openPanel, panelVisible, closePanel } = useAiContext();
+  const themeContext = useContext(ThemeContext);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
@@ -216,6 +219,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onMenuClick }) =>
         style={{ fontSize: 18, width: 40, height: 40 }}
       />
       <Space style={{ marginLeft: 'auto', alignItems: 'center' }}>
+        {themeContext && (
+          <ThemeToggle isDark={themeContext.isDark} onThemeChange={themeContext.setTheme} persist />
+        )}
         <Dropdown menu={{ items: bookmarkMenuItems }} placement="bottomRight" trigger={['click']}>
           <Button
             type="text"
