@@ -376,9 +376,11 @@ const TaskPage: React.FC = () => {
         if (conditions.date_range === 'today') {
           params.start_date = todayStart;
           params.end_date = dayjs().add(1, 'day').startOf('day').toISOString();
+          params.include_overdue = true;
         } else if (conditions.date_range === 'week') {
           params.start_date = todayStart;
           params.end_date = dayjs().add(7, 'day').startOf('day').toISOString();
+          params.include_overdue = true;
         } else if (conditions.date_range === 'month') {
           params.start_date = todayStart;
           params.end_date = dayjs().endOf('month').endOf('day').toISOString();
@@ -399,9 +401,11 @@ const TaskPage: React.FC = () => {
       if (filter === 'today') {
         params.start_date = dayjs().startOf('day').toISOString();
         params.end_date = dayjs().add(1, 'day').startOf('day').toISOString();
+        params.include_overdue = true;
       } else if (filter === 'week') {
         params.start_date = dayjs().startOf('day').toISOString();
         params.end_date = dayjs().add(7, 'day').startOf('day').toISOString();
+        params.include_overdue = true;
       }
         
       // 按清单筛选

@@ -10,6 +10,7 @@ export const getTasks = async (params?: {
   is_pinned?: boolean;
   start_date?: string;
   end_date?: string;
+  include_overdue?: boolean;
   no_start_time?: boolean;
   skip?: number;
   limit?: number;

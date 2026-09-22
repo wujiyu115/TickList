@@ -498,6 +498,51 @@ class TaskDAO:
                 child_task.deleted_at = deleted_at
                 child_task.updated_at = deleted_at
     
+    @staticmethod
+    def _date_range_condition(start_date: datetime, end_date: datetime, include_overdue: bool = False):
+        """构造日期范围过滤条件，任一分支命中即返回：
+        - due_date 落在 [start, end)
+        - due_date 为空且 start_time 落在 [start, end)
+        - completed_at 落在 [start, end)（已完成列表按完成时间过滤）
+
+        include_overdue=True 时 due_date/start_time 分支不设下界：早于 end 的
+        逾期任务也纳入，保证“今天/最近7天”视图继续展示历史未完成任务；
+        completed_at 分支保持有界，避免已完成列表被全部历史任务刷屏。
+        """
+        start_iso = start_date.isoformat()
+        end_iso = end_date.isoformat()
+        if include_overdue:
+            due_branch = and_(
+                TaskModel.due_date.isnot(None),
+                TaskModel.due_date < end_iso,
+            )
+            start_branch = and_(
+                TaskModel.due_date.is_(None),
+                TaskModel.start_time.isnot(None),
+                TaskModel.start_time < end_iso,
+            )
+        else:
+            due_branch = and_(
+                TaskModel.due_date.isnot(None),
+                TaskModel.due_date >= start_iso,
+                TaskModel.due_date < end_iso,
+            )
+            start_branch = and_(
+                TaskModel.due_date.is_(None),
+                TaskModel.start_time.isnot(None),
+                TaskModel.start_time >= start_iso,
+                TaskModel.start_time < end_iso,
+            )
+        return or_(
+            due_branch,
+            start_branch,
+            and_(
+                TaskModel.completed_at.isnot(None),
+                TaskModel.completed_at >= start_iso,
+                TaskModel.completed_at < end_iso,
+            ),
+        )
+
     def get_user_tasks(
         self,
         user_id: str,
@@ -512,7 +557,8 @@ class TaskDAO:
         end_date: Optional[datetime] = None,
         skip: int = 0,
         limit: int = 100,
-        include_deleted: bool = False
+        include_deleted: bool = False,
+        include_overdue: bool = False
     ) -> List[Dict]:
         """获取用户任务列表（筛选匹配的任务，并自动展开子任务树）"""
         session = self._get_session()
@@ -554,28 +600,11 @@ class TaskDAO:
                 )
             
             if start_date and end_date:
-                start_date_iso = start_date.isoformat()
-                end_date_iso = end_date.isoformat()
-                query = query.filter(
-                    or_(
-                        and_(
-                            TaskModel.due_date.isnot(None),
-                            TaskModel.due_date >= start_date_iso,
-                            TaskModel.due_date < end_date_iso,
-                        ),
-                        and_(
-                            TaskModel.due_date.is_(None),
-                            TaskModel.start_time.isnot(None),
-                            TaskModel.start_time >= start_date_iso,
-                            TaskModel.start_time < end_date_iso,
-                        ),
-                        and_(
-                            TaskModel.completed_at.isnot(None),
-                            TaskModel.completed_at >= start_date_iso,
-                            TaskModel.completed_at < end_date_iso,
-                        ),
-                    )
-                )
+                # include_overdue 只对未完成查询生效：已完成列表以 completed_at 落界为准
+                query = query.filter(self._date_range_condition(
+                    start_date, end_date,
+                    include_overdue=include_overdue and exclude_status == 'completed',
+                ))
 
             # 排序：已完成任务按完成时间从新到旧，其他任务按置顶、排序、创建时间
             if status == 'completed':
@@ -904,7 +933,7 @@ class TaskDAO:
                          list_id: Optional[str] = None, tags: Optional[List[str]] = None,
                          is_pinned: Optional[bool] = None, priority: Optional[List[int]] = None,
                          keyword: Optional[str] = None, start_date: Optional[datetime] = None,
-                         end_date: Optional[datetime] = None) -> int:
+                         end_date: Optional[datetime] = None, include_overdue: bool = False) -> int:
         """统计用户任务数量（支持与 get_user_tasks 相同的过滤条件）"""
         session = self._get_session()
         try:
@@ -942,28 +971,11 @@ class TaskDAO:
                 )
 
             if start_date and end_date:
-                start_date_iso = start_date.isoformat()
-                end_date_iso = end_date.isoformat()
-                query = query.filter(
-                    or_(
-                        and_(
-                            TaskModel.due_date.isnot(None),
-                            TaskModel.due_date >= start_date_iso,
-                            TaskModel.due_date < end_date_iso,
-                        ),
-                        and_(
-                            TaskModel.due_date.is_(None),
-                            TaskModel.start_time.isnot(None),
-                            TaskModel.start_time >= start_date_iso,
-                            TaskModel.start_time < end_date_iso,
-                        ),
-                        and_(
-                            TaskModel.completed_at.isnot(None),
-                            TaskModel.completed_at >= start_date_iso,
-                            TaskModel.completed_at < end_date_iso,
-                        ),
-                    )
-                )
+                # include_overdue 只对未完成查询生效：已完成列表以 completed_at 落界为准
+                query = query.filter(self._date_range_condition(
+                    start_date, end_date,
+                    include_overdue=include_overdue and exclude_status == 'completed',
+                ))
 
             return query.count()
         finally:

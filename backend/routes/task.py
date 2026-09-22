@@ -195,6 +195,7 @@ async def get_tasks(
     keyword: Optional[str] = Query(None),         # 关键词筛选
     start_date: Optional[str] = Query(None),      # 开始时间范围 - 起始日期
     end_date: Optional[str] = Query(None),        # 开始时间范围 - 结束日期
+    include_overdue: bool = Query(False),         # 未完成任务是否包含逾期（今天/最近7天视图用）
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     current_user_id: str = Depends(get_current_user)
@@ -242,7 +243,8 @@ async def get_tasks(
             start_date=start_date_dt,
             end_date=end_date_dt,
             skip=skip,
-            limit=limit
+            limit=limit,
+            include_overdue=include_overdue
         )
         
         return {
@@ -258,6 +260,7 @@ async def get_tasks(
                 keyword=keyword,
                 start_date=start_date_dt,
                 end_date=end_date_dt,
+                include_overdue=include_overdue,
             )
         }
     except Exception as e:
