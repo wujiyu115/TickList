@@ -5,6 +5,7 @@ import { message } from '../utils/antdApp';
 import { PlusOutlined, CaretDownOutlined, CaretRightOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
 import { useTaskContext } from '../contexts/TaskContext';
+import { useTaskListCommitProbe } from '../hooks/useTaskListCommitProbe';
 import { DragProvider } from '../contexts/DragContext';
 import { Task, TaskList as TaskListType } from '../types';
 import { reorderTasks, moveTask } from '../api/task';
@@ -136,7 +137,7 @@ const TaskList: React.FC<TaskListProps> = ({
   onLoadMoreCompleted,
   lists,
 }) => {
-  const { tasks, loading, addTask, refreshTasks } = useTaskContext();
+  const { tasks, loading, addTask, refreshTasks, dataRevision } = useTaskContext();
   const [searchParams] = useSearchParams();
   const currentListId = searchParams.get('list_id');
   const currentTag = searchParams.get('tag');
@@ -144,6 +145,8 @@ const TaskList: React.FC<TaskListProps> = ({
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [isAddingTask, setIsAddingTask] = useState(false);
+  // 观测探针：新任务数据真正 commit 到列表 DOM 后上报；加载中/出错/旧数据不会触发
+  useTaskListCommitProbe(dataRevision, tasks.length);
 
   // 拖拽排序处理：分离置顶/非置顶，分别计算 order
   const handleReorder = useCallback(async (reorderedTasks: Task[]) => {

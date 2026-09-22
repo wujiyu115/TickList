@@ -4,10 +4,13 @@ import { getTasks, createTask, updateTask, deleteTask as deleteTaskApi, restoreT
 import { message } from '../utils/antdApp';
 import { scheduleTaskNotification, cancelTaskNotification } from '../services/notificationService';
 import { HOST_TASKS_REFRESH_EVENT, isFocusShieldHost } from '../services/focusHost';
+import { beginTaskListFetch, reportTaskListFetch } from '../services/taskListMetrics';
 
 interface TaskContextType {
   tasks: Task[];
   loading: boolean;
+  // 最近一次成功应用到 tasks 的请求序号；由 TaskList 的 commit 探针消费（0 = 尚无新数据 commit）
+  dataRevision: number;
   selectedTask: Task | null;
   fetchTasks: (params?: any) => Promise<void>;
   addTask: (task: any) => Promise<Task | undefined>;
@@ -36,6 +39,8 @@ interface TaskProviderProps {
 export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
+  // 已应用的请求序号，与 taskListMetrics 快照严格同步推进
+  const [dataRevision, setDataRevision] = useState(0);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [lastParams, setLastParams] = useState<any>({});
   const mounted = useRef(true);
@@ -47,10 +52,16 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
 
   const fetchTasks = useCallback(async (params: any = {}) => {
     const revision = ++fetchRevision.current;
+    beginTaskListFetch(revision);
     setLoading(true);
     try {
       const response = await getTasks(params);
-      if (isFocusShieldHost() && (!mounted.current || revision !== fetchRevision.current)) return;
+      if (isFocusShieldHost() && (!mounted.current || revision !== fetchRevision.current)) {
+        reportTaskListFetch(revision, 'stale');
+        return;
+      }
+      reportTaskListFetch(revision, 'success', response.tasks.length);
+      setDataRevision(revision);
       setTasks(response.tasks);
       setLastParams(params);
       // 同步更新 selectedTask，确保编辑器显示最新数据
@@ -62,7 +73,11 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
         return null;
       });
     } catch (error) {
-      if (isFocusShieldHost() && (!mounted.current || revision !== fetchRevision.current)) return;
+      if (isFocusShieldHost() && (!mounted.current || revision !== fetchRevision.current)) {
+        reportTaskListFetch(revision, 'error');
+        return;
+      }
+      reportTaskListFetch(revision, 'error');
       message.error('获取任务列表失败');
       console.error('Failed to fetch tasks:', error);
     } finally {
@@ -188,6 +203,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   const value: TaskContextType = {
     tasks,
     loading,
+    dataRevision,
     selectedTask,
     fetchTasks,
     addTask,
