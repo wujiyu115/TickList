@@ -4,6 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { server } from '../../tests/mocks/server';
+import { mockUser } from '../../tests/mocks/data';
 import { http, HttpResponse } from 'msw';
 import LoginPage from '../LoginPage';
 
@@ -48,8 +49,29 @@ describe('LoginPage', () => {
     await waitFor(() => {
       expect(mockOnLogin).toHaveBeenCalledWith(
         expect.objectContaining({ username: 'testuser' }),
-        'mock-jwt-token'
+        'mock-jwt-token',
+        undefined
       );
+    });
+  });
+
+  it('should forward the refresh token after successful login', async () => {
+    const account = mockUser();
+    server.use(
+      http.post('/api/auth/login', () => HttpResponse.json({
+        success: true,
+        user: account,
+        token: 'mock-jwt-token',
+        refresh_token: 'mock-refresh-token',
+      }))
+    );
+    const user = userEvent.setup();
+    renderLoginPage();
+    await user.type(screen.getByPlaceholderText('用户名'), account.username);
+    await user.type(screen.getByPlaceholderText('密码'), 'test123');
+    await user.click(screen.getByRole('button', { name: /登\s*录/ }));
+    await waitFor(() => {
+      expect(mockOnLogin).toHaveBeenCalledWith(account, 'mock-jwt-token', 'mock-refresh-token');
     });
   });
 

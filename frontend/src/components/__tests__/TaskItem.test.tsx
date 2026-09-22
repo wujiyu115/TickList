@@ -1,9 +1,10 @@
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import TaskItem from '../TaskItem';
 import { Task } from '../../types';
+import { DragProvider } from '../../contexts/DragContext';
 
 // Mock TaskContext
 const mockUpdateTaskData = vi.fn();
@@ -46,12 +47,18 @@ const baseTask: Task = {
 const renderTaskItem = (task: Task, allTasks: Task[] = [task]) => {
   return render(
     <MemoryRouter>
-      <TaskItem task={task} allTasks={allTasks} />
+      <DragProvider>
+        <TaskItem task={task} allTasks={allTasks} />
+      </DragProvider>
     </MemoryRouter>
   );
 };
 
 describe('TaskItem', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('should render task title', () => {
     renderTaskItem(baseTask);
     expect(screen.getByText('测试任务标题')).toBeInTheDocument();
