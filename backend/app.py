@@ -7,7 +7,7 @@ from datetime import timedelta
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from dotenv import load_dotenv
 from utils.logger import logger
 from database.connection import db_connection
@@ -53,8 +53,12 @@ def create_app():
     
     # 根据环境配置决定是否开放文档接口
     environment = config.get_environment()
-    docs_url = "/docs" if environment == "development" else None
-    redoc_url = "/redoc" if environment == "development" else None
+    # 注意：openapi_url 必须一并禁用，否则即使关闭 docs/redoc，/openapi.json 仍会
+    # 对外暴露完整 API schema（曾导致线上泄露 76 个端点的接口文档）
+    is_dev = environment == "development"
+    docs_url = "/docs" if is_dev else None
+    redoc_url = "/redoc" if is_dev else None
+    openapi_url = "/openapi.json" if is_dev else None
     
     # 创建FastAPI应用
     app = FastAPI(
@@ -62,7 +66,8 @@ def create_app():
         description="TickList Todo Management API",
         version="1.0.0",
         docs_url=docs_url,
-        redoc_url=redoc_url
+        redoc_url=redoc_url,
+        openapi_url=openapi_url
     )
     
     # 配置静态文件目录
@@ -137,11 +142,11 @@ def create_app():
         # 处理SPA路由回退
         @app.get("/{full_path:path}")
         async def serve_spa(request: Request, full_path: str):
-            if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("redoc"):
-                return {"message": "Not Found"}, 404
+            if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("redoc") or full_path.startswith("openapi"):
+                return JSONResponse(content={"message": "Not Found"}, status_code=404)
             
             if ".." in full_path or full_path.startswith("/") or "\\" in full_path:
-                return {"message": "Access Denied"}, 403
+                return JSONResponse(content={"message": "Access Denied"}, status_code=403)
             
             file_path = os.path.join(static_folder, full_path)
             
@@ -150,16 +155,16 @@ def create_app():
                 real_static_folder = os.path.realpath(static_folder)
                 
                 if not real_file_path.startswith(real_static_folder):
-                    return {"message": "Access Denied"}, 403
+                    return JSONResponse(content={"message": "Access Denied"}, status_code=403)
             except (OSError, ValueError):
-                return {"message": "Invalid Path"}, 400
+                return JSONResponse(content={"message": "Invalid Path"}, status_code=400)
             
             if os.path.isfile(file_path):
                 allowed_extensions = {'.js', '.css', '.html', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot'}
                 file_ext = os.path.splitext(full_path)[1].lower()
                 
                 if file_ext not in allowed_extensions:
-                    return {"message": "File Type Not Allowed"}, 403
+                    return JSONResponse(content={"message": "File Type Not Allowed"}, status_code=403)
                 
                 return FileResponse(file_path)
             
@@ -180,9 +185,9 @@ def create_app():
     else:
         @app.get("/{full_path:path}")
         async def serve_fallback(request: Request, full_path: str):
-            if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("redoc"):
-                return {"message": "Not Found"}, 404
-            return {"message": "Frontend not built"}, 404
+            if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("redoc") or full_path.startswith("openapi"):
+                return JSONResponse(content={"message": "Not Found"}, status_code=404)
+            return JSONResponse(content={"message": "Frontend not built"}, status_code=404)
     
     return app
 
