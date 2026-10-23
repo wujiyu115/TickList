@@ -46,6 +46,9 @@ COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 # 设置前端静态文件路径环境变量
 ENV FRONTEND=/app/frontend/dist
 
+# 默认时区东八区（提醒调度/日志时间戳依赖本地时间），可通过 docker run -e TZ= 覆盖
+ENV TZ=Asia/Shanghai
+
 # 数据库连接字符串（可通过 docker run -e 覆盖）
 # 示例:
 #   SQLite: sqlite:///ticklist.db
