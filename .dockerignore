@@ -25,6 +25,7 @@ backend/logs/
 # Node.js / 前端
 # ===================
 node_modules/
+frontend/node_modules/
 frontend/dist/
 .cache/
 .npm

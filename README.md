@@ -359,6 +359,8 @@ bun run build
 
 构建产物将输出到 `frontend/dist` 目录。
 
+Docker 镜像使用 `frontend/bun.lock` 安装依赖，并排除宿主机的 `frontend/node_modules`，避免本地依赖覆盖镜像内的锁定版本。
+
 ## 管理员配置
 
 ### 自动管理员
