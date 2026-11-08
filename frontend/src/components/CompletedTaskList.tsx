@@ -3,10 +3,15 @@ import { Button, Dropdown, Checkbox, Spin, Empty } from 'antd';
 import { DownOutlined, CaretDownOutlined, CaretRightOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import dayjs from 'dayjs';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import isBetween from 'dayjs/plugin/isBetween';
 import { useTaskContext } from '../contexts/TaskContext';
 import { Task, TaskList as TaskListType } from '../types';
 import { getLists } from '../api/list';
 import './CompletedTaskList.less';
+
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isBetween);
 
 // 日期筛选选项
 const DATE_OPTIONS = [

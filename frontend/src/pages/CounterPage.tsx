@@ -17,6 +17,7 @@ import {
   Tooltip,
   Progress,
 } from 'antd';
+import type { MenuProps } from 'antd';
 import { message, modalApi } from '../utils/antdApp';
 import {
   PlusOutlined,
@@ -97,7 +98,7 @@ const CounterPage: React.FC = () => {
     setModalVisible(true);
   };
 
-  const handleEdit = (counter: Counter, event: React.MouseEvent) => {
+  const handleEdit = (counter: Counter, event: { stopPropagation: () => void }) => {
     event.stopPropagation();
     setEditingCounter(counter);
     const color = counter.color || '#1890ff';
@@ -114,8 +115,8 @@ const CounterPage: React.FC = () => {
     setModalVisible(true);
   };
 
-  const handleDelete = async (id: string, event: React.MouseEvent) => {
-    event.stopPropagation();
+  const handleDelete = async (id: string, event?: { stopPropagation: () => void }) => {
+    event?.stopPropagation();
     try {
       await deleteCounter(id);
       message.success('删除成功');
@@ -125,7 +126,7 @@ const CounterPage: React.FC = () => {
     }
   };
 
-  const handleTogglePin = async (counter: Counter, event: React.MouseEvent) => {
+  const handleTogglePin = async (counter: Counter, event: { stopPropagation: () => void }) => {
     event.stopPropagation();
     try {
       await updateCounter(counter.id, { is_pinned: !counter.is_pinned });
@@ -188,7 +189,7 @@ const CounterPage: React.FC = () => {
     }
   };
 
-  const handleReopen = async (counter: Counter, event: React.MouseEvent) => {
+  const handleReopen = async (counter: Counter, event: { stopPropagation: () => void }) => {
     event.stopPropagation();
     try {
       await reopenCounter(counter.id);
@@ -243,19 +244,20 @@ const CounterPage: React.FC = () => {
   const renderCounterCard = (counter: Counter) => {
     const hasTarget = counter.target_value !== null;
     const progressPercent = getProgressPercent(counter);
+    const handleReopenClick: NonNullable<MenuProps['onClick']> = ({ domEvent }) => handleReopen(counter, domEvent);
 
-    const dropdownItems = [
+    const dropdownItems: MenuProps['items'] = [
       {
         key: 'edit',
         label: '编辑',
         icon: <EditOutlined />,
-        onClick: (info: { domEvent: React.MouseEvent }) => handleEdit(counter, info.domEvent),
+        onClick: (info) => handleEdit(counter, info.domEvent),
       },
       {
         key: 'pin',
         label: counter.is_pinned ? '取消置顶' : '置顶',
         icon: counter.is_pinned ? <PushpinOutlined /> : <PushpinFilled />,
-        onClick: (info: { domEvent: React.MouseEvent }) => handleTogglePin(counter, info.domEvent),
+        onClick: (info) => handleTogglePin(counter, info.domEvent),
       },
       ...(counter.is_completed
         ? [
@@ -263,7 +265,7 @@ const CounterPage: React.FC = () => {
               key: 'reopen',
               label: '重新打开',
               icon: <UndoOutlined />,
-              onClick: (info: { domEvent: React.MouseEvent }) => handleReopen(counter, info.domEvent),
+              onClick: handleReopenClick,
             },
           ]
         : []),
@@ -273,10 +275,7 @@ const CounterPage: React.FC = () => {
         label: (
           <Popconfirm
             title="确定删除这个计数器吗？"
-            onConfirm={(e) => {
-              e?.stopPropagation();
-              handleDelete(counter.id, e as unknown as React.MouseEvent);
-            }}
+            onConfirm={(e) => handleDelete(counter.id, e)}
             onCancel={(e) => e?.stopPropagation()}
             okText="确定"
             cancelText="取消"
@@ -290,7 +289,7 @@ const CounterPage: React.FC = () => {
           </Popconfirm>
         ),
         icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
-        onClick: (info: any) => info.domEvent?.stopPropagation(),
+        onClick: (info) => info.domEvent.stopPropagation(),
       },
     ];
 

@@ -167,7 +167,7 @@ export interface TaskList {
   type: 'folder' | 'list';
   parent_id?: string;
   color: string;
-  font_color?: string;  // 字体颜色
+  font_color?: string | null;  // null 表示使用默认字体颜色
   order: number;
   is_archived: boolean;
   is_pinned: boolean;  // 是否置顶
@@ -180,7 +180,7 @@ export interface TaskListCreateRequest {
   type?: 'folder' | 'list';
   parent_id?: string;
   color?: string;
-  font_color?: string;
+  font_color?: string | null;
   order?: number;
 }
 
@@ -188,7 +188,7 @@ export interface TaskListUpdateRequest {
   name?: string;
   parent_id?: string;
   color?: string;
-  font_color?: string;
+  font_color?: string | null;
   order?: number;
   is_archived?: boolean;
   is_pinned?: boolean;

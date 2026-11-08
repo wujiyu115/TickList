@@ -280,3 +280,86 @@ describe('host-gated task list load metrics', () => {
     expect(fake.entries).toEqual([]);
   });
 });
+
+describe('standalone task requests', () => {
+  const Controls = () => {
+    const { tasks, loading, fetchTasks, refreshTasks } = useTaskContext();
+    return <>
+      <button onClick={() => { void fetchTasks({ status: 'pending' }); }}>pending</button>
+      <button onClick={() => { void fetchTasks({ status: 'completed' }); }}>completed</button>
+      <button onClick={() => { void fetchTasks({ skip: 10, limit: 2 }); }}>page</button>
+      <button onClick={() => { void refreshTasks(); }}>refresh</button>
+      <div data-testid="loading">{String(loading)}</div>
+      <div data-testid="tasks">{tasks.map(task => task.id).join(',')}</div>
+    </>;
+  };
+
+  beforeEach(() => { flags.hosted = false; });
+
+  it('ignores stale successes and errors without clearing the current loading state', async () => {
+    const first = deferredTasks();
+    const second = deferredTasks();
+    const third = deferredTasks();
+    vi.mocked(getTasks).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise).mockReturnValueOnce(third.promise);
+    render(<TaskProvider><Controls /></TaskProvider>);
+    fireEvent.click(screen.getByText('pending'));
+    fireEvent.click(screen.getByText('completed'));
+    await act(async () => { first.resolve({ tasks: [taskA], total: 1 }); });
+    expect(screen.getByTestId('tasks')).toHaveTextContent('');
+    expect(screen.getByTestId('loading')).toHaveTextContent('true');
+    fireEvent.click(screen.getByText('pending'));
+    await act(async () => { second.reject(new Error('stale')); });
+    expect(message.error).not.toHaveBeenCalled();
+    expect(screen.getByTestId('loading')).toHaveTextContent('true');
+    await act(async () => { third.resolve({ tasks: [taskB], total: 1 }); });
+    expect(screen.getByTestId('tasks')).toHaveTextContent('2');
+    expect(screen.getByTestId('loading')).toHaveTextContent('false');
+  });
+
+  it('refreshes the latest requested view and suppresses obsolete refresh events', async () => {
+    const view = deferredTasks();
+    const refresh = deferredTasks();
+    const newer = deferredTasks();
+    const onRefresh = vi.fn();
+    window.addEventListener('tasks-refreshed', onRefresh);
+    vi.mocked(getTasks).mockReturnValueOnce(view.promise).mockReturnValueOnce(refresh.promise).mockReturnValueOnce(newer.promise);
+    render(<TaskProvider><Controls /></TaskProvider>);
+    fireEvent.click(screen.getByText('completed'));
+    fireEvent.click(screen.getByText('refresh'));
+    expect(getTasks).toHaveBeenNthCalledWith(2, { status: 'completed', skip: 0, limit: 1000 });
+    fireEvent.click(screen.getByText('pending'));
+    await act(async () => { refresh.resolve({ tasks: [taskB], total: 1 }); });
+    expect(onRefresh).not.toHaveBeenCalled();
+    await act(async () => { view.resolve({ tasks: [taskB], total: 1 }); newer.resolve({ tasks: [taskA], total: 1 }); });
+    expect(screen.getByTestId('tasks')).toHaveTextContent('1');
+    window.removeEventListener('tasks-refreshed', onRefresh);
+  });
+
+  it('collects all matched pages and deduplicates expanded children', async () => {
+    const page = Array.from({ length: 1000 }, (_, index) => ({ ...taskA, id: String(index) }));
+    const child = { ...taskA, id: 'child' };
+    vi.mocked(getTasks)
+      .mockResolvedValueOnce({ tasks: [...page, child], total: 1001 })
+      .mockResolvedValueOnce({ tasks: [child, { ...taskB, id: '1000' }], total: 1001 });
+    render(<TaskProvider><Controls /></TaskProvider>);
+    fireEvent.click(screen.getByText('pending'));
+    await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('false'));
+    expect(getTasks).toHaveBeenNthCalledWith(2, { status: 'pending', skip: 1000, limit: 1000 });
+    const ids = screen.getByTestId('tasks').textContent?.split(',');
+    expect(ids).toHaveLength(1002);
+    expect(ids?.filter(id => id === 'child')).toHaveLength(1);
+    expect(ids).toContain('1000');
+  });
+
+  it('respects explicit pagination and stops fetching pages for obsolete requests', async () => {
+    const obsolete = deferredTasks();
+    vi.mocked(getTasks).mockReturnValueOnce(obsolete.promise).mockResolvedValueOnce({ tasks: [taskB], total: 2000 });
+    render(<TaskProvider><Controls /></TaskProvider>);
+    fireEvent.click(screen.getByText('pending'));
+    fireEvent.click(screen.getByText('page'));
+    await act(async () => { obsolete.resolve({ tasks: [taskA], total: 2000 }); });
+    expect(getTasks).toHaveBeenCalledTimes(2);
+    expect(getTasks).toHaveBeenNthCalledWith(2, { skip: 10, limit: 2 });
+    expect(screen.getByTestId('tasks')).toHaveTextContent('2');
+  });
+});

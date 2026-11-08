@@ -42,7 +42,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   // 已应用的请求序号，与 taskListMetrics 快照严格同步推进
   const [dataRevision, setDataRevision] = useState(0);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [lastParams, setLastParams] = useState<any>({});
+  const lastParams = useRef<NonNullable<Parameters<typeof getTasks>[0]>>({});
   const mounted = useRef(true);
   const fetchRevision = useRef(0);
   useEffect(() => {
@@ -50,46 +50,71 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
     return () => { mounted.current = false; fetchRevision.current += 1; };
   }, []);
 
-  const fetchTasks = useCallback(async (params: any = {}) => {
+  const loadTasks = useCallback(async (params: NonNullable<Parameters<typeof getTasks>[0]> = {}): Promise<boolean> => {
+    lastParams.current = params;
     const revision = ++fetchRevision.current;
+    const isCurrent = () => mounted.current && revision === fetchRevision.current;
     beginTaskListFetch(revision);
     setLoading(true);
     try {
-      const response = await getTasks(params);
-      if (isFocusShieldHost() && (!mounted.current || revision !== fetchRevision.current)) {
-        reportTaskListFetch(revision, 'stale');
-        return;
-      }
-      reportTaskListFetch(revision, 'success', response.tasks.length);
+      const paginated = params.skip != null || params.limit != null;
+      const pageLimit = 1000;
+      let skip = 0;
+      const collected: Task[] = [];
+      const ids = new Set<string>();
+      let total: number;
+      do {
+        const response = await getTasks(paginated ? params : { ...params, skip, limit: pageLimit });
+        if (!isCurrent()) {
+          reportTaskListFetch(revision, 'stale');
+          return false;
+        }
+        for (const task of response.tasks) {
+          if (!ids.has(task.id)) {
+            ids.add(task.id);
+            collected.push(task);
+          }
+        }
+        total = response.total;
+        skip += pageLimit;
+      } while (!paginated && skip < total);
+      reportTaskListFetch(revision, 'success', collected.length);
       setDataRevision(revision);
-      setTasks(response.tasks);
-      setLastParams(params);
+      setTasks(collected);
       // 同步更新 selectedTask，确保编辑器显示最新数据
       setSelectedTask(prev => {
         if (prev) {
-          const updatedTask = response.tasks.find(t => t.id === prev.id);
+          const updatedTask = collected.find(t => t.id === prev.id);
           return updatedTask || prev;
         }
         return null;
       });
+      return true;
     } catch (error) {
-      if (isFocusShieldHost() && (!mounted.current || revision !== fetchRevision.current)) {
+      if (!isCurrent()) {
         reportTaskListFetch(revision, 'error');
-        return;
+        return false;
       }
       reportTaskListFetch(revision, 'error');
       message.error('获取任务列表失败');
       console.error('Failed to fetch tasks:', error);
+      return false;
     } finally {
-      if (!isFocusShieldHost() || (mounted.current && revision === fetchRevision.current)) setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }, []);
 
+  const fetchTasks = useCallback(async (params: NonNullable<Parameters<typeof getTasks>[0]> = {}) => {
+    await loadTasks(params);
+  }, [loadTasks]);
+
   const refreshTasks = useCallback(async () => {
-    await fetchTasks(lastParams);
-    // 通知 TaskPage 等组件同步刷新已完成任务
-    if (!isFocusShieldHost() || mounted.current) window.dispatchEvent(new CustomEvent('tasks-refreshed'));
-  }, [fetchTasks, lastParams]);
+    const request = loadTasks(lastParams.current);
+    const revision = fetchRevision.current;
+    if (await request && mounted.current && revision === fetchRevision.current) {
+      window.dispatchEvent(new CustomEvent('tasks-refreshed'));
+    }
+  }, [loadTasks]);
 
   const hostRefresh = useRef(refreshTasks);
   hostRefresh.current = refreshTasks;

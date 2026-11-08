@@ -9,7 +9,7 @@ import {
   MenuOutlined,
   DeleteOutlined
 } from '@ant-design/icons';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { useTaskContext } from '../contexts/TaskContext';
 import TaskList from '../components/TaskList';
@@ -93,6 +93,28 @@ const TaskPage: React.FC = () => {
   }, []);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [refreshRevision, setRefreshRevision] = useState(0);
+  const completedRequest = useRef(0);
+  const trashRequest = useRef(0);
+
+  useEffect(() => {
+    let refreshTimer: number | undefined;
+    const refreshVisiblePage = () => {
+      if (document.visibilityState !== 'visible') return;
+      clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(() => setRefreshRevision(value => value + 1), 100);
+    };
+    window.addEventListener('focus', refreshVisiblePage);
+    document.addEventListener('visibilitychange', refreshVisiblePage);
+    return () => {
+      clearTimeout(refreshTimer);
+      window.removeEventListener('focus', refreshVisiblePage);
+      document.removeEventListener('visibilitychange', refreshVisiblePage);
+      completedRequest.current += 1;
+      trashRequest.current += 1;
+    };
+  }, []);
   const filter = searchParams.get('filter');
   const listId = searchParams.get('list_id');
   const tagFilter = searchParams.get('tag');
@@ -206,13 +228,16 @@ const TaskPage: React.FC = () => {
 
   // 加载垃圾箱任务
   const loadTrashTasks = useCallback(async (page: number, append: boolean = false) => {
+    const request = ++trashRequest.current;
     if (page === 1) {
       setTrashLoading(true);
+      setTrashLoadingMore(false);
     } else {
       setTrashLoadingMore(true);
     }
     try {
       const res = await getTrashTasks({ page, page_size: PAGE_SIZE });
+      if (request !== trashRequest.current) return;
       const newTasks = res.tasks || [];
       if (append) {
         setTrashTasks(prev => [...prev, ...newTasks]);
@@ -222,17 +247,22 @@ const TaskPage: React.FC = () => {
       setTrashTotal(res.total || 0);
       setTrashPage(page);
     } catch (error) {
+      if (request !== trashRequest.current) return;
       console.error('Failed to load trash tasks:', error);
     } finally {
-      setTrashLoading(false);
-      setTrashLoadingMore(false);
+      if (request === trashRequest.current) {
+        setTrashLoading(false);
+        setTrashLoadingMore(false);
+      }
     }
   }, []);
 
   // 加载已完成任务（分页），支持传入视图过滤参数
   const loadCompletedTasks = useCallback(async (page: number, append: boolean = false, filterParams: any = {}) => {
+    const request = ++completedRequest.current;
     if (page === 1) {
       setCompletedLoading(true);
+      setCompletedLoadingMore(false);
     } else {
       setCompletedLoadingMore(true);
     }
@@ -243,6 +273,7 @@ const TaskPage: React.FC = () => {
         skip: (page - 1) * PAGE_SIZE,
         limit: PAGE_SIZE,
       });
+      if (request !== completedRequest.current) return;
       const newTasks = res.tasks || [];
       if (append) {
         setCompletedTasks(prev => [...prev, ...newTasks]);
@@ -252,10 +283,13 @@ const TaskPage: React.FC = () => {
       setCompletedTotal(res.total || 0);
       setCompletedPage(page);
     } catch (error) {
+      if (request !== completedRequest.current) return;
       console.error('Failed to load completed tasks:', error);
     } finally {
-      setCompletedLoading(false);
-      setCompletedLoadingMore(false);
+      if (request === completedRequest.current) {
+        setCompletedLoading(false);
+        setCompletedLoadingMore(false);
+      }
     }
   }, []);
 
@@ -326,10 +360,15 @@ const TaskPage: React.FC = () => {
 
   // 当视图切换时，重置分页状态并加载数据
   useEffect(() => {
+    completedRequest.current += 1;
+    trashRequest.current += 1;
     // 无任何筛选参数时跳过加载，等待 useEffect 1 导航到默认过滤条件
     if (!filter && !listId && !tagFilter && !filterId && !tagsParam && !priorityParam && !keywordParam) {
       return;
     }
+
+    // 自定义过滤器尚未加载时，不先请求无筛选的数据。
+    if (filterId && !activeFilter) return;
 
     const isTrashView = filter === 'trash';
     const isCompletedView = filter === 'completed';
@@ -345,6 +384,7 @@ const TaskPage: React.FC = () => {
     }
 
     if (isCompletedView) {
+      currentViewParamsRef.current = {};
       // 重置已完成分页状态
       setCompletedTasks([]);
       setCompletedTotal(0);
@@ -383,7 +423,7 @@ const TaskPage: React.FC = () => {
           params.include_overdue = true;
         } else if (conditions.date_range === 'month') {
           params.start_date = todayStart;
-          params.end_date = dayjs().endOf('month').endOf('day').toISOString();
+          params.end_date = dayjs().add(1, 'month').startOf('month').toISOString();
         }
       }
         
@@ -445,7 +485,11 @@ const TaskPage: React.FC = () => {
     setCompletedTotal(0);
     setCompletedPage(1);
     loadCompletedTasks(1, false, params);
-  }, [filter, listId, tagFilter, activeFilter, tagsParam, priorityParam, keywordParam]);
+    return () => {
+      completedRequest.current += 1;
+      trashRequest.current += 1;
+    };
+  }, [filter, listId, tagFilter, filterId, activeFilter, tagsParam, priorityParam, keywordParam, location.key, refreshRevision]);
 
   // 垃圾箱 - 查看更多
   const handleTrashLoadMore = () => {

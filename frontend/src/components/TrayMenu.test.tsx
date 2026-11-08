@@ -2,8 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import TrayMenu from './TrayMenu';
 
-const invoke = vi.fn(() => Promise.resolve());
-vi.mock('@tauri-apps/api/core', () => ({ invoke: (...args: any[]) => invoke(...args) }));
+const { invoke } = vi.hoisted(() => ({
+  invoke: vi.fn<(command: string) => Promise<void>>().mockResolvedValue(undefined),
+}));
+vi.mock('@tauri-apps/api/core', () => ({ invoke }));
 
 beforeEach(() => {
   invoke.mockClear();

@@ -144,8 +144,8 @@ const SummaryPage: React.FC = () => {
           : getDateRange(timeOption);
         
         if (dateRange) {
-          params.start_date = dateRange.start;
-          params.end_date = dateRange.end;
+          params.start_date = dayjs(dateRange.start).startOf('day').toISOString();
+          params.end_date = dayjs(dateRange.end).add(1, 'day').startOf('day').toISOString();
         }
         
         // 清单筛选

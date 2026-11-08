@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
 import uuid
@@ -193,8 +193,8 @@ async def get_tasks(
     is_pinned: Optional[bool] = Query(None),
     priority: Optional[str] = Query(None),       # 优先级筛选，逗号分隔
     keyword: Optional[str] = Query(None),         # 关键词筛选
-    start_date: Optional[str] = Query(None),      # 开始时间范围 - 起始日期
-    end_date: Optional[str] = Query(None),        # 开始时间范围 - 结束日期
+    start_date: Optional[str] = Query(None, description="日期范围起点（含），ISO 时间"),
+    end_date: Optional[str] = Query(None, description="日期范围终点（不含），ISO 时间"),
     include_overdue: bool = Query(False),         # 未完成任务是否包含逾期（今天/最近7天视图用）
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -225,9 +225,7 @@ async def get_tasks(
                 pass
         if end_date:
             try:
-                # end_date 加1天，使 < 比较覆盖整天（如 today 的 completed_at 14:30 < 次日00:00）
-                parsed = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
-                end_date_dt = parsed + timedelta(days=1)
+                end_date_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
             except:
                 pass
         

@@ -8,7 +8,7 @@ import { useTaskContext } from '../contexts/TaskContext';
 import { useTaskListCommitProbe } from '../hooks/useTaskListCommitProbe';
 import { DragProvider } from '../contexts/DragContext';
 import { Task, TaskList as TaskListType } from '../types';
-import { reorderTasks, moveTask } from '../api/task';
+import { reorderTasks } from '../api/task';
 import TaskItem from './TaskItem';
 import './TaskList.less';
 
@@ -166,17 +166,6 @@ const TaskList: React.FC<TaskListProps> = ({
     }
   }, [refreshTasks]);
 
-  // 将任务移动为另一个任务的子任务，targetTaskId 为空时脱离父任务变为独立任务
-  const handleMoveToChild = useCallback(async (sourceTaskId: string, targetTaskId: string) => {
-    try {
-      await moveTask(sourceTaskId, targetTaskId || undefined);
-      await refreshTasks();
-      message.success(targetTaskId ? '已移动为子任务' : '已移动为独立任务');
-    } catch {
-      message.error('移动失败');
-      await refreshTasks();
-    }
-  }, [refreshTasks]);
 
   // 已完成任务：优先使用外部独立加载的分页数据，否则从 tasks 中过滤
   const hasExternalCompleted = externalCompletedTasks !== undefined;
@@ -278,7 +267,6 @@ const TaskList: React.FC<TaskListProps> = ({
           hideDetails={hideDetails}
           lists={lists}
           onReorder={handleReorder}
-          onMoveToChild={handleMoveToChild}
         />
 
         {/* 进行中 */}
@@ -292,7 +280,6 @@ const TaskList: React.FC<TaskListProps> = ({
           hideDetails={hideDetails}
           lists={lists}
           onReorder={handleReorder}
-          onMoveToChild={handleMoveToChild}
         />
 
         {/* 已完成 */}

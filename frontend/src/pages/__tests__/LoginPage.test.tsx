@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -7,6 +7,7 @@ import { server } from '../../tests/mocks/server';
 import { mockUser } from '../../tests/mocks/data';
 import { http, HttpResponse } from 'msw';
 import LoginPage from '../LoginPage';
+import type { User } from '../../types';
 
 // Mock @simplewebauthn/browser
 vi.mock('@simplewebauthn/browser', () => ({
@@ -14,12 +15,10 @@ vi.mock('@simplewebauthn/browser', () => ({
   startAuthentication: vi.fn(),
 }));
 
-let mockOnLogin: ReturnType<typeof vi.fn>;
-
-import { beforeEach } from 'vitest';
+const mockOnLogin = vi.fn<(user: User, token: string, refreshToken?: string) => void>();
 
 beforeEach(() => {
-  mockOnLogin = vi.fn();
+  mockOnLogin.mockReset();
 });
 
 const renderLoginPage = () => {

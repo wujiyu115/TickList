@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { BubbleMenu, FloatingMenu } from '@tiptap/react/menus';
+import type { BubbleMenuProps } from '@tiptap/react/menus';
 import { StarterKit } from '@tiptap/starter-kit';
 import { Underline } from '@tiptap/extension-underline';
 import { TaskList } from '@tiptap/extension-task-list';
@@ -14,8 +15,15 @@ import { Highlight } from '@tiptap/extension-highlight';
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
 import { common, createLowlight } from 'lowlight';
 import { Markdown } from 'tiptap-markdown';
+import type { MarkdownStorage } from 'tiptap-markdown';
 import { TableFormula } from '../extensions/tableFormula';
 import './TiptapEditor.less';
+
+declare module '@tiptap/core' {
+  interface Storage {
+    markdown: MarkdownStorage;
+  }
+}
 
 const lowlight = createLowlight(common);
 
@@ -118,19 +126,14 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
     onChange(e.target.value);
   }, [onChange]);
 
-  const isInTable = editor?.isActive('table') ?? false;
-
-  const tableBubbleShouldShow = useMemo(() => {
-    return ({ editor: e }: { editor: any }) => {
-      return e.isActive('table');
-    };
-  }, []);
-
-  const textBubbleShouldShow = useMemo(() => {
-    return ({ editor: e, from, to }: { editor: any; from: number; to: number }) => {
-      return from !== to && !e.isActive('table');
-    };
-  }, []);
+  const tableBubbleShouldShow = useCallback<NonNullable<BubbleMenuProps['shouldShow']>>(
+    ({ editor: currentEditor }) => currentEditor.isActive('table'),
+    [],
+  );
+  const textBubbleShouldShow = useCallback<NonNullable<BubbleMenuProps['shouldShow']>>(
+    ({ editor: currentEditor, from, to }) => from !== to && !currentEditor.isActive('table'),
+    [],
+  );
 
   if (!editor) return null;
 
@@ -160,14 +163,10 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       <BubbleMenu
         editor={editor}
         shouldShow={textBubbleShouldShow}
-        tippyOptions={{
+        options={{
           placement: 'top',
-          popperOptions: {
-            modifiers: [
-              { name: 'flip' },
-              { name: 'preventOverflow', options: { boundary: 'viewport' } },
-            ],
-          },
+          flip: true,
+          shift: { rootBoundary: 'viewport' },
         }}
         className="tiptap-bubble-menu"
       >
@@ -183,16 +182,12 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       <BubbleMenu
         editor={editor}
         shouldShow={tableBubbleShouldShow}
-        tippyOptions={{
+        options={{
           placement: 'top',
-          maxWidth: 'none',
-          popperOptions: {
-            modifiers: [
-              { name: 'flip' },
-              { name: 'preventOverflow', options: { boundary: 'viewport', padding: 8, altAxis: true } },
-            ],
-          },
+          flip: true,
+          shift: { rootBoundary: 'viewport', padding: 8, crossAxis: true },
         }}
+        style={{ maxWidth: 'none' }}
         className="tiptap-table-menu"
       >
         <button type="button" onClick={() => editor.chain().focus().addRowBefore().run()} title="上方插入行">↑行</button>
@@ -207,16 +202,12 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
 
       <FloatingMenu
         editor={editor}
-        tippyOptions={{
+        options={{
           placement: 'bottom-start',
-          maxWidth: 'none',
-          popperOptions: {
-            modifiers: [
-              { name: 'flip', options: { fallbackPlacements: ['top-start'] } },
-              { name: 'preventOverflow', options: { boundary: 'viewport', padding: 8, altAxis: true } },
-            ],
-          },
+          flip: { fallbackPlacements: ['top-start'] },
+          shift: { rootBoundary: 'viewport', padding: 8, crossAxis: true },
         }}
+        style={{ maxWidth: 'none' }}
         className="tiptap-floating-menu"
       >
         <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}>H1</button>
